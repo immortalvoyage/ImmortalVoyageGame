@@ -1,10 +1,19 @@
 {
-  "name": "immortal-voyage-game",
-  "main": "src/worker.js",
-  "compatibility_date": "2026-07-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "vars": {
-    "DISCORD_CLIENT_ID": "1536242596505190441",
-    "ALLOWED_DISCORD_USER_ID": "1179245490081103994"
-  }
+	"name": "immortal-voyage-game",
+	"main": "src/worker.js",
+	"compatibility_date": "2026-07-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"DISCORD_CLIENT_ID": "1536242596505190441",
+		"ALLOWED_DISCORD_USER_ID": "1179245490081103994"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "immortalvoyage-game",
+			"database_id": "cb6f88ff-4cd1-40c0-aa88-bfddc9a1c597"
+		}
+	]
 }
