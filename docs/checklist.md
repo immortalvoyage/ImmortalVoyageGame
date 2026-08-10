@@ -1,0 +1,7 @@
+- [x] Desktop shell
+- [x] Mobile responsive shell
+- [x] Existing auth boundary retained
+- [x] Player action disabled
+- [ ] PR CI
+- [ ] Production deploy
+- [ ] Online visual verification
