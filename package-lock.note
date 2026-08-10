@@ -1,0 +1,1 @@
+Cloudflare currently deploys with npx wrangler deploy; dependency caching is optional for this prototype.
