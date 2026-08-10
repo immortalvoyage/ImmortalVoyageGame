@@ -1,2 +1,0 @@
-game shell static checks passed
-worker syntax check passed
