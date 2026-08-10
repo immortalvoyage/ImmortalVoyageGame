@@ -1,0 +1,5 @@
+game-shell
+character panel
+scene panel
+chronicle panel
+action panel
