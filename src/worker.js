@@ -1,3 +1,5 @@
+import { createD1CharacterRepository, createPlayerCharacterBootstrap } from './modules/character/index.js';
+
 const COOKIE_NAME = "iv_game_session";
 
 export default {
@@ -68,7 +70,17 @@ async function protectedGamePage(request, env) {
   const session = readCookie(request.headers.get("Cookie"), COOKIE_NAME);
   const userId = session && env.DISCORD_CLIENT_SECRET ? await verifySession(session, env.DISCORD_CLIENT_SECRET) : null;
   if (!userId || userId !== String(env.ALLOWED_DISCORD_USER_ID)) return Response.redirect(new URL("/game", request.url).toString(), 302);
-  return html(gamePage());
+  if (!env.DB) return html(messagePage("旅途暫停", "角色資料庫尚未完成綁定。"), 503);
+
+  const repository = createD1CharacterRepository(env.DB);
+  const bootstrap = createPlayerCharacterBootstrap({
+    repository,
+    createCharacter: async () => { throw new Error('character creation route not ready'); },
+  });
+  const result = await bootstrap.resolve({ playerId: userId });
+
+  if (result.state === 'character_creation_required') return html(characterCreationRequiredPage());
+  return html(gamePage(result.character));
 }
 
 async function signSession(userId, secret) {
@@ -126,12 +138,21 @@ function entryPage() {
     </main>`);
 }
 
-function gamePage() {
-  return shell(`<main class="hero"><p class="eyebrow">IMMORTALVOYAGE</p><h1>旅途將啟</h1><p class="subtitle">身分驗證完成。遊戲主畫面將在下一階段建立。</p></main>`);
+function characterCreationRequiredPage() {
+  return shell(`<main class="hero"><p class="eyebrow">IMMORTALVOYAGE</p><h1>此世未生</h1><p class="subtitle">身分驗證與角色資料庫已連接。目前沒有存活角色，下一階段將進入出生地域與人物建立。</p></main>`);
+}
+
+function gamePage(character) {
+  const characterId = escapeHtml(character?.characterId ?? '未知');
+  return shell(`<main class="hero"><p class="eyebrow">IMMORTALVOYAGE</p><h1>故人歸來</h1><p class="subtitle">角色資料已由世界存檔讀取。角色識別：${characterId}</p></main>`);
 }
 
 function messagePage(title, message) {
   return shell(`<main class="hero"><p class="eyebrow">IMMORTALVOYAGE</p><h1>${title}</h1><p class="subtitle">${message}</p><a class="discord" href="/game">返回入口</a></main>`);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
 function shell(content) {
