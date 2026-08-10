@@ -1,2 +1,0 @@
-Static verification target: node test/worker.test.mjs
-Expected: game shell static checks passed
