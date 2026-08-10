@@ -4,3 +4,6 @@ export { FeatureFlags } from "./feature-flags.js";
 export { ModuleRegistry } from "./module-registry.js";
 export { ActionResolver } from "./action-resolver.js";
 export { CORE_VERSION, WORLD_SCHEMA_VERSION, SAVE_SCHEMA_VERSION, getSchemaInfo } from "./schema.js";
+export { PLAYER_ROLES, createPlayer, isOwner } from "./player.js";
+export { createSessionContext } from "./session-context.js";
+export { PERMISSIONS, can, requirePermission } from "./access-control.js";
