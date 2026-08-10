@@ -1,0 +1,10 @@
+{
+  "name": "immortal-voyage-game",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "DISCORD_CLIENT_ID": "1486738869578760192",
+    "ALLOWED_DISCORD_USER_ID": "1179245490081103994"
+  }
+}
