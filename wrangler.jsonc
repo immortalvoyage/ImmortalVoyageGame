@@ -4,7 +4,7 @@
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "DISCORD_CLIENT_ID": "1486738869578760192",
+    "DISCORD_CLIENT_ID": "1536242596505190441",
     "ALLOWED_DISCORD_USER_ID": "1179245490081103994"
   }
 }
