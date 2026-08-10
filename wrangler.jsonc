@@ -1,5 +1,5 @@
 {
-	"name": "immortal-voyage-game",
+	"name": "immortalvoyagegame",
 	"main": "src/worker.js",
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": [
@@ -13,7 +13,7 @@
 		{
 			"binding": "DB",
 			"database_name": "immortalvoyage-game",
-			"database_id": "cb6f88ff-4cd1-40c0-aa88-bfddc9a1c597"
+			"database_id": "8c2135e3-8e1b-4b2d-a377-ba69b6d7429f"
 		}
 	]
 }
