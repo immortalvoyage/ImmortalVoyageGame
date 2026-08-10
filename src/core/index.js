@@ -7,3 +7,5 @@ export { CORE_VERSION, WORLD_SCHEMA_VERSION, SAVE_SCHEMA_VERSION, getSchemaInfo 
 export { PLAYER_ROLES, createPlayer, isOwner } from "./player.js";
 export { createSessionContext } from "./session-context.js";
 export { PERMISSIONS, can, requirePermission } from "./access-control.js";
+export { TESTER_ACCESS_STATUS, TESTER_ACCESS_SOURCES, createTesterAccess, hasTesterAccess } from "./tester-access.js";
+export { TURN_SOURCES, TurnLedger } from "./turn-ledger.js";
