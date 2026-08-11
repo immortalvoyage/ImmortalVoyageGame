@@ -2,9 +2,9 @@ import { gatherIntoCharacter } from './character-gather.js';
 import { GatherableResourceRegistry } from '../modules/resources/index.js';
 
 const STARTER_RESOURCE_BY_REGION = Object.freeze({
-  coast: Object.freeze({ resourceId: 'starter-shellfish', itemId: 'shellfish', label: '拾取潮間貝類' }),
-  forest: Object.freeze({ resourceId: 'starter-berries', itemId: 'wild-berry', label: '採些野莓' }),
-  grassland: Object.freeze({ resourceId: 'starter-herbs', itemId: 'wild-herb', label: '採些可用野草' }),
+  coast: Object.freeze({ resourceId: 'starter-shellfish', itemId: 'shellfish', label: '拾取潮間貝類', result: '你在退潮留下的濕痕間找到一小份可食用的貝類，仔細收進行囊。這是你真正從此世取得的第一份資源。' }),
+  forest: Object.freeze({ resourceId: 'starter-berries', itemId: 'wild-berry', label: '採些野莓', result: '你辨認出幾顆尚能食用的野莓，小心摘下收進行囊。這是你真正從此世取得的第一份資源。' }),
+  grassland: Object.freeze({ resourceId: 'starter-herbs', itemId: 'wild-herb', label: '採些可用野草', result: '你在較濕潤的草叢間找到一小把可利用的野草，整理後收進行囊。這是你真正從此世取得的第一份資源。' }),
 });
 
 function regionKey(character) {
@@ -33,6 +33,6 @@ export function performStarterGather(character, { occurredAt = new Date().toISOS
   if (!gathered.outcome.allowed) return gathered;
   return Object.freeze({
     character: Object.freeze({ ...gathered.character, starterGatheredAt: occurredAt }),
-    outcome: Object.freeze({ ...gathered.outcome, label: option.label }),
+    outcome: Object.freeze({ ...gathered.outcome, label: option.label, result: option.result }),
   });
 }
