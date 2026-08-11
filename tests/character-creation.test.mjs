@@ -36,7 +36,7 @@ test('character creation returns a complete alive character with rolled attribut
     random: () => 0.2,
   });
 
-  assert.equal(character.characterName, '沈無涯');
+  assert.equal(character.name, '沈無涯');
   assert.equal(character.birthRegionId, 'sun-coast');
   assert.equal(character.originPreference, 'coast');
   assert.equal(character.status, 'alive');
