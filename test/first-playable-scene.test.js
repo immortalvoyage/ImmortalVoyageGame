@@ -79,13 +79,14 @@ test('character with inventory gets a view inventory choice with readable item l
   assert.match(describeInventory(character), /可用野草 × 1/);
 });
 
-test('viewing inventory is read only and does not create action history', () => {
+test('viewing inventory is read only and exposes a stable item snapshot for the UI renderer', () => {
   const character = { characterId: 'char-1', playerId: 'player-1', birthRegionTags: ['grassland'], starterGatheredAt: '2026-08-11T03:02:00.000Z', inventory: { items: [{ itemId: 'wild-herb', quantity: 1 }] }, actionHistory: [{ actionId: 'starter-gather' }] };
   const applied = applyFirstPlayableAction(character, 'view-inventory', { occurredAt: '2026-08-11T03:10:00.000Z' });
   assert.equal(applied.character, character);
   assert.equal(applied.character.actionHistory.length, 1);
   assert.equal(applied.outcome.readOnly, true);
   assert.match(applied.outcome.result, /可用野草 × 1/);
+  assert.deepEqual(applied.outcome.inventory, [{ itemId: 'wild-herb', quantity: 1 }]);
 });
 
 test('repeated world actions accumulate character progress', () => {
