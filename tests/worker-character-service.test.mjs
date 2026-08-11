@@ -50,6 +50,23 @@ test('worker character service creates and reloads a persisted character', async
   assert.equal(reloaded.character.name, 'Johann Müller');
 });
 
+test('worker character service saves and reloads scene state in the D1 payload', async () => {
+  const rows = [];
+  const service = createWorkerCharacterService({ DB: fakeDb(rows) }, { random: () => 0.1 });
+  const created = await service.create('player-1', { characterName: '沈無涯', originPreference: 'coast' });
+  const changed = {
+    ...created.character,
+    sceneState: { sceneId: 'birth-coast', lastActionId: 'observe', lastResult: '已觀察港口', updatedAt: '2026-08-11T03:00:00.000Z' },
+    actionHistory: [{ sceneId: 'birth-coast', actionId: 'observe', result: '已觀察港口', worldMutation: false, occurredAt: '2026-08-11T03:00:00.000Z' }],
+  };
+
+  await service.save(changed);
+  const reloaded = await service.resolve('player-1');
+  assert.equal(reloaded.character.sceneState.lastActionId, 'observe');
+  assert.equal(reloaded.character.actionHistory.length, 1);
+  assert.equal(reloaded.character.actionHistory[0].worldMutation, false);
+});
+
 test('worker character service refuses to start without D1 binding', () => {
   assert.throws(() => createWorkerCharacterService({}), /DB binding is required/);
 });
