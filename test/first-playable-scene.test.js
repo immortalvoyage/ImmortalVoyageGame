@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ACTION_HISTORY_LIMIT, applyFirstPlayableAction, getFirstPlayableScene, resolveFirstPlayableAction } from '../src/core/first-playable-scene.js';
 
-test('coastal birth receives the coastal opening scene', () => {
+test('coastal birth receives the coastal opening scene and starter gathering action', () => {
   const scene = getFirstPlayableScene({ birthRegionTags: ['coast', 'urban'] });
   assert.equal(scene.id, 'birth-coast');
-  assert.equal(scene.choices.length, 3);
+  assert.equal(scene.choices.length, 4);
+  assert.equal(scene.choices.some((choice) => choice.id === 'starter-gather'), true);
 });
 
 test('forest birth receives the forest opening scene', () => {
@@ -20,7 +21,7 @@ test('grassland birth falls back to the grassland opening scene', () => {
 
 test('world progress unlocks a region-specific follow-up choice', () => {
   const scene = getFirstPlayableScene({ birthRegionTags: ['forest'], worldProgress: { locationKnowledge: 2 } });
-  assert.equal(scene.choices.length, 4);
+  assert.equal(scene.choices.length, 5);
   assert.equal(scene.choices.at(-1).id, 'read-forest-signs');
 });
 
@@ -59,6 +60,14 @@ test('applying an action stores scene state, world progress and action history o
   assert.equal(applied.character.actionHistory.length, 1);
   assert.equal(applied.character.actionHistory[0].occurredAt, '2026-08-11T03:00:00.000Z');
   assert.equal(applied.character.actionHistory[0].worldMutation, false);
+});
+
+test('starter gathering enters inventory through the existing scene action flow and then disappears', () => {
+  const original = { characterId: 'char-1', playerId: 'player-1', birthRegionId: 'starter-forest', birthRegionTags: ['forest'], status: 'alive' };
+  const applied = applyFirstPlayableAction(original, 'starter-gather', { occurredAt: '2026-08-11T03:02:00.000Z' });
+  assert.equal(applied.character.inventory.items[0].itemId, 'wild-berry');
+  assert.equal(applied.character.sceneState.lastActionId, 'starter-gather');
+  assert.equal(getFirstPlayableScene(applied.character).choices.some((choice) => choice.id === 'starter-gather'), false);
 });
 
 test('repeated world actions accumulate character progress', () => {

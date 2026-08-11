@@ -1,3 +1,5 @@
+import { getStarterGatherOption, performStarterGather } from './starter-gather.js';
+
 const SCENES = Object.freeze({
   coast: Object.freeze({
     title: '潮聲初醒',
@@ -48,8 +50,11 @@ function requirementsMet(character, requires = {}) {
 export function getFirstPlayableScene(character) {
   const key = sceneKey(character);
   const scene = SCENES[key];
-  const choices = requirementsMet(character, scene.unlock.requires) ? Object.freeze([...scene.choices, scene.unlock]) : scene.choices;
-  return Object.freeze({ id: `birth-${key}`, title: scene.title, body: scene.body, choices });
+  const choices = [...scene.choices];
+  const gather = getStarterGatherOption(character);
+  if (gather) choices.push(Object.freeze({ id: 'starter-gather', label: gather.label, result: gather.result, progress: Object.freeze({}) }));
+  if (requirementsMet(character, scene.unlock.requires)) choices.push(scene.unlock);
+  return Object.freeze({ id: `birth-${key}`, title: scene.title, body: scene.body, choices: Object.freeze(choices) });
 }
 
 export function resolveFirstPlayableAction(character, actionId) {
@@ -72,15 +77,26 @@ export function resolveFirstPlayableAction(character, actionId) {
 
 export function applyFirstPlayableAction(character, actionId, { occurredAt = new Date().toISOString() } = {}) {
   if (!character || typeof character !== 'object') throw new TypeError('character is required');
-  const outcome = resolveFirstPlayableAction(character, actionId);
-  const previousHistory = Array.isArray(character.actionHistory) ? character.actionHistory : [];
-  const previousProgress = character.worldProgress && typeof character.worldProgress === 'object' ? character.worldProgress : {};
+  const scene = getFirstPlayableScene(character);
+  let baseCharacter = character;
+  let outcome;
+
+  if (String(actionId || '') === 'starter-gather') {
+    const gathered = performStarterGather(character, { occurredAt });
+    baseCharacter = gathered.character;
+    outcome = Object.freeze({ sceneId: scene.id, actionId: 'starter-gather', result: gathered.outcome.result, progress: Object.freeze({}), worldMutation: false, nextSystem: null, itemId: gathered.outcome.itemId, quantity: gathered.outcome.quantity });
+  } else {
+    outcome = resolveFirstPlayableAction(character, actionId);
+  }
+
+  const previousHistory = Array.isArray(baseCharacter.actionHistory) ? baseCharacter.actionHistory : [];
+  const previousProgress = baseCharacter.worldProgress && typeof baseCharacter.worldProgress === 'object' ? baseCharacter.worldProgress : {};
   const worldProgress = Object.freeze(Object.entries(outcome.progress).reduce((progress, [key, amount]) => ({ ...progress, [key]: Number(previousProgress[key] || 0) + amount }), { ...previousProgress }));
   const historyEntry = Object.freeze({ sceneId: outcome.sceneId, actionId: outcome.actionId, result: outcome.result, progress: outcome.progress, worldMutation: false, occurredAt });
   const actionHistory = Object.freeze([...previousHistory, historyEntry].slice(-ACTION_HISTORY_LIMIT));
   const sceneState = Object.freeze({ sceneId: outcome.sceneId, lastActionId: outcome.actionId, lastResult: outcome.result, updatedAt: occurredAt });
 
-  return Object.freeze({ character: Object.freeze({ ...character, worldProgress, sceneState, actionHistory }), outcome });
+  return Object.freeze({ character: Object.freeze({ ...baseCharacter, worldProgress, sceneState, actionHistory }), outcome });
 }
 
 export { ACTION_HISTORY_LIMIT };
