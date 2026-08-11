@@ -4,21 +4,21 @@ const ITEM_CATALOG = Object.freeze({
     name: '潮間貝類',
     category: 'food',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'shellfish', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'shellfish', glyph: '◌', motion: 'none' }),
   }),
   'wild-berry': Object.freeze({
     id: 'wild-berry',
     name: '野莓',
     category: 'food',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'wild-berry', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'wild-berry', glyph: '●', motion: 'none' }),
   }),
   'wild-herb': Object.freeze({
     id: 'wild-herb',
     name: '可用野草',
     category: 'material',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'wild-herb', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'wild-herb', glyph: '🌿', motion: 'none' }),
   }),
 });
 
@@ -30,13 +30,14 @@ export function getItemMetadata(itemId) {
     name: id,
     category: 'unknown',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: id, motion: 'none' }),
+    visual: Object.freeze({ iconKey: id, glyph: '', motion: 'none' }),
   });
 }
 
 export function describeItemStack(itemId, quantity) {
   const item = getItemMetadata(itemId);
-  return `${item.name} × ${Number(quantity)}`;
+  const glyph = item.visual?.glyph ? `${item.visual.glyph} ` : '';
+  return `${glyph}${item.name} × ${Number(quantity)}`;
 }
 
 export { ITEM_CATALOG };
