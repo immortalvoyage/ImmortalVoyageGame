@@ -1,6 +1,8 @@
 import { createWorkerCharacterService } from './modules/character/index.js';
 import { applyFirstPlayableAction, getFirstPlayableScene } from './core/first-playable-scene.js';
 import { acceptStarterWork, completeStarterWork, getStarterWorkOffers } from './core/starter-work.js';
+import { renderInventoryResult } from './modules/inventory/inventory-result.js';
+import { getItemHttpAsset } from './modules/inventory/item-http-assets.js';
 
 const COOKIE_NAME = "iv_game_session";
 
@@ -9,6 +11,10 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/") return Response.redirect(`${url.origin}/game`, 302);
     if (request.method === "GET" && url.pathname === "/game") return html(entryPage());
+    if (request.method === "GET" && url.pathname.startsWith('/assets/items/')) {
+      const asset = getItemHttpAsset(url.pathname);
+      if (asset) return new Response(asset.body, { status: 200, headers: { 'Content-Type': asset.contentType, 'Cache-Control': 'public, max-age=86400' } });
+    }
     if (request.method === "GET" && url.pathname === "/preview/character-creation") return html(characterCreationPage().replace('action="/character/birth"', 'action="#"').replace('type="submit"', 'type="button"').replace('一旦降生，此世便開始流動。', '預覽模式 · 不會建立角色或寫入資料。'));
     if (request.method === "GET" && url.pathname === "/auth/discord") return startDiscordLogin(url, env);
     if (request.method === "GET" && url.pathname === "/auth/callback") return finishDiscordLogin(request, url, env);
@@ -91,7 +97,8 @@ async function firstSceneAction(request, env) {
   const form = await request.formData();
   try {
     const applied = applyFirstPlayableAction(resolved.character, form.get('actionId'));
-    const savedCharacter = await service.save(applied.character);
+    const savedCharacter = applied.outcome.readOnly ? resolved.character : await service.save(applied.character);
+    if (applied.outcome.actionId === 'view-inventory') return html(inventoryResultPage(savedCharacter));
     if (applied.outcome.actionId === 'seek-work') return Response.redirect(new URL('/work', request.url).toString(), 303);
     return html(sceneResultPage(savedCharacter, applied.outcome));
   } catch (error) {
@@ -218,6 +225,10 @@ function gamePage(character) {
   const historyCount = Array.isArray(character?.actionHistory) ? character.actionHistory.length : 0;
   const workLink = character?.activeWorkContract ? `<a class="button secondary" href="/work">查看目前工作</a>` : '';
   return shell(`<div class="game-workspace"><main class="hero play-scene"><p class="eyebrow">IMMORTALVOYAGE</p><p class="scene-name">${name}</p><h1>${escapeHtml(scene.title)}</h1><p class="subtitle">${escapeHtml(scene.body)}</p>${persistedResult}<form method="post" action="/scene/action" class="scene-actions">${scene.choices.map((choice) => `<button class="scene-choice" type="submit" name="actionId" value="${escapeHtml(choice.id)}">${escapeHtml(choice.label)}</button>`).join('')}</form>${workLink}<p class="notice">此情境已有 ${historyCount} 筆行動寫入角色存檔；重新登入仍會保留。</p></main><aside class="ad-slot" aria-label="廣告"></aside></div>`);
+}
+
+function inventoryResultPage(character) {
+  return shell(`<div class="game-workspace"><main class="hero play-scene inventory-page">${renderInventoryResult(character)}<a class="button" href="/play">收起行囊</a></main><aside class="ad-slot" aria-label="廣告"></aside></div>`);
 }
 
 function sceneResultPage(character, outcome) {
