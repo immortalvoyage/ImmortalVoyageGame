@@ -28,6 +28,8 @@ const SCENES = Object.freeze({
   }),
 });
 
+const ACTION_HISTORY_LIMIT = 20;
+
 function sceneKey(character) {
   const tags = Array.isArray(character?.birthRegionTags) ? character.birthRegionTags : [];
   if (tags.includes('coast') || tags.includes('island') || tags.includes('urban')) return 'coast';
@@ -36,9 +38,10 @@ function sceneKey(character) {
 }
 
 export function getFirstPlayableScene(character) {
-  const scene = SCENES[sceneKey(character)];
+  const key = sceneKey(character);
+  const scene = SCENES[key];
   return Object.freeze({
-    id: `birth-${sceneKey(character)}`,
+    id: `birth-${key}`,
     title: scene.title,
     body: scene.body,
     choices: scene.choices,
@@ -60,3 +63,30 @@ export function resolveFirstPlayableAction(character, actionId) {
     worldMutation: false,
   });
 }
+
+export function applyFirstPlayableAction(character, actionId, { occurredAt = new Date().toISOString() } = {}) {
+  if (!character || typeof character !== 'object') throw new TypeError('character is required');
+  const outcome = resolveFirstPlayableAction(character, actionId);
+  const previousHistory = Array.isArray(character.actionHistory) ? character.actionHistory : [];
+  const historyEntry = Object.freeze({
+    sceneId: outcome.sceneId,
+    actionId: outcome.actionId,
+    result: outcome.result,
+    worldMutation: false,
+    occurredAt,
+  });
+  const actionHistory = Object.freeze([...previousHistory, historyEntry].slice(-ACTION_HISTORY_LIMIT));
+  const sceneState = Object.freeze({
+    sceneId: outcome.sceneId,
+    lastActionId: outcome.actionId,
+    lastResult: outcome.result,
+    updatedAt: occurredAt,
+  });
+
+  return Object.freeze({
+    character: Object.freeze({ ...character, sceneState, actionHistory }),
+    outcome,
+  });
+}
+
+export { ACTION_HISTORY_LIMIT };
