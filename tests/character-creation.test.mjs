@@ -29,12 +29,14 @@ test('character creation returns a complete alive character with rolled attribut
   const character = createCharacterFromBirth({
     characterId: 'char-1',
     playerId: 'player-1',
+    characterName: '沈無涯',
     regions: [{ id: 'sun-coast', tags: ['coast', 'island'] }],
     originPreference: 'coast',
     talentCount: 1,
     random: () => 0.2,
   });
 
+  assert.equal(character.name, '沈無涯');
   assert.equal(character.birthRegionId, 'sun-coast');
   assert.equal(character.originPreference, 'coast');
   assert.equal(character.status, 'alive');

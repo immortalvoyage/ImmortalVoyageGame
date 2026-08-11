@@ -39,13 +39,15 @@ test('worker character service requests creation when player has no character', 
 test('worker character service creates and reloads a persisted character', async () => {
   const rows = [];
   const service = createWorkerCharacterService({ DB: fakeDb(rows) }, { random: () => 0.1 });
-  const created = await service.create('player-1', { originPreference: 'coast' });
+  const created = await service.create('player-1', { characterName: 'Johann Müller', originPreference: 'coast' });
   assert.equal(created.state, 'character_created');
   assert.equal(created.character.playerId, 'player-1');
+  assert.equal(created.character.name, 'Johann Müller');
 
   const reloaded = await service.resolve('player-1');
   assert.equal(reloaded.state, 'existing_character');
   assert.equal(reloaded.character.characterId, created.character.characterId);
+  assert.equal(reloaded.character.name, 'Johann Müller');
 });
 
 test('worker character service refuses to start without D1 binding', () => {

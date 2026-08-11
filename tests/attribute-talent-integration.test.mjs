@@ -19,5 +19,5 @@ test('drought talent lowers thirst rate without removing water need', () => {
 test('environment and talent multiply instead of overwriting each other', () => {
   const talents = [{ modifiers: { thirstRate: 0.8 } }];
   const modifiers = buildSurvivalModifiers({ talents, environment: { thirstModifier: 1.5 } });
-  assert.equal(modifiers.thirstModifier, 1.2);
+  assert.ok(Math.abs(modifiers.thirstModifier - 1.2) < Number.EPSILON * 2);
 });
