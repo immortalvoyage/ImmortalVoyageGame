@@ -15,3 +15,8 @@ test('inventory result explains that viewing inventory is read only', () => {
   assert.match(html, /不會因查看而改變世界狀態/);
   assert.match(html, /行囊目前是空的/);
 });
+
+test('inventory result leaves close navigation to the page wrapper', () => {
+  const html = renderInventoryResult({ inventory: { items: [] } });
+  assert.doesNotMatch(html, /收起行囊/);
+});
