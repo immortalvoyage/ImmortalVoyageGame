@@ -61,6 +61,7 @@ export function resolveFirstPlayableAction(character, actionId) {
     actionId: choice.id,
     result: choice.result,
     worldMutation: false,
+    nextSystem: choice.id === 'seek-work' ? 'starter_work' : null,
   });
 }
 
