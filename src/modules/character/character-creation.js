@@ -1,5 +1,6 @@
 import { ATTRIBUTE_KEYS, createAttributes } from './attributes.js';
 import { rollBirthTalents } from './talents.js';
+import { assertCharacterName } from './character-name.js';
 
 const ORIGIN_PREFERENCES = Object.freeze([
   'random',
@@ -54,6 +55,7 @@ function selectBirthRegion({ regions, preference = 'random', random = Math.rando
 export function createCharacterFromBirth({
   characterId,
   playerId,
+  characterName,
   regions,
   originPreference = 'random',
   talentCount = 1,
@@ -68,6 +70,7 @@ export function createCharacterFromBirth({
   return Object.freeze({
     characterId: requireText(characterId, 'characterId'),
     playerId: requireText(playerId, 'playerId'),
+    name: assertCharacterName(characterName),
     creationVersion: 1,
     originPreference,
     birthRegionId: requireText(birthRegion.id, 'birthRegion.id'),
