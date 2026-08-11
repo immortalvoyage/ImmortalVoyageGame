@@ -18,6 +18,22 @@ test('grassland birth falls back to the grassland opening scene', () => {
   assert.equal(scene.id, 'birth-grassland');
 });
 
+test('world progress unlocks a region-specific follow-up choice', () => {
+  const scene = getFirstPlayableScene({ birthRegionTags: ['forest'], worldProgress: { locationKnowledge: 2 } });
+  assert.equal(scene.choices.length, 4);
+  assert.equal(scene.choices.at(-1).id, 'read-forest-signs');
+});
+
+test('locked follow-up action cannot be submitted before its requirement is met', () => {
+  assert.throws(() => resolveFirstPlayableAction({ birthRegionTags: ['forest'], worldProgress: { locationKnowledge: 1 } }, 'read-forest-signs'), (error) => error?.code === 'unsupported_scene_action');
+});
+
+test('unlocked follow-up action adds route confidence without mutating shared world state', () => {
+  const result = resolveFirstPlayableAction({ birthRegionTags: ['forest'], worldProgress: { locationKnowledge: 2 } }, 'read-forest-signs');
+  assert.equal(result.progress.routeConfidence, 1);
+  assert.equal(result.worldMutation, false);
+});
+
 test('first scene action resolves without mutating shared world state', () => {
   const result = resolveFirstPlayableAction({ birthRegionTags: ['coast'] }, 'seek-work');
   assert.equal(result.actionId, 'seek-work');
