@@ -4,7 +4,7 @@ const WILD_HERB_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 
   <rect width="128" height="128" rx="18" fill="#101915"/>
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <path d="M62 95C58 74 54 54 43 31M64 95C66 72 70 52 82 28M62 95C64 74 59 54 57 35M64 95C70 76 78 61 91 47" stroke="#7f9b55" stroke-width="6"/>
-    <path d="M47 41c-13-2-20 7-22 18 12 1 20-5 22-18Zm15 8c-13-4-22 4-25 15 12 2 21-4 25-15Zm16-8c14-3 22 5 24 16-12 2-21-4 24-16Zm2 18c13-2 20 6 22 17-12 1-20-5-22-17Z" fill="#93ad62" stroke="#b7c783" stroke-width="2"/>
+    <path d="M47 41c-13-2-20 7-22 18 12 1 20-5 22-18Zm15 8c-13-4-22 4-25 15 12 2 21-4 25-15Zm16-8c14-3 22 5 24 16-12 2-21-4-24-16Zm2 18c13-2 20 6 22 17-12 1-20-5-22-17Z" fill="#93ad62" stroke="#b7c783" stroke-width="2"/>
     <path d="M48 88c10 5 22 6 33 1M47 93c11 5 24 6 36 0" stroke="#b48a4b" stroke-width="6"/>
   </g>
 </svg>`;
