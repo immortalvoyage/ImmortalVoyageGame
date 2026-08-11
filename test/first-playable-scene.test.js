@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getFirstPlayableScene, resolveFirstPlayableAction } from '../src/core/first-playable-scene.js';
+import { ACTION_HISTORY_LIMIT, applyFirstPlayableAction, getFirstPlayableScene, resolveFirstPlayableAction } from '../src/core/first-playable-scene.js';
 
 test('coastal birth receives the coastal opening scene', () => {
   const scene = getFirstPlayableScene({ birthRegionTags: ['coast', 'urban'] });
@@ -30,4 +30,25 @@ test('unknown first scene action is rejected', () => {
     () => resolveFirstPlayableAction({ birthRegionTags: ['coast'] }, 'destroy-world'),
     (error) => error?.code === 'unsupported_scene_action',
   );
+});
+
+test('applying an action stores scene state and action history on the character', () => {
+  const original = { characterId: 'char-1', playerId: 'player-1', birthRegionTags: ['coast'], status: 'alive' };
+  const applied = applyFirstPlayableAction(original, 'observe', { occurredAt: '2026-08-11T03:00:00.000Z' });
+
+  assert.equal(original.sceneState, undefined);
+  assert.equal(applied.character.sceneState.sceneId, 'birth-coast');
+  assert.equal(applied.character.sceneState.lastActionId, 'observe');
+  assert.equal(applied.character.actionHistory.length, 1);
+  assert.equal(applied.character.actionHistory[0].occurredAt, '2026-08-11T03:00:00.000Z');
+  assert.equal(applied.character.actionHistory[0].worldMutation, false);
+});
+
+test('action history is bounded to prevent character payload from growing forever', () => {
+  let character = { characterId: 'char-1', playerId: 'player-1', birthRegionTags: ['forest'], status: 'alive' };
+  for (let index = 0; index < ACTION_HISTORY_LIMIT + 5; index += 1) {
+    character = applyFirstPlayableAction(character, 'observe', { occurredAt: `2026-08-11T03:${String(index).padStart(2, '0')}:00.000Z` }).character;
+  }
+  assert.equal(character.actionHistory.length, ACTION_HISTORY_LIMIT);
+  assert.equal(character.actionHistory.at(-1).sceneId, 'birth-forest');
 });

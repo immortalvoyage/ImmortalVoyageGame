@@ -24,6 +24,7 @@ export function createWorkerCharacterService(env, { regions = DEFAULT_BIRTH_REGI
   return Object.freeze({
     resolve: (playerId) => bootstrap.resolve({ playerId }),
     create: (playerId, createInput) => bootstrap.resolve({ playerId, createInput }),
+    save: (character) => repository.save(character),
   });
 }
 
