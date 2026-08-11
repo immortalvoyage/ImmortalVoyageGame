@@ -1,6 +1,7 @@
 {
 	"name": "immortalvoyagegame",
 	"main": "src/worker.js",
+	"account_id": "9bf5fec6c54b0fbf7638b42dd4c3fb5b",
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": [
 		"nodejs_compat"
