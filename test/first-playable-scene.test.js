@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ACTION_HISTORY_LIMIT, applyFirstPlayableAction, getFirstPlayableScene, resolveFirstPlayableAction } from '../src/core/first-playable-scene.js';
+import { ACTION_HISTORY_LIMIT, applyFirstPlayableAction, describeInventory, getFirstPlayableScene, resolveFirstPlayableAction } from '../src/core/first-playable-scene.js';
 
 test('coastal birth receives the coastal opening scene and starter gathering action', () => {
   const scene = getFirstPlayableScene({ birthRegionTags: ['coast', 'urban'] });
@@ -68,6 +68,24 @@ test('starter gathering enters inventory through the existing scene action flow 
   assert.equal(applied.character.inventory.items[0].itemId, 'wild-berry');
   assert.equal(applied.character.sceneState.lastActionId, 'starter-gather');
   assert.equal(getFirstPlayableScene(applied.character).choices.some((choice) => choice.id === 'starter-gather'), false);
+});
+
+test('character with inventory gets a view inventory choice with readable item labels', () => {
+  const character = { birthRegionTags: ['grassland'], starterGatheredAt: '2026-08-11T03:02:00.000Z', inventory: { items: [{ itemId: 'wild-herb', quantity: 1 }] } };
+  const scene = getFirstPlayableScene(character);
+  const choice = scene.choices.find((item) => item.id === 'view-inventory');
+  assert.equal(choice.label, '查看行囊');
+  assert.match(choice.result, /可用野草 × 1/);
+  assert.match(describeInventory(character), /可用野草 × 1/);
+});
+
+test('viewing inventory is read only and does not create action history', () => {
+  const character = { characterId: 'char-1', playerId: 'player-1', birthRegionTags: ['grassland'], starterGatheredAt: '2026-08-11T03:02:00.000Z', inventory: { items: [{ itemId: 'wild-herb', quantity: 1 }] }, actionHistory: [{ actionId: 'starter-gather' }] };
+  const applied = applyFirstPlayableAction(character, 'view-inventory', { occurredAt: '2026-08-11T03:10:00.000Z' });
+  assert.equal(applied.character, character);
+  assert.equal(applied.character.actionHistory.length, 1);
+  assert.equal(applied.outcome.readOnly, true);
+  assert.match(applied.outcome.result, /可用野草 × 1/);
 });
 
 test('repeated world actions accumulate character progress', () => {

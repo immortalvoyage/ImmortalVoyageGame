@@ -34,6 +34,7 @@ const SCENES = Object.freeze({
 });
 
 const ACTION_HISTORY_LIMIT = 20;
+const ITEM_LABELS = Object.freeze({ shellfish: '潮間貝類', 'wild-berry': '野莓', 'wild-herb': '可用野草' });
 
 function sceneKey(character) {
   const tags = Array.isArray(character?.birthRegionTags) ? character.birthRegionTags : [];
@@ -47,12 +48,26 @@ function requirementsMet(character, requires = {}) {
   return Object.entries(requires).every(([key, amount]) => Number(progress[key] || 0) >= amount);
 }
 
+function inventoryItems(character) {
+  return Array.isArray(character?.inventory?.items)
+    ? character.inventory.items.filter((item) => item && Number(item.quantity) > 0)
+    : [];
+}
+
+export function describeInventory(character) {
+  const items = inventoryItems(character);
+  if (!items.length) return '你的行囊目前是空的。';
+  const description = items.map((item) => `${ITEM_LABELS[item.itemId] ?? item.itemId} × ${Number(item.quantity)}`).join('、');
+  return `你打開行囊查看，目前帶著：${description}。`;
+}
+
 export function getFirstPlayableScene(character) {
   const key = sceneKey(character);
   const scene = SCENES[key];
   const choices = [...scene.choices];
   const gather = getStarterGatherOption(character);
   if (gather) choices.push(Object.freeze({ id: 'starter-gather', label: gather.label, result: gather.result, progress: Object.freeze({}) }));
+  if (inventoryItems(character).length) choices.push(Object.freeze({ id: 'view-inventory', label: '查看行囊', result: describeInventory(character), progress: Object.freeze({}), readOnly: true }));
   if (requirementsMet(character, scene.unlock.requires)) choices.push(scene.unlock);
   return Object.freeze({ id: `birth-${key}`, title: scene.title, body: scene.body, choices: Object.freeze(choices) });
 }
@@ -72,6 +87,7 @@ export function resolveFirstPlayableAction(character, actionId) {
     progress: choice.progress,
     worldMutation: false,
     nextSystem: choice.id === 'seek-work' ? 'starter_work' : null,
+    readOnly: choice.readOnly === true,
   });
 }
 
@@ -84,10 +100,12 @@ export function applyFirstPlayableAction(character, actionId, { occurredAt = new
   if (String(actionId || '') === 'starter-gather') {
     const gathered = performStarterGather(character, { occurredAt });
     baseCharacter = gathered.character;
-    outcome = Object.freeze({ sceneId: scene.id, actionId: 'starter-gather', result: gathered.outcome.result, progress: Object.freeze({}), worldMutation: false, nextSystem: null, itemId: gathered.outcome.itemId, quantity: gathered.outcome.quantity });
+    outcome = Object.freeze({ sceneId: scene.id, actionId: 'starter-gather', result: gathered.outcome.result, progress: Object.freeze({}), worldMutation: false, nextSystem: null, itemId: gathered.outcome.itemId, quantity: gathered.outcome.quantity, readOnly: false });
   } else {
     outcome = resolveFirstPlayableAction(character, actionId);
   }
+
+  if (outcome.readOnly) return Object.freeze({ character, outcome });
 
   const previousHistory = Array.isArray(baseCharacter.actionHistory) ? baseCharacter.actionHistory : [];
   const previousProgress = baseCharacter.worldProgress && typeof baseCharacter.worldProgress === 'object' ? baseCharacter.worldProgress : {};
