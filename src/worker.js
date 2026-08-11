@@ -9,6 +9,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/") return Response.redirect(`${url.origin}/game`, 302);
     if (request.method === "GET" && url.pathname === "/game") return html(entryPage());
+    if (request.method === "GET" && url.pathname === "/preview/character-creation") return html(characterCreationPage().replace('action="/character/birth"', 'action="#"').replace('type="submit"', 'type="button"').replace('一旦降生，此世便開始流動。', '預覽模式 · 不會建立角色或寫入資料。'));
     if (request.method === "GET" && url.pathname === "/auth/discord") return startDiscordLogin(url, env);
     if (request.method === "GET" && url.pathname === "/auth/callback") return finishDiscordLogin(request, url, env);
     if (request.method === "GET" && url.pathname === "/play") return protectedGamePage(request, env);
