@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const workerSource = fs.readFileSync(new URL('../src/worker.js', import.meta.url), 'utf8');
 
 test('game pages include an empty ad slot that stays hidden until populated', () => {
-  assert.match(workerSource, /class=\\"ad-slot\\"/);
+  assert.match(workerSource, /class="ad-slot"/);
   assert.match(workerSource, /\.ad-slot:empty\{display:none\}/);
 });
 
