@@ -1,1 +1,1 @@
-export { Inventory } from './inventory.js';
+export { Inventory, attachInventoryToCharacter, inventoryFromCharacter } from './inventory.js';
