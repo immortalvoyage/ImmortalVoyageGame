@@ -27,43 +27,41 @@ function starterLocationId(character) {
   return character?.offlineState?.locationId || character?.birthRegionId || `birth-${regionKey(character)}`;
 }
 
-function resourceState(character) {
-  return character?.starterGathering && typeof character.starterGathering === 'object'
-    ? character.starterGathering
-    : { depleted: [] };
+function gatheredCounts(character) {
+  const counts = character?.starterGathering?.gathered;
+  return counts && typeof counts === 'object' ? counts : {};
 }
 
 export function getStarterGatherOptions(character) {
-  const state = resourceState(character);
-  const depleted = new Set(Array.isArray(state.depleted) ? state.depleted : []);
+  const gathered = gatheredCounts(character);
   return Object.freeze(STARTER_RESOURCES_BY_REGION[regionKey(character)]
-    .filter((resource) => !depleted.has(resource.id))
-    .map((resource) => Object.freeze({ id: resource.id, itemId: resource.itemId, label: resource.label })));
+    .filter((resource) => Number(gathered[resource.id] || 0) < resource.quantity)
+    .map((resource) => Object.freeze({
+      id: resource.id,
+      itemId: resource.itemId,
+      label: resource.label,
+      remaining: resource.quantity - Number(gathered[resource.id] || 0),
+    })));
 }
 
 export function gatherStarterResource(character, resourceId) {
   if (!character || typeof character !== 'object') throw new TypeError('character is required');
 
   const locationId = starterLocationId(character);
-  const state = resourceState(character);
-  const depleted = new Set(Array.isArray(state.depleted) ? state.depleted : []);
+  const gathered = gatheredCounts(character);
   const registry = new GatherableResourceRegistry();
 
   for (const resource of STARTER_RESOURCES_BY_REGION[regionKey(character)]) {
-    registry.register({
-      id: resource.id,
-      locationId,
-      itemId: resource.itemId,
-      quantity: depleted.has(resource.id) ? 0 : resource.quantity,
-      tags: ['starter'],
-    });
+    const remaining = Math.max(0, resource.quantity - Number(gathered[resource.id] || 0));
+    registry.register({ id: resource.id, locationId, itemId: resource.itemId, quantity: remaining, tags: ['starter'] });
   }
 
   const inventory = inventoryFromCharacter(character);
+  const requestedResourceId = String(resourceId || '');
   const result = resolveGather({
     playerLocationId: locationId,
     resourceRegistry: registry,
-    resourceId: String(resourceId || ''),
+    resourceId: requestedResourceId,
     inventory,
     quantity: 1,
   });
@@ -74,15 +72,13 @@ export function gatherStarterResource(character, resourceId) {
     throw error;
   }
 
-  const updatedDepleted = new Set(depleted);
-  if ((registry.get(result.resourceId)?.quantity ?? 0) <= 0) updatedDepleted.add(result.resourceId);
-
+  const updatedGathered = { ...gathered, [requestedResourceId]: Number(gathered[requestedResourceId] || 0) + result.quantity };
   const withInventory = attachInventoryToCharacter(character, inventory);
   return Object.freeze({
     character: Object.freeze({
       ...withInventory,
-      starterGathering: Object.freeze({ depleted: Object.freeze([...updatedDepleted]) }),
+      starterGathering: Object.freeze({ gathered: Object.freeze(updatedGathered) }),
     }),
-    result: Object.freeze({ ...result, locationId }),
+    result: Object.freeze({ ...result, resourceId: requestedResourceId, locationId }),
   });
 }
