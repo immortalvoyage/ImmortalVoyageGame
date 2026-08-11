@@ -4,21 +4,21 @@ const ITEM_CATALOG = Object.freeze({
     name: '潮間貝類',
     category: 'food',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'shellfish', glyph: '◌', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'shellfish', glyph: '◌', assetPath: null, motion: 'none' }),
   }),
   'wild-berry': Object.freeze({
     id: 'wild-berry',
     name: '野莓',
     category: 'food',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'wild-berry', glyph: '●', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'wild-berry', glyph: '●', assetPath: null, motion: 'none' }),
   }),
   'wild-herb': Object.freeze({
     id: 'wild-herb',
     name: '可用野草',
     category: 'material',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: 'wild-herb', glyph: '🌿', motion: 'none' }),
+    visual: Object.freeze({ iconKey: 'wild-herb', glyph: '🌿', assetPath: '/assets/items/wild-herb.svg', motion: 'none' }),
   }),
 });
 
@@ -30,7 +30,7 @@ export function getItemMetadata(itemId) {
     name: id,
     category: 'unknown',
     rarity: 'common',
-    visual: Object.freeze({ iconKey: id, glyph: '', motion: 'none' }),
+    visual: Object.freeze({ iconKey: id, glyph: '', assetPath: null, motion: 'none' }),
   });
 }
 
