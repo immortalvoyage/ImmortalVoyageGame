@@ -38,3 +38,19 @@ export class Inventory {
     return [...this.#items.entries()].map(([itemId, quantity]) => Object.freeze({ itemId, quantity }));
   }
 }
+
+export function inventoryFromCharacter(character) {
+  const inventory = new Inventory();
+  const items = Array.isArray(character?.inventory?.items) ? character.inventory.items : [];
+  for (const item of items) inventory.add(item.itemId, item.quantity);
+  return inventory;
+}
+
+export function attachInventoryToCharacter(character, inventory) {
+  if (!character || typeof character !== 'object') throw new TypeError('character is required');
+  if (!(inventory instanceof Inventory)) throw new TypeError('inventory is required');
+  return Object.freeze({
+    ...character,
+    inventory: Object.freeze({ schemaVersion: 1, items: Object.freeze(inventory.entries()) }),
+  });
+}
