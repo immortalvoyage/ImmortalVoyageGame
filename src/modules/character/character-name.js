@@ -35,9 +35,13 @@ export function normalizeCharacterName(value) {
 }
 
 export function validateCharacterName(value) {
+  if (typeof value !== 'string') throw new TypeError('characterName is required');
+  if (FORBIDDEN_FORMAT.test(value)) {
+    return Object.freeze({ valid: false, reason: 'name_forbidden_format', name: value });
+  }
+
   const name = normalizeCharacterName(value);
   if (!name) return Object.freeze({ valid: false, reason: 'name_required', name });
-  if (FORBIDDEN_FORMAT.test(name)) return Object.freeze({ valid: false, reason: 'name_forbidden_format', name });
 
   const length = graphemeLength(name);
   if (length < MIN_GRAPHEMES) return Object.freeze({ valid: false, reason: 'name_too_short', name });
