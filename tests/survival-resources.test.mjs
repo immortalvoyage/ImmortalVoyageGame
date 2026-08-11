@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { Inventory } from '../src/modules/inventory/index.js';
+import { Inventory, attachInventoryToCharacter, inventoryFromCharacter } from '../src/modules/inventory/index.js';
 import { GatherableResourceRegistry, resolveGather } from '../src/modules/resources/index.js';
 
 test('player can gather fruit at current location into inventory', () => {
@@ -55,4 +55,17 @@ test('gathering is capped by remaining resource quantity', () => {
   assert.equal(result.quantity, 1);
   assert.equal(resources.get('fallen-branch-1').quantity, 0);
   assert.equal(resources.listAt('forest-edge').length, 0);
+});
+
+test('inventory can be restored from character payload', () => {
+  const inventory = inventoryFromCharacter({ inventory: { schemaVersion: 1, items: [{ itemId: 'fresh-water', quantity: 2 }] } });
+  assert.equal(inventory.get('fresh-water'), 2);
+});
+
+test('inventory can be attached to character payload for save/load', () => {
+  const inventory = new Inventory();
+  inventory.add('wild-berry', 3);
+  const character = attachInventoryToCharacter({ characterId: 'char-1', status: 'alive' }, inventory);
+  assert.equal(character.inventory.schemaVersion, 1);
+  assert.deepEqual(character.inventory.items, [{ itemId: 'wild-berry', quantity: 3 }]);
 });
