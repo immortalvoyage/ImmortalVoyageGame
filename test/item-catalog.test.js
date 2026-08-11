@@ -8,7 +8,12 @@ test('starter items expose stable metadata for future visual inventory rendering
   assert.equal(herb.category, 'material');
   assert.equal(herb.rarity, 'common');
   assert.equal(herb.visual.iconKey, 'wild-herb');
+  assert.equal(herb.visual.glyph, '🌿');
   assert.equal(herb.visual.motion, 'none');
+});
+
+test('starter item stack uses metadata-driven visual glyph', () => {
+  assert.equal(describeItemStack('wild-herb', 1), '🌿 可用野草 × 1');
 });
 
 test('unknown items remain readable without breaking inventory rendering', () => {
