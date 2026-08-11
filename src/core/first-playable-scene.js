@@ -88,6 +88,7 @@ export function resolveFirstPlayableAction(character, actionId) {
     worldMutation: false,
     nextSystem: choice.id === 'seek-work' ? 'starter_work' : null,
     readOnly: choice.readOnly === true,
+    inventory: choice.id === 'view-inventory' ? Object.freeze(inventoryItems(character).map((item) => Object.freeze({ itemId: item.itemId, quantity: Number(item.quantity) }))) : null,
   });
 }
 
@@ -100,7 +101,7 @@ export function applyFirstPlayableAction(character, actionId, { occurredAt = new
   if (String(actionId || '') === 'starter-gather') {
     const gathered = performStarterGather(character, { occurredAt });
     baseCharacter = gathered.character;
-    outcome = Object.freeze({ sceneId: scene.id, actionId: 'starter-gather', result: gathered.outcome.result, progress: Object.freeze({}), worldMutation: false, nextSystem: null, itemId: gathered.outcome.itemId, quantity: gathered.outcome.quantity, readOnly: false });
+    outcome = Object.freeze({ sceneId: scene.id, actionId: 'starter-gather', result: gathered.outcome.result, progress: Object.freeze({}), worldMutation: false, nextSystem: null, itemId: gathered.outcome.itemId, quantity: gathered.outcome.quantity, readOnly: false, inventory: null });
   } else {
     outcome = resolveFirstPlayableAction(character, actionId);
   }
