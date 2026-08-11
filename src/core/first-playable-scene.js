@@ -7,6 +7,7 @@ const SCENES = Object.freeze({
       Object.freeze({ id: 'seek-work', label: '往碼頭找活做', result: '你朝最吵雜的碼頭走去。扛貨、補網、跑腿與臨時船工的招呼聲此起彼落；這裡很可能成為你第一份收入的起點。', progress: Object.freeze({ settlementContact: 1 }) }),
       Object.freeze({ id: 'explore', label: '沿海岸走走', result: '你避開港口中心，沿著潮線往外走。礁石、漂流物與陌生腳印讓你意識到，海邊不只有工作，也藏著許多尚未被注意的痕跡。', progress: Object.freeze({ exploration: 1, locationKnowledge: 1 }) }),
     ]),
+    unlock: Object.freeze({ id: 'read-harbor-flow', label: '順著港口脈絡行動', result: '你已不是第一次看這片港口。潮位、貨流與巡邏節奏開始能彼此對上，你避開最擁擠的路線，更快找到真正值得注意的地方。', requires: Object.freeze({ locationKnowledge: 2 }), progress: Object.freeze({ awareness: 1, routeConfidence: 1 }) }),
   }),
   forest: Object.freeze({
     title: '林間初醒',
@@ -16,6 +17,7 @@ const SCENES = Object.freeze({
       Object.freeze({ id: 'seek-work', label: '循斧聲找人', result: '你循著斧聲前進，很快看見有人整理木料。砍柴、搬運、採集與跑腿，都可能成為你換取第一頓飯的方法。', progress: Object.freeze({ settlementContact: 1 }) }),
       Object.freeze({ id: 'explore', label: '往林中探索', result: '你沿著較少人走的小徑深入。泥土上的足跡和折斷的枝條提醒你：這片林地不是空無一人，也不是完全安全。', progress: Object.freeze({ exploration: 1, locationKnowledge: 1 }) }),
     ]),
+    unlock: Object.freeze({ id: 'read-forest-signs', label: '循熟悉的林跡前進', result: '你開始分得出舊獸徑、新腳印與常有人走動的方向。林子仍危險，但你已不再只是靠運氣選路。', requires: Object.freeze({ locationKnowledge: 2 }), progress: Object.freeze({ exploration: 1, routeConfidence: 1 }) }),
   }),
   grassland: Object.freeze({
     title: '風原初醒',
@@ -25,6 +27,7 @@ const SCENES = Object.freeze({
       Object.freeze({ id: 'seek-work', label: '往炊煙方向走', result: '你朝有人煙的方向走去。放牧、修繕、運送與照料牲畜，都是能讓陌生人換到食物與信任的工作。', progress: Object.freeze({ settlementContact: 1 }) }),
       Object.freeze({ id: 'explore', label: '沿水草尋路', result: '你沿著較茂盛的草地前進，希望找到水與人跡。遠處留下的車轍證明，這裡曾有其他旅人經過。', progress: Object.freeze({ exploration: 1, locationKnowledge: 1 }) }),
     ]),
+    unlock: Object.freeze({ id: 'read-grassland-route', label: '沿熟悉的水路與車轍走', result: '你已能把水草、車轍與炊煙連成一條較可靠的路。草原依舊遼闊，但方向不再全靠猜測。', requires: Object.freeze({ locationKnowledge: 2 }), progress: Object.freeze({ exploration: 1, routeConfidence: 1 }) }),
   }),
 });
 
@@ -37,10 +40,16 @@ function sceneKey(character) {
   return 'grassland';
 }
 
+function requirementsMet(character, requires = {}) {
+  const progress = character?.worldProgress && typeof character.worldProgress === 'object' ? character.worldProgress : {};
+  return Object.entries(requires).every(([key, amount]) => Number(progress[key] || 0) >= amount);
+}
+
 export function getFirstPlayableScene(character) {
   const key = sceneKey(character);
   const scene = SCENES[key];
-  return Object.freeze({ id: `birth-${key}`, title: scene.title, body: scene.body, choices: scene.choices });
+  const choices = requirementsMet(character, scene.unlock.requires) ? Object.freeze([...scene.choices, scene.unlock]) : scene.choices;
+  return Object.freeze({ id: `birth-${key}`, title: scene.title, body: scene.body, choices });
 }
 
 export function resolveFirstPlayableAction(character, actionId) {
