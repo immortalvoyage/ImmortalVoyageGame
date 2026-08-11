@@ -1,4 +1,5 @@
 import { getStarterGatherOption, performStarterGather } from './starter-gather.js';
+import { describeItemStack } from '../modules/inventory/item-catalog.js';
 
 const SCENES = Object.freeze({
   coast: Object.freeze({
@@ -34,7 +35,6 @@ const SCENES = Object.freeze({
 });
 
 const ACTION_HISTORY_LIMIT = 20;
-const ITEM_LABELS = Object.freeze({ shellfish: '潮間貝類', 'wild-berry': '野莓', 'wild-herb': '可用野草' });
 
 function sceneKey(character) {
   const tags = Array.isArray(character?.birthRegionTags) ? character.birthRegionTags : [];
@@ -57,7 +57,7 @@ function inventoryItems(character) {
 export function describeInventory(character) {
   const items = inventoryItems(character);
   if (!items.length) return '你的行囊目前是空的。';
-  const description = items.map((item) => `${ITEM_LABELS[item.itemId] ?? item.itemId} × ${Number(item.quantity)}`).join('、');
+  const description = items.map((item) => describeItemStack(item.itemId, item.quantity)).join('、');
   return `你打開行囊查看，目前帶著：${description}。`;
 }
 
