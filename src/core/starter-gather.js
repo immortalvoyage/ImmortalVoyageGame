@@ -1,4 +1,5 @@
 import { gatherIntoCharacter } from './character-gather.js';
+import { applyActionSurvivalCost } from './action-survival-cost.js';
 import { GatherableResourceRegistry } from '../modules/resources/index.js';
 
 const STARTER_RESOURCE_BY_REGION = Object.freeze({
@@ -31,8 +32,16 @@ export function performStarterGather(character, { occurredAt = new Date().toISOS
   registry.register({ id: option.resourceId, locationId, itemId: option.itemId, quantity: 1 });
   const gathered = gatherIntoCharacter(character, { playerLocationId: locationId, resourceRegistry: registry, resourceId: option.resourceId, quantity: 1 });
   if (!gathered.outcome.allowed) return gathered;
+
+  const cost = applyActionSurvivalCost(gathered.character, 'starter-gather');
   return Object.freeze({
-    character: Object.freeze({ ...gathered.character, starterGatheredAt: occurredAt }),
-    outcome: Object.freeze({ ...gathered.outcome, label: option.label, result: option.result }),
+    character: Object.freeze({ ...cost.character, starterGatheredAt: occurredAt }),
+    outcome: Object.freeze({
+      ...gathered.outcome,
+      label: option.label,
+      result: option.result,
+      elapsedWorldDays: cost.elapsedWorldDays,
+      survival: cost.survival ? Object.freeze({ state: cost.survival.state, crisis: cost.survival.crisis }) : null,
+    }),
   });
 }
