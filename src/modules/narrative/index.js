@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { devStarterPack } from '../../content/dev-starter.js';
+import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 3, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 4, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
@@ -13,6 +14,7 @@ function scene({ world, actor, context }) {
     code: 'SCENE_PRESENTED',
     data: {
       ...view,
+      inventoryItems: buildPublicInventory(view.character.inventory, devStarterPack.items),
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view),
