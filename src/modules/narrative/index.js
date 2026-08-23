@@ -2,7 +2,7 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { devStarterPack } from '../../content/dev-starter.js';
 import { buildLocationView } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 2, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 3, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
@@ -33,7 +33,12 @@ function sceneText(view) {
 function buildOptions(view, isActionAvailable) {
   const options = [];
   const location = devStarterPack.locations[view.character.locationId];
+  const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
+
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
+  for (const [npcId, npc] of Object.entries(devStarterPack.npcs)) {
+    if (npc.searchLabel && !visibleNpcIds.has(npcId)) options.push(option(npc.searchLabel, 'purpose.find-npc', { npcId }));
+  }
   for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
   for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
   for (const route of view.routes) options.push(option(`前往${route.name}`, 'location.travel', { destinationId: route.id }));
