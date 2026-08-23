@@ -42,6 +42,13 @@ function rememberUnique(seen, value, path) {
   seen.add(value);
 }
 
+function validateItemQuantity(entry, path, items) {
+  requireRecord(entry, path);
+  requireText(entry.itemId, `${path}.itemId`);
+  if (!Object.hasOwn(items, entry.itemId)) fail(`${path}.itemId references unknown item: ${entry.itemId}`);
+  requireInteger(entry.quantity, `${path}.quantity`, { min: 1 });
+}
+
 export function validateContentPack(pack) {
   requireRecord(pack, 'pack');
   requireText(pack.id, 'pack.id');
@@ -106,12 +113,30 @@ export function validateContentPack(pack) {
     const gatherableItemIds = new Set();
     for (const [index, gatherable] of gatherables.entries()) {
       const path = `locations.${locationId}.gatherables[${index}]`;
-      requireRecord(gatherable, path);
-      requireText(gatherable.itemId, `${path}.itemId`);
+      validateItemQuantity(gatherable, path, items);
       rememberUnique(gatherableItemIds, gatherable.itemId, `locations.${locationId}.gatherables item ids`);
-      if (!Object.hasOwn(items, gatherable.itemId)) fail(`${path}.itemId references unknown item: ${gatherable.itemId}`);
-      requireInteger(gatherable.quantity, `${path}.quantity`, { min: 1 });
       requireText(gatherable.label, `${path}.label`);
+    }
+
+    const recipes = requireArray(location.recipes, `locations.${locationId}.recipes`);
+    const recipeIds = new Set();
+    for (const [index, recipe] of recipes.entries()) {
+      const path = `locations.${locationId}.recipes[${index}]`;
+      requireRecord(recipe, path);
+      requireText(recipe.id, `${path}.id`);
+      rememberUnique(recipeIds, recipe.id, `locations.${locationId}.recipes ids`);
+      requireText(recipe.label, `${path}.label`);
+
+      const inputs = requireArray(recipe.inputs, `${path}.inputs`);
+      if (inputs.length === 0) fail(`${path}.inputs must not be empty`);
+      const inputItemIds = new Set();
+      for (const [inputIndex, input] of inputs.entries()) {
+        const inputPath = `${path}.inputs[${inputIndex}]`;
+        validateItemQuantity(input, inputPath, items);
+        rememberUnique(inputItemIds, input.itemId, `${path}.inputs item ids`);
+      }
+
+      validateItemQuantity(recipe.output, `${path}.output`, items);
     }
   }
 
