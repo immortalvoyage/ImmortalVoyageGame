@@ -24,6 +24,7 @@ button:disabled { opacity: .55; cursor: wait; }
 .stats dt { color: #68645c; }
 .stats dd { margin: 0; font-weight: 600; }
 .message { min-height: 1.5em; margin: 0; }
+.narrative { line-height: 1.75; margin: 16px 0; }
 @media (max-width: 720px) {
   .shell { padding-top: 18px; }
   .grid { grid-template-columns: 1fr; }
