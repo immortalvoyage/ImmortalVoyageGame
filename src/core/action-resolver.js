@@ -12,6 +12,10 @@ export class ActionResolver {
     }
   }
 
+  hasAction(actionType) {
+    return this.#handlers.has(actionType);
+  }
+
   resolve({ world, actor, action, context }) {
     if (!action || typeof action.type !== 'string') return { ok: false, code: 'INVALID_ACTION' };
     const entry = this.#handlers.get(action.type);
