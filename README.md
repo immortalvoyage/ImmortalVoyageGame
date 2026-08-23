@@ -8,15 +8,17 @@
 
 出生 → 看見世界 → 找人／互動 → 移動 → 取得水與食物 → 背包 → 消耗 → 工作取得貨幣 → 花費貨幣 → 繼續生存。
 
-starter 地點、NPC 名稱與數值只屬可替換的開發 Content Pack，不視為正式世界觀。
+在此閉環之上，已加入最小 Purpose Action、Content Pack 驗證、Crafting，以及「由行為形成身分」的 Career 切片。角色不在出生時選固定職業；工作等 authoritative 行為累積後，由 Content Pack 規則推導公開身分。
+
+starter 地點、NPC 名稱、職業身分、配方與數值都只屬可替換的開發 Content Pack，不視為正式世界觀。
 
 ## Architecture
 
 - `src/core/`：World Clock、World State、Action Resolver、Schema Migration、Game Module Manifest/Wiring、Permission Boundary。
-- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 目前提供零 AI 的 deterministic fallback，Purpose Action 由 server 解析尋人路徑。
-- `src/content/`：版本化開發內容；後續可替換為正式 Content Pack。
+- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 提供零 AI deterministic fallback；Purpose 由 server 解析尋人意圖；Crafting 與 Career 均可獨立關閉。
+- `src/content/`：版本化開發內容與 fail-closed validator；後續可替換為正式 Content Pack。
 - `src/adapters/`：可替換 I/O；Memory Store 用於測試，File Store 用於本機持久化開發。
-- `public/`：純 Browser UI，不載入 Core，不持有世界真相。
+- `public/`：純 Browser UI，不載入 Core，不持有世界真相，也不取得 raw behavior counters。
 - `dev/`：本機 Node authoritative server，僅供開發，不是 production hosting。
 - `tests/`：Node 內建 test runner，無第三方 test dependency。
 
@@ -33,7 +35,7 @@ npm run dev
 
 `npm run verify` 會先對 `src/`、`dev/`、`public/`、`tests/`、`scripts/` 的 JavaScript/MJS 執行 `node --check`，再執行完整 `node --test`。不需要額外套件或外部服務。
 
-開啟 `http://127.0.0.1:8787` 即可操作目前的最小垂直切片。本機世界存檔寫入 `.data/world.json`，以臨時檔 + rename 原子替換；`.data/` 不提交 Git。
+開啟 `http://127.0.0.1:8787` 即可操作目前版本。本機世界存檔寫入 `.data/world.json`，以臨時檔 + rename 原子替換；`.data/` 不提交 Git。
 
 ## Cost boundary
 

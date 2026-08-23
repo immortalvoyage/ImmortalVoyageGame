@@ -34,6 +34,7 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.equal(migrated.nextCharacterSequence, 8);
   assert.deepEqual(migrated.characters.s1.needs, { hunger: 3, thirst: 4, fatigue: 5 });
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
+  assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
   assert.equal(assertWorldState(migrated), migrated);
 });
 
@@ -49,6 +50,19 @@ test('migration preserves valid fractional survival progress', () => {
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 10, thirst: 20, fatigue: 30 });
 });
 
+test('schema v2 behavior counts are backfilled and existing valid counts are preserved', () => {
+  const v2 = migrateWorldState(legacyWorld());
+  v2.schemaVersion = 2;
+  delete v2.characters.s1.behaviorCounts;
+  const backfilled = migrateWorldState(v2);
+  assert.deepEqual(backfilled.characters.s1.behaviorCounts, {});
+
+  const withCounts = structuredClone(v2);
+  withCounts.characters.s1.behaviorCounts = { 'work:starter-labor': 4 };
+  const preserved = migrateWorldState(withCounts);
+  assert.deepEqual(preserved.characters.s1.behaviorCounts, { 'work:starter-labor': 4 });
+});
+
 test('newer world schemas fail closed', () => {
   assert.throws(
     () => migrateWorldState(legacyWorld({ schemaVersion: CURRENT_SCHEMA_VERSION + 1 })),
@@ -61,4 +75,10 @@ test('invalid migrated survival progress is rejected rather than silently repair
   world.characters.s1.needProgressSeconds = { hunger: -1, thirst: 0, fatigue: 0 };
   const migrated = migrateWorldState(world);
   assert.throws(() => assertWorldState(migrated), /invalid survival progress/);
+});
+
+test('invalid behavior counts fail closed', () => {
+  const migrated = migrateWorldState(legacyWorld());
+  migrated.characters.s1.behaviorCounts = { 'work:starter-labor': -1 };
+  assert.throws(() => assertWorldState(migrated), /invalid behavior counts/);
 });

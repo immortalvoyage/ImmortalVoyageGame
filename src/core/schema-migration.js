@@ -13,6 +13,10 @@ export function migrateWorldState(input) {
       world = migrateV1ToV2(world);
       continue;
     }
+    if (world.schemaVersion === 2) {
+      world = migrateV2ToV3(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -39,5 +43,16 @@ function migrateV1ToV2(world) {
     : 1;
   migrated.nextCharacterSequence = Math.max(existingSequence, inferredNextSequence);
   migrated.schemaVersion = 2;
+  return migrated;
+}
+
+function migrateV2ToV3(world) {
+  const migrated = cloneWorld(world);
+  const characters = migrated.characters && typeof migrated.characters === 'object' ? migrated.characters : {};
+  for (const character of Object.values(characters)) {
+    if (!character || typeof character !== 'object') continue;
+    character.behaviorCounts ??= {};
+  }
+  migrated.schemaVersion = 3;
   return migrated;
 }

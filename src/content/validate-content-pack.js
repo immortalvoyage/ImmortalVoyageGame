@@ -57,6 +57,7 @@ export function validateContentPack(pack) {
 
   const items = requireRecord(pack.items, 'pack.items');
   const locations = requireRecord(pack.locations, 'pack.locations');
+  const careers = requireRecord(pack.careers, 'pack.careers');
   const npcs = requireRecord(pack.npcs, 'pack.npcs');
 
   if (Object.keys(items).length === 0) fail('pack.items must not be empty');
@@ -71,6 +72,7 @@ export function validateContentPack(pack) {
     validateNeedMap(item.consumeEffect, `items.${itemId}.consumeEffect`, { min: -100, max: 100 });
   }
 
+  const declaredBehaviorIds = new Set();
   for (const [locationId, location] of Object.entries(locations)) {
     requireText(locationId, 'location id');
     requireRecord(location, `locations.${locationId}`);
@@ -94,6 +96,8 @@ export function validateContentPack(pack) {
       requireText(job.id, `${path}.id`);
       rememberUnique(jobIds, job.id, `locations.${locationId}.jobs ids`);
       requireText(job.label, `${path}.label`);
+      requireText(job.behaviorId, `${path}.behaviorId`);
+      declaredBehaviorIds.add(job.behaviorId);
       requireInteger(job.rewardMoney, `${path}.rewardMoney`, { min: 0 });
       validateNeedMap(job.needCosts, `${path}.needCosts`, { min: 0, max: 100 });
     }
@@ -135,8 +139,27 @@ export function validateContentPack(pack) {
         validateItemQuantity(input, inputPath, items);
         rememberUnique(inputItemIds, input.itemId, `${path}.inputs item ids`);
       }
-
       validateItemQuantity(recipe.output, `${path}.output`, items);
+    }
+  }
+
+  for (const [careerId, career] of Object.entries(careers)) {
+    requireText(careerId, 'career id');
+    const path = `careers.${careerId}`;
+    requireRecord(career, path);
+    requireText(career.name, `${path}.name`);
+    const requirements = requireArray(career.requirements, `${path}.requirements`);
+    if (requirements.length === 0) fail(`${path}.requirements must not be empty`);
+    const requirementBehaviorIds = new Set();
+    for (const [index, requirement] of requirements.entries()) {
+      const requirementPath = `${path}.requirements[${index}]`;
+      requireRecord(requirement, requirementPath);
+      requireText(requirement.behaviorId, `${requirementPath}.behaviorId`);
+      rememberUnique(requirementBehaviorIds, requirement.behaviorId, `${path}.requirements behavior ids`);
+      if (!declaredBehaviorIds.has(requirement.behaviorId)) {
+        fail(`${requirementPath}.behaviorId references unknown behavior: ${requirement.behaviorId}`);
+      }
+      requireInteger(requirement.minCount, `${requirementPath}.minCount`, { min: 1 });
     }
   }
 

@@ -3,7 +3,7 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { devStarterPack } from '../../content/dev-starter.js';
 import { addStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 2, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 3, actions: ['economy.work', 'economy.buy'] });
 
 function work({ world, actor, action }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -12,16 +12,23 @@ function work({ world, actor, action }) {
   const jobId = action.payload?.jobId;
   const job = location?.jobs?.find((entry) => entry.id === jobId);
   if (!job) return { ok: false, code: 'WORK_NOT_AVAILABLE' };
+
   character.money += job.rewardMoney;
   for (const [need, cost] of Object.entries(job.needCosts ?? {})) {
     if (!(need in character.needs)) continue;
     character.needs[need] = Math.min(100, character.needs[need] + cost);
   }
+  const behaviorCount = (character.behaviorCounts[job.behaviorId] ?? 0) + 1;
+  character.behaviorCounts[job.behaviorId] = behaviorCount;
+
   return {
     ok: true,
     code: 'WORK_COMPLETED',
     data: { money: character.money, needs: structuredClone(character.needs) },
-    events: [{ type: 'economy.money-created', data: { characterId: character.id, amount: job.rewardMoney, source: job.id } }],
+    events: [
+      { type: 'economy.money-created', data: { characterId: character.id, amount: job.rewardMoney, source: job.id } },
+      { type: 'character.behavior-recorded', data: { characterId: character.id, behaviorId: job.behaviorId, count: behaviorCount } },
+    ],
   };
 }
 

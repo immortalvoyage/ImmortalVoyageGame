@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 
@@ -32,6 +32,14 @@ export function assertWorldState(world) {
     for (const need of ['hunger', 'thirst', 'fatigue']) {
       const progress = character.needProgressSeconds[need];
       if (!Number.isInteger(progress) || progress < 0) throw new Error('invalid survival progress');
+    }
+    if (!character.behaviorCounts || typeof character.behaviorCounts !== 'object' || Array.isArray(character.behaviorCounts)) {
+      throw new Error('invalid behavior counts');
+    }
+    for (const [behaviorId, count] of Object.entries(character.behaviorCounts)) {
+      if (typeof behaviorId !== 'string' || behaviorId.length === 0 || !Number.isSafeInteger(count) || count < 0) {
+        throw new Error('invalid behavior counts');
+      }
     }
   }
   return world;

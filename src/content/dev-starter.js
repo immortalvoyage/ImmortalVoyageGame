@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 5,
+  dataVersion: 6,
   startingLocationId: 'starter-square',
   items: Object.freeze({
     water: Object.freeze({
@@ -30,6 +30,7 @@ export const devStarterPack = Object.freeze({
         Object.freeze({
           id: 'starter-labor',
           label: '找一份雜役工作',
+          behaviorId: 'work:starter-labor',
           rewardMoney: 2,
           needCosts: Object.freeze({ hunger: 5, thirst: 5 }),
         }),
@@ -72,6 +73,14 @@ export const devStarterPack = Object.freeze({
         Object.freeze({ itemId: 'food', quantity: 1, label: '採集可食用的東西' }),
       ]),
       recipes: Object.freeze([]),
+    }),
+  }),
+  careers: Object.freeze({
+    'starter-labor-hand': Object.freeze({
+      name: '聚落雜役熟手',
+      requirements: Object.freeze([
+        Object.freeze({ behaviorId: 'work:starter-labor', minCount: 3 }),
+      ]),
     }),
   }),
   npcs: Object.freeze({

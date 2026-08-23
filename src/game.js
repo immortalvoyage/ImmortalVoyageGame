@@ -10,9 +10,10 @@ import { purposeModule } from './modules/purpose/index.js';
 import { survivalModule } from './modules/survival/index.js';
 import { economyModule } from './modules/economy/index.js';
 import { craftingModule } from './modules/crafting/index.js';
+import { careerModule } from './modules/career/index.js';
 import { narrativeModule } from './modules/narrative/index.js';
 
-const allModules = [characterModule, inventoryModule, locationModule, npcModule, purposeModule, survivalModule, economyModule, craftingModule, narrativeModule];
+const allModules = [characterModule, inventoryModule, locationModule, npcModule, purposeModule, survivalModule, economyModule, craftingModule, careerModule, narrativeModule];
 
 export function createGame({ store, now = () => Date.now(), enabledModules = allModules.map((module) => module.manifest.name) }) {
   if (!store) throw new TypeError('store is required');
