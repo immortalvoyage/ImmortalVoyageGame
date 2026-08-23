@@ -8,8 +8,9 @@ import { locationModule } from './modules/location/index.js';
 import { npcModule } from './modules/npc/index.js';
 import { survivalModule } from './modules/survival/index.js';
 import { economyModule } from './modules/economy/index.js';
+import { narrativeModule } from './modules/narrative/index.js';
 
-const allModules = [characterModule, inventoryModule, locationModule, npcModule, survivalModule, economyModule];
+const allModules = [characterModule, inventoryModule, locationModule, npcModule, survivalModule, economyModule, narrativeModule];
 
 export function createGame({ store, now = () => Date.now(), enabledModules = allModules.map((module) => module.manifest.name) }) {
   if (!store) throw new TypeError('store is required');
