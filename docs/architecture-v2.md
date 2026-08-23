@@ -6,9 +6,15 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 
 - Core: world clock, world state, action resolution, schema migration, module manifest validation, permission boundary, bounded idempotency/event ledgers.
 - Modules: character, inventory, location, NPC, purpose action, survival, economy, narrative.
-- Content: disposable versioned starter content used only to prove the critical path.
+- Content: disposable versioned starter content used only to prove the critical path. Server startup validates its references and bounded numeric rules before gameplay code consumes it.
 - Browser: submits intents through `/api/action`; it does not import Core modules or own world truth.
 - Local dev server: zero-dependency Node server with local file-backed world persistence for development only.
+
+## Content Pack boundary
+
+Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item references, duplicate local rules, unknown need keys, invalid quantities/prices/rewards, and a missing starting location at module load time. Character birth reads the Content Pack starting location rather than hardcoding a starter-world ID.
+
+This validation is a fail-closed development/runtime guard, not a second source of world truth and not a remote content service. It adds no database, scheduler, polling, AI, or network dependency.
 
 ## Purpose actions
 
