@@ -9,6 +9,7 @@ export function createInitialWorld({ nowMs = Date.now() } = {}) {
     logicalTimeSeconds: 0,
     lastResolvedAtMs: nowMs,
     characters: {},
+    nextCharacterSequence: 1,
     requestResults: {},
     requestOrder: [],
     gameEvents: [],
@@ -22,6 +23,7 @@ export function cloneWorld(world) {
 export function assertWorldState(world) {
   if (!world || world.schemaVersion !== CURRENT_SCHEMA_VERSION) throw new Error('unsupported world schema');
   if (!world.characters || typeof world.characters !== 'object') throw new Error('invalid character collection');
+  if (!Number.isInteger(world.nextCharacterSequence) || world.nextCharacterSequence < 1) throw new Error('invalid character sequence');
   if (!world.requestResults || typeof world.requestResults !== 'object') throw new Error('invalid request result ledger');
   if (!Array.isArray(world.requestOrder) || !Array.isArray(world.gameEvents)) throw new Error('invalid world ledgers');
   return world;
