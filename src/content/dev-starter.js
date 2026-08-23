@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 4,
+  dataVersion: 5,
   startingLocationId: 'starter-square',
   items: Object.freeze({
     water: Object.freeze({
@@ -14,6 +14,11 @@ export const devStarterPack = Object.freeze({
       name: '食物',
       consumeLabel: '進食',
       consumeEffect: Object.freeze({ hunger: -25 }),
+    }),
+    'simple-meal': Object.freeze({
+      name: '簡單餐食',
+      consumeLabel: '吃簡單餐食',
+      consumeEffect: Object.freeze({ hunger: -35, thirst: -15 }),
     }),
   }),
   locations: Object.freeze({
@@ -34,6 +39,17 @@ export const devStarterPack = Object.freeze({
         Object.freeze({ itemId: 'water', price: 1 }),
       ]),
       gatherables: Object.freeze([]),
+      recipes: Object.freeze([
+        Object.freeze({
+          id: 'starter-simple-meal',
+          label: '製作簡單餐食',
+          inputs: Object.freeze([
+            Object.freeze({ itemId: 'food', quantity: 1 }),
+            Object.freeze({ itemId: 'water', quantity: 1 }),
+          ]),
+          output: Object.freeze({ itemId: 'simple-meal', quantity: 1 }),
+        }),
+      ]),
     }),
     'starter-well': Object.freeze({
       name: '公共水井',
@@ -44,6 +60,7 @@ export const devStarterPack = Object.freeze({
       gatherables: Object.freeze([
         Object.freeze({ itemId: 'water', quantity: 1, label: '在水井取水' }),
       ]),
+      recipes: Object.freeze([]),
     }),
     'starter-grove': Object.freeze({
       name: '近郊樹林',
@@ -54,6 +71,7 @@ export const devStarterPack = Object.freeze({
       gatherables: Object.freeze([
         Object.freeze({ itemId: 'food', quantity: 1, label: '採集可食用的東西' }),
       ]),
+      recipes: Object.freeze([]),
     }),
   }),
   npcs: Object.freeze({
