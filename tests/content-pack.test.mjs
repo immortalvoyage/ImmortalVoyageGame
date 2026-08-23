@@ -58,6 +58,24 @@ test('Content Pack rejects invalid economy and survival numbers', () => {
   assert.throws(() => validateContentPack(invalidNeed), /is not a known need/);
 });
 
+test('Content Pack rejects unsafe crafting recipes', () => {
+  const missingInputItem = clonePack();
+  missingInputItem.locations['starter-square'].recipes[0].inputs[0].itemId = 'missing-item';
+  assert.throws(() => validateContentPack(missingInputItem), /references unknown item/);
+
+  const freeRecipe = clonePack();
+  freeRecipe.locations['starter-square'].recipes[0].inputs = [];
+  assert.throws(() => validateContentPack(freeRecipe), /inputs must not be empty/);
+
+  const duplicateRecipe = clonePack();
+  duplicateRecipe.locations['starter-square'].recipes.push(structuredClone(duplicateRecipe.locations['starter-square'].recipes[0]));
+  assert.throws(() => validateContentPack(duplicateRecipe), /recipes ids contains duplicate value/);
+
+  const invalidOutput = clonePack();
+  invalidOutput.locations['starter-square'].recipes[0].output.quantity = 0;
+  assert.throws(() => validateContentPack(invalidOutput), /output.quantity must be an integer/);
+});
+
 test('Content Pack rejects NPC locations that do not exist', () => {
   const pack = clonePack();
   pack.npcs.foreman.locationId = 'missing-place';
