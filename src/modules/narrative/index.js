@@ -1,19 +1,22 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { devStarterPack } from '../../content/dev-starter.js';
+import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 5, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 6, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const isActionAvailable = context?.isActionAvailable ?? (() => true);
+  const careers = isActionAvailable('career.observe') ? buildCareerViewForActor(world, actor) ?? [] : [];
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
     data: {
       ...view,
+      careers,
       inventoryItems: buildPublicInventory(view.character.inventory, devStarterPack.items),
       narrative: {
         mode: 'deterministic-fallback',
