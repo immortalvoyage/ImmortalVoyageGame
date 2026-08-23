@@ -1,4 +1,5 @@
 import { ActionResolver } from './action-resolver.js';
+import { migrateWorldState } from './schema-migration.js';
 import { assertWorldState, recordGameEvents, rememberRequest } from './world-state.js';
 import { resolveWorldTime } from './world-clock.js';
 
@@ -16,7 +17,7 @@ export class GameRuntime {
     if (!requestId || typeof requestId !== 'string' || requestId.length > 128) return { ok: false, code: 'INVALID_REQUEST_ID' };
 
     return this.store.transact(async (loaded) => {
-      let world = assertWorldState(loaded);
+      let world = assertWorldState(migrateWorldState(loaded));
       const prior = world.requestResults[requestId];
       if (prior) {
         if (prior.sessionId !== actor.sessionId) return { ok: false, code: 'REQUEST_ID_COLLISION' };

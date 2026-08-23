@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 
@@ -26,6 +26,14 @@ export function assertWorldState(world) {
   if (!Number.isInteger(world.nextCharacterSequence) || world.nextCharacterSequence < 1) throw new Error('invalid character sequence');
   if (!world.requestResults || typeof world.requestResults !== 'object') throw new Error('invalid request result ledger');
   if (!Array.isArray(world.requestOrder) || !Array.isArray(world.gameEvents)) throw new Error('invalid world ledgers');
+  for (const character of Object.values(world.characters)) {
+    if (!character || typeof character !== 'object') throw new Error('invalid character state');
+    if (!character.needProgressSeconds || typeof character.needProgressSeconds !== 'object') throw new Error('invalid survival progress');
+    for (const need of ['hunger', 'thirst', 'fatigue']) {
+      const progress = character.needProgressSeconds[need];
+      if (!Number.isInteger(progress) || progress < 0) throw new Error('invalid survival progress');
+    }
+  }
   return world;
 }
 
