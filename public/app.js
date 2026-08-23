@@ -94,14 +94,7 @@ function render() {
   }
 
   narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
-  const actions = [];
-  if ((character.inventory.water ?? 0) > 0) actions.push(button('飲水', 'survival.consume', { kind: 'water' }, true));
-  if ((character.inventory.food ?? 0) > 0) actions.push(button('進食', 'survival.consume', { kind: 'food' }, true));
-  if (character.locationId === 'starter-square') {
-    actions.push(button('買食物（1）', 'economy.buy', { itemId: 'food' }, true));
-    actions.push(button('買水（1）', 'economy.buy', { itemId: 'water' }, true));
-  }
-  worldActions.replaceChildren(...actions);
+  worldActions.replaceChildren(...view.utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
 }
 
 function showMessage(text) {

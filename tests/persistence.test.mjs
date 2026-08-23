@@ -18,7 +18,7 @@ test('file store survives runtime restart without external database', async (t) 
 
   const first = createFileBackedDevelopmentGame({ filePath, now: () => 1000 });
   await dispatch(first.runtime, 'birth', 'character.birth', { name: '留存旅人' });
-  await dispatch(first.runtime, 'work', 'economy.work');
+  await dispatch(first.runtime, 'work', 'economy.work', { jobId: 'starter-labor' });
 
   const second = createFileBackedDevelopmentGame({ filePath, now: () => 2000 });
   const observed = await dispatch(second.runtime, 'observe', 'location.observe');

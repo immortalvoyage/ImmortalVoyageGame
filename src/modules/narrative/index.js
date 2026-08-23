@@ -1,12 +1,13 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
+import { devStarterPack } from '../../content/dev-starter.js';
 import { buildLocationView } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 1, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 2, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const options = buildOptions(view, context?.isActionAvailable ?? (() => true));
+  const isActionAvailable = context?.isActionAvailable ?? (() => true);
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
@@ -15,8 +16,9 @@ function scene({ world, actor, context }) {
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view),
-        options,
+        options: buildOptions(view, isActionAvailable),
       },
+      utilities: buildUtilities(view, isActionAvailable),
     },
   };
 }
@@ -30,24 +32,30 @@ function sceneText(view) {
 
 function buildOptions(view, isActionAvailable) {
   const options = [];
-  const locationId = view.character.locationId;
-  if (locationId === 'starter-square') {
-    const foreman = view.visibleNpcs.find((npc) => npc.id === 'foreman');
-    if (foreman) options.push(option('和雜役領班談談', 'npc.interact', { npcId: foreman.id }));
-    options.push(option('找一份雜役工作', 'economy.work'));
-    for (const route of view.routes.slice(0, 2)) options.push(option(`前往${route.name}`, 'location.travel', { destinationId: route.id }));
-  } else if (locationId === 'starter-well') {
-    options.push(option('在水井取水', 'survival.gather', { kind: 'water' }));
-    const back = view.routes[0];
-    if (back) options.push(option(`返回${back.name}`, 'location.travel', { destinationId: back.id }));
-    if ((view.character.inventory.water ?? 0) > 0) options.push(option('喝一些水', 'survival.consume', { kind: 'water' }));
-  } else if (locationId === 'starter-grove') {
-    options.push(option('採集可食用的東西', 'survival.gather', { kind: 'food' }));
-    const back = view.routes[0];
-    if (back) options.push(option(`返回${back.name}`, 'location.travel', { destinationId: back.id }));
-    if ((view.character.inventory.food ?? 0) > 0) options.push(option('吃掉手邊的食物', 'survival.consume', { kind: 'food' }));
-  }
+  const location = devStarterPack.locations[view.character.locationId];
+  for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
+  for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
+  for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
+  for (const route of view.routes) options.push(option(`前往${route.name}`, 'location.travel', { destinationId: route.id }));
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
+}
+
+function buildUtilities(view, isActionAvailable) {
+  const utilities = [];
+  const location = devStarterPack.locations[view.character.locationId];
+  if (isActionAvailable('survival.consume')) {
+    for (const [itemId, quantity] of Object.entries(view.character.inventory)) {
+      const item = devStarterPack.items[itemId];
+      if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
+    }
+  }
+  if (isActionAvailable('economy.buy')) {
+    for (const offer of location.market ?? []) {
+      const item = devStarterPack.items[offer.itemId];
+      if (item) utilities.push(option(`購買${item.name}（${offer.price}）`, 'economy.buy', { itemId: offer.itemId }));
+    }
+  }
+  return utilities;
 }
 
 function option(label, type, payload = {}) {
