@@ -76,6 +76,24 @@ test('Content Pack rejects unsafe crafting recipes', () => {
   assert.throws(() => validateContentPack(invalidOutput), /output.quantity must be an integer/);
 });
 
+test('Content Pack rejects broken career behavior rules', () => {
+  const missingJobBehavior = clonePack();
+  delete missingJobBehavior.locations['starter-square'].jobs[0].behaviorId;
+  assert.throws(() => validateContentPack(missingJobBehavior), /behaviorId must be non-empty text/);
+
+  const unknownBehavior = clonePack();
+  unknownBehavior.careers['starter-labor-hand'].requirements[0].behaviorId = 'work:missing';
+  assert.throws(() => validateContentPack(unknownBehavior), /references unknown behavior/);
+
+  const zeroThreshold = clonePack();
+  zeroThreshold.careers['starter-labor-hand'].requirements[0].minCount = 0;
+  assert.throws(() => validateContentPack(zeroThreshold), /minCount must be an integer/);
+
+  const noRequirements = clonePack();
+  noRequirements.careers['starter-labor-hand'].requirements = [];
+  assert.throws(() => validateContentPack(noRequirements), /requirements must not be empty/);
+});
+
 test('Content Pack rejects NPC locations that do not exist', () => {
   const pack = clonePack();
   pack.npcs.foreman.locationId = 'missing-place';
