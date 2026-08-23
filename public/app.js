@@ -78,6 +78,9 @@ function render() {
   narrativeText.textContent = view.narrative.text;
 
   const character = view.character;
+  const inventoryText = (view.inventoryItems ?? [])
+    .map((item) => `${item.name} × ${item.quantity}`)
+    .join('、') || '空';
   characterState.replaceChildren();
   const rows = [
     ['姓名', character.name],
@@ -85,7 +88,7 @@ function render() {
     ['飢餓', String(character.needs.hunger)],
     ['口渴', String(character.needs.thirst)],
     ['疲勞', String(character.needs.fatigue)],
-    ['背包', Object.entries(character.inventory).map(([id, qty]) => `${id} × ${qty}`).join('、') || '空'],
+    ['背包', inventoryText],
   ];
   for (const [key, value] of rows) {
     const dt = document.createElement('dt');
