@@ -16,6 +16,11 @@ test('local dev server keeps browser behind server action boundary', async (t) =
   assert.match(page.headers.get('content-security-policy'), /default-src 'self'/);
   const cookie = page.headers.get('set-cookie').split(';')[0];
 
+  const feedbackModule = await fetch(base + '/result-message.js', { headers: { cookie } });
+  assert.equal(feedbackModule.status, 200);
+  assert.match(feedbackModule.headers.get('content-type'), /text\/javascript/);
+  assert.match(await feedbackModule.text(), /formatActionResult/);
+
   const born = await fetch(base + '/api/action', {
     method: 'POST',
     headers: { 'content-type': 'application/json', cookie },
