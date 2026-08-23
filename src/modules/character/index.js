@@ -1,7 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { devStarterPack } from '../../content/dev-starter.js';
 
-const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 3, actions: ['character.birth'] });
+const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 4, actions: ['character.birth'] });
 
 function birth({ world, actor, action }) {
   if (world.characters[actor.sessionId]) return { ok: false, code: 'CHARACTER_EXISTS' };
@@ -16,6 +16,7 @@ function birth({ world, actor, action }) {
     locationId: devStarterPack.startingLocationId,
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    behaviorCounts: {},
     inventory: {},
     money: 0,
   };
@@ -29,7 +30,12 @@ function birth({ world, actor, action }) {
 }
 
 export function publicCharacter(character) {
-  const { ownerSessionId: _ownerSessionId, needProgressSeconds: _needProgressSeconds, ...publicFields } = character;
+  const {
+    ownerSessionId: _ownerSessionId,
+    needProgressSeconds: _needProgressSeconds,
+    behaviorCounts: _behaviorCounts,
+    ...publicFields
+  } = character;
   return structuredClone(publicFields);
 }
 
