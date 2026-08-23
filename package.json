@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "verify": "node scripts/verify.mjs",
     "dev": "node dev/server.mjs"
   },
   "engines": {
