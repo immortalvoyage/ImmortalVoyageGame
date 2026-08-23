@@ -1,6 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { devStarterPack } from '../../content/dev-starter.js';
+import { publicCharacter } from '../character/index.js';
 
 const manifest = validateGameModuleManifest({ name: 'location', dataVersion: 1, actions: ['location.travel', 'location.observe'] });
 
@@ -28,7 +29,7 @@ function observe({ world, actor }) {
     ok: true,
     code: 'OBSERVED',
     data: {
-      character: structuredClone(character),
+      character: publicCharacter(character),
       location: publicLocation(character.locationId),
       routes: devStarterPack.locations[character.locationId].routes.map(publicLocation),
       visibleNpcs: Object.entries(devStarterPack.npcs)
