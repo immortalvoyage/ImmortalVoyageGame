@@ -22,21 +22,23 @@ function travel({ world, actor, action }) {
   };
 }
 
-function observe({ world, actor }) {
+export function buildLocationView(world, actor) {
   const character = getOwnedActiveCharacter(world, actor);
-  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  if (!character) return null;
   return {
-    ok: true,
-    code: 'OBSERVED',
-    data: {
-      character: publicCharacter(character),
-      location: publicLocation(character.locationId),
-      routes: devStarterPack.locations[character.locationId].routes.map(publicLocation),
-      visibleNpcs: Object.entries(devStarterPack.npcs)
-        .filter(([, npc]) => npc.locationId === character.locationId)
-        .map(([id, npc]) => ({ id, name: npc.name })),
-    },
+    character: publicCharacter(character),
+    location: publicLocation(character.locationId),
+    routes: devStarterPack.locations[character.locationId].routes.map(publicLocation),
+    visibleNpcs: Object.entries(devStarterPack.npcs)
+      .filter(([, npc]) => npc.locationId === character.locationId)
+      .map(([id, npc]) => ({ id, name: npc.name })),
   };
+}
+
+function observe({ world, actor }) {
+  const view = buildLocationView(world, actor);
+  if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  return { ok: true, code: 'OBSERVED', data: view };
 }
 
 function publicLocation(id) {

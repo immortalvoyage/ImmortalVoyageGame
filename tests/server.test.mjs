@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDevServer } from '../dev/server.mjs';
+import { createDevelopmentGame } from '../src/game.js';
 
 test('local dev server keeps browser behind server action boundary', async (t) => {
-  const server = createDevServer();
+  const { runtime } = createDevelopmentGame({ now: () => 1000 });
+  const server = createDevServer({ runtime });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
   const address = server.address();

@@ -13,7 +13,7 @@ starter 地點、NPC 名稱與數值只屬可替換的開發 Content Pack，不�
 ## Architecture
 
 - `src/core/`：World Clock、World State、Action Resolver、Game Module Manifest/Wiring、Permission Boundary。
-- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。
+- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 目前提供零 AI 的 deterministic fallback。
 - `src/content/`：版本化開發內容；後續可替換為正式 Content Pack。
 - `src/adapters/`：可替換 I/O；Memory Store 用於測試，File Store 用於本機持久化開發。
 - `public/`：純 Browser UI，不載入 Core，不持有世界真相。
