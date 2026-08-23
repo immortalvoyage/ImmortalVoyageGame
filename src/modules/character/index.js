@@ -8,7 +8,7 @@ function birth({ world, actor, action }) {
   if (name.length < 1 || name.length > 24) return { ok: false, code: 'INVALID_NAME' };
 
   const character = {
-    id: `char:${actor.sessionId}`,
+    id: `char:${world.nextCharacterSequence++}`,
     ownerSessionId: actor.sessionId,
     name,
     status: 'alive',
@@ -21,9 +21,14 @@ function birth({ world, actor, action }) {
   return {
     ok: true,
     code: 'CHARACTER_BORN',
-    data: { character: structuredClone(character) },
+    data: { character: publicCharacter(character) },
     events: [{ type: 'character.born', data: { characterId: character.id } }],
   };
+}
+
+export function publicCharacter(character) {
+  const { ownerSessionId: _ownerSessionId, ...publicFields } = character;
+  return structuredClone(publicFields);
 }
 
 export const characterModule = { manifest, actions: { 'character.birth': birth } };
