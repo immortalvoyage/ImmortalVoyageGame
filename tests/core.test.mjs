@@ -13,6 +13,8 @@ test('birth creates one owned character', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   const result = await dispatch(runtime, 'r1', 'character.birth', { name: '旅人' });
   assert.equal(result.ok, true);
+  assert.equal(result.data.character.ownerSessionId, undefined);
+  assert.equal(result.data.character.id, 'char:1');
   assert.equal(store.snapshot().characters.s1.name, '旅人');
   assert.equal((await dispatch(runtime, 'r2', 'character.birth', { name: '二號' })).code, 'CHARACTER_EXISTS');
 });
