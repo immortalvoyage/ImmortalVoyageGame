@@ -99,3 +99,17 @@ test('money source and sink leave bounded game event evidence', async () => {
   assert.ok(types.includes('economy.money-created'));
   assert.ok(types.includes('economy.money-sunk'));
 });
+
+test('deterministic narrative fallback presents 2 to 4 valid choices', async () => {
+  const { runtime } = createDevelopmentGame({ now: () => 1000 });
+  await dispatch(runtime, 'nb', 'character.birth', { name: '敘事旅人' });
+  const scene = await dispatch(runtime, 'ns', 'narrative.scene');
+  assert.equal(scene.ok, true);
+  assert.equal(scene.data.narrative.mode, 'deterministic-fallback');
+  assert.ok(scene.data.narrative.options.length >= 2);
+  assert.ok(scene.data.narrative.options.length <= 4);
+  for (const choice of scene.data.narrative.options) {
+    assert.equal(typeof choice.label, 'string');
+    assert.equal(typeof choice.intent.type, 'string');
+  }
+});
