@@ -37,10 +37,10 @@ test('critical path supports observe, npc interaction, travel, gather, consume, 
   assert.equal(observed.data.visibleNpcs[0].id, 'foreman');
   assert.equal((await dispatch(runtime, 'n', 'npc.interact', { npcId: 'foreman' })).ok, true);
   assert.equal((await dispatch(runtime, 't1', 'location.travel', { destinationId: 'starter-well' })).ok, true);
-  assert.equal((await dispatch(runtime, 'g1', 'survival.gather', { kind: 'water' })).ok, true);
-  assert.equal((await dispatch(runtime, 'c1', 'survival.consume', { kind: 'water' })).ok, true);
+  assert.equal((await dispatch(runtime, 'g1', 'survival.gather', { itemId: 'water' })).ok, true);
+  assert.equal((await dispatch(runtime, 'c1', 'survival.consume', { itemId: 'water' })).ok, true);
   await dispatch(runtime, 't2', 'location.travel', { destinationId: 'starter-square' });
-  assert.equal((await dispatch(runtime, 'w1', 'economy.work')).data.money, 2);
+  assert.equal((await dispatch(runtime, 'w1', 'economy.work', { jobId: 'starter-labor' })).data.money, 2);
   const purchase = await dispatch(runtime, 'p1', 'economy.buy', { itemId: 'food' });
   assert.equal(purchase.data.money, 1);
   assert.equal(purchase.data.inventory.food, 1);
@@ -109,7 +109,7 @@ test('idempotency ledger is bounded', async () => {
 test('money source and sink leave bounded game event evidence', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 0 });
   await dispatch(runtime, 'b', 'character.birth', { name: '旅人' });
-  await dispatch(runtime, 'w', 'economy.work');
+  await dispatch(runtime, 'w', 'economy.work', { jobId: 'starter-labor' });
   await dispatch(runtime, 'p', 'economy.buy', { itemId: 'food' });
   const types = store.snapshot().gameEvents.map((event) => event.type);
   assert.ok(types.includes('economy.money-created'));
@@ -142,4 +142,17 @@ test('narrative does not offer intents from disabled gameplay modules', async ()
     scene.data.narrative.options.map((choice) => choice.intent.type),
     ['location.travel', 'location.travel'],
   );
+});
+
+test('starter gameplay rules are driven by content pack data instead of location ids in modules', async () => {
+  const { runtime } = createDevelopmentGame({ now: () => 1000 });
+  await dispatch(runtime, 'cb', 'character.birth', { name: '資料旅人' });
+  const scene = await dispatch(runtime, 'cs', 'narrative.scene');
+  assert.ok(scene.data.narrative.options.some((choice) => choice.intent.payload?.jobId === 'starter-labor'));
+  assert.ok(scene.data.utilities.some((choice) => choice.intent.type === 'economy.buy' && choice.intent.payload.itemId === 'food'));
+
+  await dispatch(runtime, 'cw', 'economy.work', { jobId: 'starter-labor' });
+  await dispatch(runtime, 'ct', 'location.travel', { destinationId: 'starter-well' });
+  const wellScene = await dispatch(runtime, 'cws', 'narrative.scene');
+  assert.ok(wellScene.data.narrative.options.some((choice) => choice.intent.type === 'survival.gather' && choice.intent.payload.itemId === 'water'));
 });
