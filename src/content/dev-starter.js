@@ -1,6 +1,9 @@
+import { validateContentPack } from './validate-content-pack.js';
+
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 3,
+  dataVersion: 4,
+  startingLocationId: 'starter-square',
   items: Object.freeze({
     water: Object.freeze({
       name: '水',
@@ -62,3 +65,5 @@ export const devStarterPack = Object.freeze({
     }),
   }),
 });
+
+validateContentPack(devStarterPack);
