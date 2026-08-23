@@ -81,9 +81,11 @@ function render() {
   const inventoryText = (view.inventoryItems ?? [])
     .map((item) => `${item.name} × ${item.quantity}`)
     .join('、') || '空';
+  const careerText = (view.careers ?? []).map((career) => career.name).join('、') || '尚未形成';
   characterState.replaceChildren();
   const rows = [
     ['姓名', character.name],
+    ['身分', careerText],
     ['貨幣', String(character.money)],
     ['飢餓', String(character.needs.hunger)],
     ['口渴', String(character.needs.thirst)],
