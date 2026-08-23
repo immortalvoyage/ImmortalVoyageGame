@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>不朽之旅 V2 開發切片</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">IMMORTAL VOYAGE · V2 DEV SLICE</p>
+      <h1>不朽之旅</h1>
+      <p class="subtle">本頁只驗證新的 deterministic 世界核心與最小生存閉環。</p>
+    </header>
+
+    <section id="birth-panel" class="card" hidden>
+      <h2>出生</h2>
+      <form id="birth-form">
+        <label for="character-name">姓名</label>
+        <div class="row">
+          <input id="character-name" maxlength="24" required autocomplete="off">
+          <button type="submit">進入世界</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="game-panel" hidden>
+      <div class="grid">
+        <article class="card">
+          <h2 id="location-name">世界</h2>
+          <p id="location-description"></p>
+          <div id="route-actions" class="actions"></div>
+        </article>
+
+        <article class="card">
+          <h2>角色</h2>
+          <dl id="character-state" class="stats"></dl>
+        </article>
+      </div>
+
+      <article class="card">
+        <h2>可執行行動</h2>
+        <div id="world-actions" class="actions"></div>
+      </article>
+
+      <article class="card">
+        <h2>訊息</h2>
+        <p id="message" class="message">正在讀取世界狀態……</p>
+      </article>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
