@@ -12,8 +12,8 @@ starter 地點、NPC 名稱與數值只屬可替換的開發 Content Pack，不�
 
 ## Architecture
 
-- `src/core/`：World Clock、World State、Action Resolver、Game Module Manifest/Wiring、Permission Boundary。
-- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 目前提供零 AI 的 deterministic fallback。
+- `src/core/`：World Clock、World State、Action Resolver、Schema Migration、Game Module Manifest/Wiring、Permission Boundary。
+- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 目前提供零 AI 的 deterministic fallback，Purpose Action 由 server 解析尋人路徑。
 - `src/content/`：版本化開發內容；後續可替換為正式 Content Pack。
 - `src/adapters/`：可替換 I/O；Memory Store 用於測試，File Store 用於本機持久化開發。
 - `public/`：純 Browser UI，不載入 Core，不持有世界真相。
@@ -27,9 +27,11 @@ World Clock 採 logical time + timestamp + lazy elapsed resolution；沒有 hear
 需要 Node.js 22+：
 
 ```bash
-npm test
+npm run verify
 npm run dev
 ```
+
+`npm run verify` 會先對 `src/`、`dev/`、`public/`、`tests/`、`scripts/` 的 JavaScript/MJS 執行 `node --check`，再執行完整 `node --test`。不需要額外套件或外部服務。
 
 開啟 `http://127.0.0.1:8787` 即可操作目前的最小垂直切片。本機世界存檔寫入 `.data/world.json`，以臨時檔 + rename 原子替換；`.data/` 不提交 Git。
 
