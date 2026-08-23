@@ -1,0 +1,13 @@
+{
+  "name": "immortal-voyage-game",
+  "private": true,
+  "version": "0.0.0-v2",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node dev/server.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
