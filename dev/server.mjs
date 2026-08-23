@@ -3,11 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { createDevelopmentGame } from '../src/game.js';
+import { createFileBackedDevelopmentGame } from '../src/game.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(here, '..', 'public');
-const { runtime } = createDevelopmentGame();
 const MAX_BODY_BYTES = 16 * 1024;
 
 const STATIC_FILES = new Map([
@@ -58,14 +57,15 @@ function sendJson(res, statusCode, body) {
   res.end(JSON.stringify(body));
 }
 
-export function createDevServer() {
+export function createDevServer({ runtime } = {}) {
+  const authoritativeRuntime = runtime ?? createFileBackedDevelopmentGame({ filePath: join(here, '..', '.data', 'world.json') }).runtime;
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'POST' && url.pathname === '/api/action') {
         const sessionId = sessionFor(req, res);
         const body = await readJson(req);
-        const result = await runtime.dispatch({
+        const result = await authoritativeRuntime.dispatch({
           actor: { sessionId },
           requestId: body.requestId,
           action: body.action,
