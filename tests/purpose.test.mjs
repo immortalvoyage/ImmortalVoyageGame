@@ -8,7 +8,7 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('purpose NPC search advances only one authoritative route step and does not expose hidden target location', async () => {
+test('purpose NPC search resolves target on the authoritative arrival step without exposing hidden location', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'birth', 'character.birth', { name: '尋人旅人' });
   await dispatch(runtime, 'leave', 'location.travel', { destinationId: 'starter-well' });
@@ -18,17 +18,29 @@ test('purpose NPC search advances only one authoritative route step and does not
   assert.ok(searchChoice);
   assert.equal(searchChoice.intent.payload.npcId, 'foreman');
 
-  const progress = await dispatch(runtime, 'search', searchChoice.intent.type, searchChoice.intent.payload);
-  assert.equal(progress.ok, true);
-  assert.equal(progress.code, 'PURPOSE_SEARCH_PROGRESS');
-  assert.equal(progress.data.location.id, 'starter-square');
-  assert.equal(progress.data.target.id, 'foreman');
-  assert.equal(progress.data.target.locationId, undefined);
+  const found = await dispatch(runtime, 'search', searchChoice.intent.type, searchChoice.intent.payload);
+  assert.equal(found.ok, true);
+  assert.equal(found.code, 'PURPOSE_TARGET_FOUND');
+  assert.equal(found.data.location.id, 'starter-square');
+  assert.equal(found.data.npc.id, 'foreman');
+  assert.equal(found.data.npc.locationId, undefined);
   assert.equal(store.snapshot().characters['purpose-session'].locationId, 'starter-square');
+
+  const eventTypes = store.snapshot().gameEvents.slice(-2).map((event) => event.type);
+  assert.deepEqual(eventTypes, ['character.travelled', 'purpose.target-found']);
 
   const arrived = await dispatch(runtime, 'scene-arrived', 'narrative.scene');
   assert.ok(arrived.data.visibleNpcs.some((npc) => npc.id === 'foreman'));
   assert.equal(arrived.data.narrative.options.some((choice) => choice.intent.type === 'purpose.find-npc'), false);
+});
+
+test('purpose search finds a target immediately when already co-located', async () => {
+  const { runtime } = createDevelopmentGame({ now: () => 1000 });
+  await dispatch(runtime, 'birth-local', 'character.birth', { name: '本地旅人' });
+  const found = await dispatch(runtime, 'find-local', 'purpose.find-npc', { npcId: 'foreman' });
+  assert.equal(found.code, 'PURPOSE_TARGET_FOUND');
+  assert.deepEqual(found.data.npc, { id: 'foreman', name: '聚落雜役領班' });
+  assert.equal(found.data.location, undefined);
 });
 
 test('purpose search rejects unknown targets without mutating authoritative state', async () => {
