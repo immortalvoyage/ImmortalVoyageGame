@@ -1,6 +1,9 @@
 node_modules/
-.dev.vars
+dist/
+.next/
+.wrangler/
+.sites-runtime/
 .env
 .env.*
-.wrangler/
-.DS_Store
+!.env.example
+*.log
