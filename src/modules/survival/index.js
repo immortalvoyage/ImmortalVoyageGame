@@ -2,7 +2,7 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { addStack, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 1, actions: ['survival.gather', 'survival.consume'] });
+const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 2, actions: ['survival.gather', 'survival.consume'] });
 
 function gather({ world, actor, action }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -24,14 +24,23 @@ function consume({ world, actor, action }) {
   return { ok: true, code: 'ITEM_CONSUMED', data: { needs: structuredClone(character.needs), inventory: structuredClone(character.inventory) } };
 }
 
+const NEED_INTERVAL_SECONDS = Object.freeze({
+  hunger: 30 * 60,
+  thirst: 20 * 60,
+  fatigue: 60 * 60,
+});
+
 function resolveElapsed({ world, elapsedSeconds }) {
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  if (elapsedMinutes < 1) return;
+  if (!Number.isInteger(elapsedSeconds) || elapsedSeconds <= 0) return;
   for (const character of Object.values(world.characters)) {
     if (character.status !== 'alive') continue;
-    character.needs.hunger = Math.min(100, character.needs.hunger + Math.floor(elapsedMinutes / 30));
-    character.needs.thirst = Math.min(100, character.needs.thirst + Math.floor(elapsedMinutes / 20));
-    character.needs.fatigue = Math.min(100, character.needs.fatigue + Math.floor(elapsedMinutes / 60));
+    character.needProgressSeconds ??= { hunger: 0, thirst: 0, fatigue: 0 };
+    for (const [need, intervalSeconds] of Object.entries(NEED_INTERVAL_SECONDS)) {
+      const accumulated = (character.needProgressSeconds[need] ?? 0) + elapsedSeconds;
+      const increments = Math.floor(accumulated / intervalSeconds);
+      character.needProgressSeconds[need] = accumulated % intervalSeconds;
+      if (increments > 0) character.needs[need] = Math.min(100, character.needs[need] + increments);
+    }
   }
 }
 
