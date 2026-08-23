@@ -3,7 +3,7 @@ import { devStarterPack } from '../../content/dev-starter.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 4, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 5, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
@@ -54,6 +54,14 @@ function buildUtilities(view, isActionAvailable) {
     for (const [itemId, quantity] of Object.entries(view.character.inventory)) {
       const item = devStarterPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
+    }
+  }
+  if (isActionAvailable('crafting.craft')) {
+    for (const recipe of location.recipes ?? []) {
+      const ingredients = recipe.inputs
+        .map((input) => `${devStarterPack.items[input.itemId].name}×${input.quantity}`)
+        .join('＋');
+      utilities.push(option(`${recipe.label}（${ingredients}）`, 'crafting.craft', { recipeId: recipe.id }));
     }
   }
   if (isActionAvailable('economy.buy')) {
