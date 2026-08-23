@@ -34,6 +34,16 @@ test('Content Pack rejects unknown item references and duplicate local rules', (
   assert.throws(() => validateContentPack(duplicateJob), /jobs ids contains duplicate value/);
 });
 
+test('Content Pack requires own reference keys and rejects malformed need maps', () => {
+  const inheritedItemName = clonePack();
+  inheritedItemName.locations['starter-square'].market[0].itemId = 'toString';
+  assert.throws(() => validateContentPack(inheritedItemName), /references unknown item/);
+
+  const nullEffect = clonePack();
+  nullEffect.items.water.consumeEffect = null;
+  assert.throws(() => validateContentPack(nullEffect), /consumeEffect must be an object/);
+});
+
 test('Content Pack rejects invalid economy and survival numbers', () => {
   const negativePrice = clonePack();
   negativePrice.locations['starter-square'].market[0].price = -1;
