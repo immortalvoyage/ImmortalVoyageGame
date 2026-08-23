@@ -14,6 +14,7 @@ test('birth creates one owned character', async () => {
   const result = await dispatch(runtime, 'r1', 'character.birth', { name: '旅人' });
   assert.equal(result.ok, true);
   assert.equal(result.data.character.ownerSessionId, undefined);
+  assert.equal(result.data.character.needProgressSeconds, undefined);
   assert.equal(result.data.character.id, 'char:1');
   assert.equal(store.snapshot().characters.s1.name, '旅人');
   assert.equal((await dispatch(runtime, 'r2', 'character.birth', { name: '二號' })).code, 'CHARACTER_EXISTS');
@@ -77,6 +78,21 @@ test('lazy elapsed resolution advances survival without background work', async 
   assert.equal(needs.hunger, 2);
   assert.equal(needs.thirst, 3);
   assert.equal(needs.fatigue, 1);
+});
+
+test('frequent requests cannot freeze survival progression by discarding fractional elapsed time', async () => {
+  let now = 0;
+  const { runtime, store } = createDevelopmentGame({ now: () => now });
+  await dispatch(runtime, 'fb', 'character.birth', { name: '頻繁旅人' });
+  for (let i = 1; i <= 6; i += 1) {
+    now = i * 10 * 60 * 1000;
+    await dispatch(runtime, `fo-${i}`, 'location.observe');
+  }
+  const character = store.snapshot().characters.s1;
+  assert.equal(character.needs.hunger, 2);
+  assert.equal(character.needs.thirst, 3);
+  assert.equal(character.needs.fatigue, 1);
+  assert.deepEqual(character.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
 });
 
 test('idempotency ledger is bounded', async () => {
