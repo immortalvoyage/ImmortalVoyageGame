@@ -13,14 +13,15 @@ export function buildCareerView(character, careers = devStarterPack.careers) {
     .map((career) => ({ name: career.name }));
 }
 
-function observe({ world, actor }) {
+export function buildCareerViewForActor(world, actor) {
   const character = getOwnedActiveCharacter(world, actor);
-  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  return {
-    ok: true,
-    code: 'CAREER_OBSERVED',
-    data: { careers: buildCareerView(character) },
-  };
+  return character ? buildCareerView(character) : null;
+}
+
+function observe({ world, actor }) {
+  const careers = buildCareerViewForActor(world, actor);
+  if (!careers) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  return { ok: true, code: 'CAREER_OBSERVED', data: { careers } };
 }
 
 export const careerModule = { manifest, actions: { 'career.observe': observe } };
