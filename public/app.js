@@ -2,10 +2,11 @@ const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
 const birthForm = document.querySelector('#birth-form');
 const message = document.querySelector('#message');
-const routeActions = document.querySelector('#route-actions');
+const narrativeActions = document.querySelector('#narrative-actions');
 const worldActions = document.querySelector('#world-actions');
 const locationName = document.querySelector('#location-name');
 const locationDescription = document.querySelector('#location-description');
+const narrativeText = document.querySelector('#narrative-text');
 const characterState = document.querySelector('#character-state');
 
 let view = null;
@@ -36,7 +37,7 @@ async function act(type, payload = {}) {
 
 async function refresh() {
   try {
-    const result = await act('location.observe');
+    const result = await act('narrative.scene');
     if (!result) return;
     view = result.data;
     render();
@@ -72,6 +73,7 @@ function render() {
   gamePanel.hidden = false;
   locationName.textContent = view.location.name;
   locationDescription.textContent = view.location.description;
+  narrativeText.textContent = view.narrative.text;
 
   const character = view.character;
   characterState.replaceChildren();
@@ -91,18 +93,14 @@ function render() {
     characterState.append(dt, dd);
   }
 
-  routeActions.replaceChildren(...view.routes.map((route) => button(`前往 ${route.name}`, 'location.travel', { destinationId: route.id }, true)));
+  narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
   const actions = [];
-  if (character.locationId === 'starter-well') actions.push(button('取水', 'survival.gather', { kind: 'water' }));
-  if (character.locationId === 'starter-grove') actions.push(button('採集食物', 'survival.gather', { kind: 'food' }));
-  if ((character.inventory.water ?? 0) > 0) actions.push(button('飲水', 'survival.consume', { kind: 'water' }));
-  if ((character.inventory.food ?? 0) > 0) actions.push(button('進食', 'survival.consume', { kind: 'food' }));
+  if ((character.inventory.water ?? 0) > 0) actions.push(button('飲水', 'survival.consume', { kind: 'water' }, true));
+  if ((character.inventory.food ?? 0) > 0) actions.push(button('進食', 'survival.consume', { kind: 'food' }, true));
   if (character.locationId === 'starter-square') {
-    actions.push(button('做雜役', 'economy.work'));
     actions.push(button('買食物（1）', 'economy.buy', { itemId: 'food' }, true));
     actions.push(button('買水（1）', 'economy.buy', { itemId: 'water' }, true));
   }
-  for (const npc of view.visibleNpcs) actions.push(button(`與${npc.name}交談`, 'npc.interact', { npcId: npc.id }, true));
   worldActions.replaceChildren(...actions);
 }
 
