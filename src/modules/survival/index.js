@@ -1,26 +1,31 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { devStarterPack } from '../../content/dev-starter.js';
 import { addStack, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 2, actions: ['survival.gather', 'survival.consume'] });
+const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 3, actions: ['survival.gather', 'survival.consume'] });
 
 function gather({ world, actor, action }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const kind = action.payload?.kind;
-  const allowed = character.locationId === 'starter-well' ? ['water'] : character.locationId === 'starter-grove' ? ['food'] : [];
-  if (!allowed.includes(kind)) return { ok: false, code: 'RESOURCE_NOT_AVAILABLE' };
-  addStack(character, kind, 1);
+  const itemId = action.payload?.itemId;
+  const location = devStarterPack.locations[character.locationId];
+  const gatherable = location?.gatherables?.find((entry) => entry.itemId === itemId);
+  if (!gatherable) return { ok: false, code: 'RESOURCE_NOT_AVAILABLE' };
+  addStack(character, itemId, gatherable.quantity);
   return { ok: true, code: 'RESOURCE_GATHERED', data: { inventory: structuredClone(character.inventory) } };
 }
 
 function consume({ world, actor, action }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const kind = action.payload?.kind;
-  if (!['water', 'food'].includes(kind) || !removeStack(character, kind, 1)) return { ok: false, code: 'ITEM_NOT_AVAILABLE' };
-  if (kind === 'water') character.needs.thirst = Math.max(0, character.needs.thirst - 25);
-  if (kind === 'food') character.needs.hunger = Math.max(0, character.needs.hunger - 25);
+  const itemId = action.payload?.itemId;
+  const item = devStarterPack.items[itemId];
+  if (!item?.consumeEffect || !removeStack(character, itemId, 1)) return { ok: false, code: 'ITEM_NOT_AVAILABLE' };
+  for (const [need, delta] of Object.entries(item.consumeEffect)) {
+    if (!(need in character.needs)) continue;
+    character.needs[need] = Math.max(0, Math.min(100, character.needs[need] + delta));
+  }
   return { ok: true, code: 'ITEM_CONSUMED', data: { needs: structuredClone(character.needs), inventory: structuredClone(character.inventory) } };
 }
 
