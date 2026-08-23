@@ -34,7 +34,16 @@ test('purpose found and travel results produce useful deterministic feedback', (
   );
 });
 
-test('unknown or incomplete result falls back without exposing raw internals', () => {
+test('known action failures are translated without exposing raw codes', () => {
+  assert.equal(formatActionResult({ ok: false, code: 'INSUFFICIENT_FUNDS' }, '購買食物'), '金錢不足。');
+  assert.equal(formatActionResult({ ok: false, code: 'PURPOSE_TARGET_UNKNOWN' }, '尋找某人'), '你目前沒有足夠情報尋找這個目標。');
+  assert.equal(formatActionResult({ ok: false, code: 'INVALID_NAME' }, '出生'), '請輸入 1～24 個字的角色姓名。');
+});
+
+test('unknown or incomplete results use safe fallback without exposing raw internals', () => {
   assert.equal(formatActionResult({ ok: true, code: 'SOMETHING_NEW', data: { secret: 'x' } }, '測試行動'), '測試行動：完成');
   assert.equal(formatActionResult({ ok: true, code: 'NPC_INTERACTION', data: {} }, '交談'), '交談：完成');
+  const failed = formatActionResult({ ok: false, code: 'SERVER_INTERNAL_SECRET_CODE', data: { secret: 'x' } }, '測試行動');
+  assert.equal(failed, '測試行動：無法完成。');
+  assert.equal(failed.includes('SERVER_INTERNAL_SECRET_CODE'), false);
 });
