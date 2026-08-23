@@ -34,6 +34,15 @@ test('purpose found and travel results produce useful deterministic feedback', (
   );
 });
 
+test('crafting success and failures produce deterministic feedback', () => {
+  assert.equal(
+    formatActionResult({ ok: true, code: 'CRAFT_COMPLETED', data: { crafted: { name: '簡單餐食', quantity: 1 } } }, '製作'),
+    '已製作簡單餐食 × 1。',
+  );
+  assert.equal(formatActionResult({ ok: false, code: 'CRAFT_MATERIALS_MISSING' }, '製作'), '製作材料不足。');
+  assert.equal(formatActionResult({ ok: false, code: 'CRAFT_NOT_AVAILABLE' }, '製作'), '這裡目前無法進行這項製作。');
+});
+
 test('known action failures are translated without exposing raw codes', () => {
   assert.equal(formatActionResult({ ok: false, code: 'INSUFFICIENT_FUNDS' }, '購買食物'), '金錢不足。');
   assert.equal(formatActionResult({ ok: false, code: 'PURPOSE_TARGET_UNKNOWN' }, '尋找某人'), '你目前沒有足夠情報尋找這個目標。');

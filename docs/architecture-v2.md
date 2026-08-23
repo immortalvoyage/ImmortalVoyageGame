@@ -5,16 +5,22 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 ## Current boundaries
 
 - Core: world clock, world state, action resolution, schema migration, module manifest validation, permission boundary, bounded idempotency/event ledgers.
-- Modules: character, inventory, location, NPC, purpose action, survival, economy, narrative.
+- Modules: character, inventory, location, NPC, purpose action, survival, economy, crafting, narrative.
 - Content: disposable versioned starter content used only to prove the critical path. Server startup validates its references and bounded numeric rules before gameplay code consumes it.
 - Browser: submits intents through `/api/action`; it does not import Core modules or own world truth.
 - Local dev server: zero-dependency Node server with local file-backed world persistence for development only.
 
 ## Content Pack boundary
 
-Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item references, duplicate local rules, unknown need keys, invalid quantities/prices/rewards, and a missing starting location at module load time. Character birth reads the Content Pack starting location rather than hardcoding a starter-world ID.
+Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe references, duplicate local rules, free recipes with no inputs, unknown need keys, invalid quantities/prices/rewards, and a missing starting location at module load time. Character birth reads the Content Pack starting location rather than hardcoding a starter-world ID.
 
 This validation is a fail-closed development/runtime guard, not a second source of world truth and not a remote content service. It adds no database, scheduler, polling, AI, or network dependency.
+
+## Crafting
+
+The minimal Crafting Module accepts a recipe intent only when that recipe exists at the character's authoritative current location. It verifies all required stackable inputs before consuming anything, then atomically removes inputs and adds the validated output on the Action Resolver draft. Missing materials or an unavailable recipe produce no committed mutation. Successful crafting emits bounded `crafting.completed` evidence, and generic request idempotency prevents retry-driven duplicate production.
+
+Crafting recipes and ingredient/output quantities live in the Content Pack. Narrative exposes crafting as deterministic functional UI only when the module action is registered; disabling the Crafting Module therefore removes its UI without breaking Core or other gameplay.
 
 ## Purpose actions
 

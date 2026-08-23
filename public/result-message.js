@@ -23,6 +23,10 @@ function failureMessage(code, fallbackLabel) {
       return '這裡目前無法交易。';
     case 'ITEM_NOT_SOLD':
       return '這裡沒有販售該物品。';
+    case 'CRAFT_NOT_AVAILABLE':
+      return '這裡目前無法進行這項製作。';
+    case 'CRAFT_MATERIALS_MISSING':
+      return '製作材料不足。';
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
     case 'INVALID_NAME':
@@ -65,6 +69,11 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
     case 'PURCHASE_COMPLETED':
       return `${text(fallbackLabel, '購買')}：交易完成。`;
+    case 'CRAFT_COMPLETED': {
+      const name = text(result.data?.crafted?.name);
+      const quantity = result.data?.crafted?.quantity;
+      return name && Number.isSafeInteger(quantity) && quantity > 0 ? `已製作${name} × ${quantity}。` : fallback;
+    }
     default:
       return fallback;
   }
