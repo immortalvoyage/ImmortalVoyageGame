@@ -129,3 +129,17 @@ test('deterministic narrative fallback presents 2 to 4 valid choices', async () 
     assert.equal(typeof choice.intent.type, 'string');
   }
 });
+
+test('narrative does not offer intents from disabled gameplay modules', async () => {
+  const { runtime } = createDevelopmentGame({
+    now: () => 1000,
+    enabledModules: ['character', 'inventory', 'location', 'narrative'],
+  });
+  await dispatch(runtime, 'db', 'character.birth', { name: '降級旅人' });
+  const scene = await dispatch(runtime, 'ds', 'narrative.scene');
+  assert.equal(scene.ok, true);
+  assert.deepEqual(
+    scene.data.narrative.options.map((choice) => choice.intent.type),
+    ['location.travel', 'location.travel'],
+  );
+});

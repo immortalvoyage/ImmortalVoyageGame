@@ -31,7 +31,15 @@ export class GameRuntime {
         }
       }
 
-      const result = this.resolver.resolve({ world, actor, action, context: { nowMs: world.lastResolvedAtMs } });
+      const result = this.resolver.resolve({
+        world,
+        actor,
+        action,
+        context: {
+          nowMs: world.lastResolvedAtMs,
+          isActionAvailable: (actionType) => this.resolver.hasAction(actionType),
+        },
+      });
       if (!result.ok) return result;
 
       const committed = result.world;

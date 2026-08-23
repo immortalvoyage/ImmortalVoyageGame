@@ -3,10 +3,10 @@ import { buildLocationView } from '../location/index.js';
 
 const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 1, actions: ['narrative.scene'] });
 
-function scene({ world, actor }) {
+function scene({ world, actor, context }) {
   const view = buildLocationView(world, actor);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const options = buildOptions(view);
+  const options = buildOptions(view, context?.isActionAvailable ?? (() => true));
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
@@ -28,7 +28,7 @@ function sceneText(view) {
   return location.description;
 }
 
-function buildOptions(view) {
+function buildOptions(view, isActionAvailable) {
   const options = [];
   const locationId = view.character.locationId;
   if (locationId === 'starter-square') {
@@ -47,7 +47,7 @@ function buildOptions(view) {
     if (back) options.push(option(`返回${back.name}`, 'location.travel', { destinationId: back.id }));
     if ((view.character.inventory.food ?? 0) > 0) options.push(option('吃掉手邊的食物', 'survival.consume', { kind: 'food' }));
   }
-  return options.slice(0, 4);
+  return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
 function option(label, type, payload = {}) {
