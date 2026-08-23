@@ -1,3 +1,5 @@
+import { formatActionResult } from './result-message.js';
+
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
 const birthForm = document.querySelector('#birth-form');
@@ -59,7 +61,7 @@ function button(label, type, payload, secondary = false) {
   element.addEventListener('click', async () => {
     try {
       const result = await act(type, payload);
-      if (result) showMessage(label + '：完成');
+      if (result) showMessage(formatActionResult(result, label));
       await refresh();
     } catch (error) {
       showMessage(`${label}：${error.result?.code ?? error.message}`);
