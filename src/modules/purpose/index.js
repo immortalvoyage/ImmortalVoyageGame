@@ -3,7 +3,19 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { devStarterPack } from '../../content/dev-starter.js';
 import { applyTravelStep, findNextRouteStep, publicLocation } from '../location/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 1, actions: ['purpose.find-npc'] });
+const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 2, actions: ['purpose.find-npc'] });
+
+function foundResult(character, npcId, npc, extra = {}) {
+  return {
+    ok: true,
+    code: 'PURPOSE_TARGET_FOUND',
+    data: {
+      npc: { id: npcId, name: npc.name },
+      ...extra,
+    },
+    events: [{ type: 'purpose.target-found', data: { characterId: character.id, npcId } }],
+  };
+}
 
 function findNpc({ world, actor, action }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -13,18 +25,24 @@ function findNpc({ world, actor, action }) {
   const npc = devStarterPack.npcs[npcId];
   if (!npc?.searchLabel) return { ok: false, code: 'PURPOSE_TARGET_UNKNOWN' };
 
-  if (npc.locationId === character.locationId) {
-    return {
-      ok: true,
-      code: 'PURPOSE_TARGET_FOUND',
-      data: { npc: { id: npcId, name: npc.name } },
-      events: [{ type: 'purpose.target-found', data: { characterId: character.id, npcId } }],
-    };
-  }
+  if (npc.locationId === character.locationId) return foundResult(character, npcId, npc);
 
   const nextLocationId = findNextRouteStep(character.locationId, npc.locationId);
   if (!nextLocationId || !applyTravelStep(character, nextLocationId)) {
     return { ok: false, code: 'PURPOSE_ROUTE_UNAVAILABLE' };
+  }
+
+  const travelEvent = {
+    type: 'character.travelled',
+    data: { characterId: character.id, destinationId: nextLocationId, reason: 'purpose.find-npc' },
+  };
+  if (nextLocationId === npc.locationId) {
+    const found = foundResult(character, npcId, npc, {
+      location: publicLocation(nextLocationId),
+      needs: structuredClone(character.needs),
+    });
+    found.events.unshift(travelEvent);
+    return found;
   }
 
   return {
@@ -36,7 +54,7 @@ function findNpc({ world, actor, action }) {
       target: { id: npcId, name: npc.name },
     },
     events: [
-      { type: 'character.travelled', data: { characterId: character.id, destinationId: nextLocationId, reason: 'purpose.find-npc' } },
+      travelEvent,
       { type: 'purpose.search-progress', data: { characterId: character.id, npcId, destinationId: nextLocationId } },
     ],
   };
