@@ -1,6 +1,6 @@
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 2,
+  dataVersion: 3,
   items: Object.freeze({
     water: Object.freeze({
       name: '水',
@@ -58,6 +58,7 @@ export const devStarterPack = Object.freeze({
       name: '聚落雜役領班',
       locationId: 'starter-square',
       greeting: '這裡總有些搬運和整理的活計。',
+      searchLabel: '尋找聚落雜役領班',
     }),
   }),
 });

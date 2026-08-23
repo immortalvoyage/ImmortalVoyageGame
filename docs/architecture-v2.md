@@ -5,10 +5,14 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 ## Current boundaries
 
 - Core: world clock, world state, action resolution, schema migration, module manifest validation, permission boundary, bounded idempotency/event ledgers.
-- Modules: character, inventory, location, NPC, survival, economy, narrative.
+- Modules: character, inventory, location, NPC, purpose action, survival, economy, narrative.
 - Content: disposable versioned starter content used only to prove the critical path.
 - Browser: submits intents through `/api/action`; it does not import Core modules or own world truth.
 - Local dev server: zero-dependency Node server with local file-backed world persistence for development only.
+
+## Purpose actions
+
+Purpose actions express intent rather than a destination claim. The current minimal NPC-search flow lets the server inspect the authoritative NPC location and route graph, resolve at most one valid travel step, and return only the player's resulting location plus public target identity. The browser never receives the NPC's hidden authoritative location or a full path, and the action remains subject to normal server validation and feature/module availability.
 
 ## World schema
 
