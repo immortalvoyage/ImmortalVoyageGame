@@ -49,7 +49,7 @@ async function refresh() {
       gamePanel.hidden = true;
       return;
     }
-    showMessage(`無法讀取世界：${error.message}`);
+    showMessage(formatActionResult(error.result ?? { ok: false }, '讀取世界'));
   }
 }
 
@@ -64,7 +64,7 @@ function button(label, type, payload, secondary = false) {
       if (result) showMessage(formatActionResult(result, label));
       await refresh();
     } catch (error) {
-      showMessage(`${label}：${error.result?.code ?? error.message}`);
+      showMessage(formatActionResult(error.result ?? { ok: false }, label));
     }
   });
   return element;
@@ -111,7 +111,7 @@ birthForm.addEventListener('submit', async (event) => {
     showMessage('角色已出生。');
     await refresh();
   } catch (error) {
-    showMessage(`出生失敗：${error.result?.code ?? error.message}`);
+    showMessage(formatActionResult(error.result ?? { ok: false }, '出生'));
   }
 });
 
