@@ -28,5 +28,6 @@ test('local dev server keeps browser behind server action boundary', async (t) =
   });
   const data = await observed.json();
   assert.equal(data.data.character.name, '本機旅人');
-  assert.equal(data.data.character.ownerSessionId, cookie.split('=')[1]);
+  assert.equal(data.data.character.ownerSessionId, undefined);
+  assert.equal(data.data.character.id, 'char:1');
 });
