@@ -53,6 +53,11 @@ test('topic eligibility is not knowledge; successful ask persists bounded discov
   await unlockLivingAdvice(runtime);
 
   let scene = await dispatch(runtime, 'scene-before-ask', 'narrative.scene');
+  const askUtility = scene.data.utilities.find(
+    (choice) => choice.intent.type === 'npc.ask' && choice.intent.payload.topicId === 'foreman-living-advice',
+  );
+  assert.ok(askUtility);
+  assert.deepEqual(askUtility.intent.payload, { npcId: 'foreman', topicId: 'foreman-living-advice' });
   assert.equal(purposeChoice(scene, 'herbalist'), undefined);
   assert.deepEqual(scene.data.knowledge, []);
   assert.equal(JSON.stringify(scene.data).includes('rumor:herbalist'), false);
