@@ -35,6 +35,8 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.deepEqual(migrated.characters.s1.needs, { hunger: 3, thirst: 4, fatigue: 5 });
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
   assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
+  assert.deepEqual(migrated.tradeListings, {});
+  assert.equal(migrated.nextTradeListingSequence, 1);
   assert.equal(assertWorldState(migrated), migrated);
 });
 
@@ -61,6 +63,33 @@ test('schema v2 behavior counts are backfilled and existing valid counts are pre
   withCounts.characters.s1.behaviorCounts = { 'work:starter-labor': 4 };
   const preserved = migrateWorldState(withCounts);
   assert.deepEqual(preserved.characters.s1.behaviorCounts, { 'work:starter-labor': 4 });
+});
+
+test('schema v3 backfills bounded trade state and preserves a valid existing sequence', () => {
+  const v3 = migrateWorldState(legacyWorld());
+  v3.schemaVersion = 3;
+  delete v3.tradeListings;
+  delete v3.nextTradeListingSequence;
+  const backfilled = migrateWorldState(v3);
+  assert.deepEqual(backfilled.tradeListings, {});
+  assert.equal(backfilled.nextTradeListingSequence, 1);
+
+  const withListing = structuredClone(v3);
+  withListing.tradeListings = {
+    'listing:4': {
+      id: 'listing:4',
+      sellerSessionId: 's1',
+      sellerCharacterId: 'char:7',
+      itemId: 'food',
+      quantity: 1,
+      totalPrice: 2,
+      createdLogicalTimeSeconds: 0,
+    },
+  };
+  withListing.nextTradeListingSequence = 10;
+  const preserved = migrateWorldState(withListing);
+  assert.equal(preserved.nextTradeListingSequence, 10);
+  assert.ok(preserved.tradeListings['listing:4']);
 });
 
 test('newer world schemas fail closed', () => {
