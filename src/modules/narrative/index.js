@@ -3,9 +3,10 @@ import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 8, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 10, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -21,6 +22,10 @@ function scene({ world, actor, context }) {
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
     : null;
+  const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
+  const survivalCondition = survivalActive
+    ? buildPublicSurvivalCondition(view.character, contentPack.survival)
+    : null;
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
@@ -29,25 +34,34 @@ function scene({ world, actor, context }) {
       careers,
       progression,
       trade,
+      survivalCondition,
       inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',
-        text: sceneText(view),
-        options: buildOptions(view, isActionAvailable, contentPack),
+        text: sceneText(view, survivalCondition),
+        options: buildOptions(view, isActionAvailable, contentPack, survivalCondition),
       },
       utilities: buildUtilities(view, isActionAvailable, contentPack),
     },
   };
 }
 
-function sceneText(view) {
-  const { location, character } = view;
-  if (character.needs.thirst >= 60) return `${location.description} 你明顯感到口渴，下一步最好先處理飲水。`;
-  if (character.needs.hunger >= 60) return `${location.description} 飢餓感正在變得難以忽視。`;
+function needNames(entries = []) {
+  return entries.map((entry) => entry.name).join('、');
+}
+
+function sceneText(view, survivalCondition) {
+  const { location } = view;
+  if (survivalCondition?.severity === 'critical') {
+    return `${location.description} ${needNames(survivalCondition.criticalNeeds)}已達危急程度，現在應優先補給或休整，不適合繼續工作。`;
+  }
+  if (survivalCondition?.severity === 'warning') {
+    return `${location.description} 你已明顯感到${needNames(survivalCondition.warningNeeds)}，最好在狀況惡化前處理。`;
+  }
   return location.description;
 }
 
-function buildOptions(view, isActionAvailable, contentPack) {
+function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
   const location = contentPack.locations[view.character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
@@ -56,7 +70,9 @@ function buildOptions(view, isActionAvailable, contentPack) {
   for (const [npcId, npc] of Object.entries(contentPack.npcs)) {
     if (npc.searchLabel && !visibleNpcIds.has(npcId)) options.push(option(npc.searchLabel, 'purpose.find-npc', { npcId }));
   }
-  for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
+  if (survivalCondition?.severity !== 'critical') {
+    for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
+  }
   for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
   for (const route of view.routes) options.push(option(`前往${route.name}`, 'location.travel', { destinationId: route.id }));
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
@@ -70,6 +86,9 @@ function buildUtilities(view, isActionAvailable, contentPack) {
       const item = contentPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
+  }
+  if (isActionAvailable('survival.rest') && view.character.needs.fatigue > 0) {
+    utilities.push(option('休息片刻', 'survival.rest'));
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {

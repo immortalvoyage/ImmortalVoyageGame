@@ -2,8 +2,13 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 7,
+  dataVersion: 8,
   startingLocationId: 'starter-square',
+  survival: Object.freeze({
+    warningThreshold: 60,
+    criticalThreshold: 85,
+    restFatigueRelief: 25,
+  }),
   items: Object.freeze({
     water: Object.freeze({
       name: '水',

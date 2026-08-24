@@ -2,8 +2,15 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { addStack } from '../inventory/index.js';
+import { canPerformSurvivalLimitedWork } from '../survival/condition.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 4, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 5, actions: ['economy.work', 'economy.buy'] });
+
+function survivalGuardEnabled(context) {
+  const isActionAvailable = context?.isActionAvailable;
+  if (typeof isActionAvailable !== 'function') return true;
+  return isActionAvailable('survival.gather') || isActionAvailable('survival.consume');
+}
 
 function work({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -12,6 +19,9 @@ function work({ world, actor, action, context }) {
   const jobId = action.payload?.jobId;
   const job = location?.jobs?.find((entry) => entry.id === jobId);
   if (!job) return { ok: false, code: 'WORK_NOT_AVAILABLE' };
+  if (survivalGuardEnabled(context) && !canPerformSurvivalLimitedWork(character, context.contentPack.survival)) {
+    return { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' };
+  }
 
   character.money += job.rewardMoney;
   for (const [need, cost] of Object.entries(job.needCosts ?? {})) {

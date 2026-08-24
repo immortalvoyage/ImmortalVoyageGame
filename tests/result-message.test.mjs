@@ -43,6 +43,17 @@ test('crafting success and failures produce deterministic feedback', () => {
   assert.equal(formatActionResult({ ok: false, code: 'CRAFT_NOT_AVAILABLE' }, '製作'), '這裡目前無法進行這項製作。');
 });
 
+test('survival condition and rest results produce deterministic feedback', () => {
+  assert.equal(
+    formatActionResult({ ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' }, '工作'),
+    '目前的飢餓、口渴或疲勞狀況太差，先補給或休整後再工作。',
+  );
+  assert.equal(
+    formatActionResult({ ok: true, code: 'REST_COMPLETED', data: { needs: { fatigue: 65 } } }, '休息片刻'),
+    '你休息了一會兒，疲勞有所緩解。',
+  );
+});
+
 test('trade success and failures produce deterministic feedback without raw codes', () => {
   assert.equal(
     formatActionResult({ ok: true, code: 'TRADE_LISTED', data: {} }, '上架'),

@@ -19,6 +19,8 @@ function failureMessage(code, fallbackLabel) {
       return '你目前沒有足夠情報尋找這個目標。';
     case 'WORK_NOT_AVAILABLE':
       return '這裡目前沒有這份工作。';
+    case 'SURVIVAL_CONDITION_TOO_POOR':
+      return '目前的飢餓、口渴或疲勞狀況太差，先補給或休整後再工作。';
     case 'MARKET_NOT_AVAILABLE':
       return '這裡目前無法交易。';
     case 'ITEM_NOT_SOLD':
@@ -83,6 +85,8 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return `${text(fallbackLabel, '採集')}：已取得資源。`;
     case 'ITEM_CONSUMED':
       return `${text(fallbackLabel, '使用物品')}：完成。`;
+    case 'REST_COMPLETED':
+      return '你休息了一會兒，疲勞有所緩解。';
     case 'WORK_COMPLETED':
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
     case 'PURCHASE_COMPLETED':

@@ -12,7 +12,7 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 
 ## Content Pack boundary
 
-Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, progression tags, career rules, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, invalid progression kinds or thresholds, duplicate local rules, free recipes with no inputs, empty behavior requirements, unknown need keys, invalid thresholds/quantities/prices/rewards, and a missing starting location before the pack is accepted by game wiring.
+Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, progression tags, career rules, survival warning/critical thresholds, basic rest relief, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, invalid progression kinds or thresholds, invalid or reversed survival thresholds, invalid rest relief, duplicate local rules, free recipes with no inputs, empty behavior requirements, unknown need keys, invalid quantities/prices/rewards, and a missing starting location before the pack is accepted by game wiring.
 
 `src/game.js` is the composition boundary: it validates the selected Content Pack and injects it into the authoritative runtime context. `GameRuntime` remains content-agnostic and only forwards server-owned runtime context to registered action handlers. Gameplay modules do not import the development starter pack directly; modules that need current content consume the injected pack. This makes a future validated Content Pack replaceable without editing gameplay modules or creating a second registry.
 
@@ -33,6 +33,20 @@ After supported schema migration, Core validates the structural invariants that 
 Successful action drafts are validated a second time immediately before persistence, after bounded event/request evidence is recorded. Both structural validation and the injected domain/content validator must pass. A handler therefore cannot return `ok: true` and silently persist malformed or orphaned authoritative state. Validation failure leaves the store unchanged.
 
 These checks are validation only: malformed state is rejected instead of silently repaired. Existing writer functions remain responsible for trimming request/event ledgers to their 256-entry caps. Content-specific references remain outside Core and are checked separately by the world/content compatibility guard.
+
+## Survival condition and reversible pressure
+
+Survival needs remain authoritative numeric state and continue to advance by logical elapsed time when the Survival Module is enabled. The current starter Content Pack defines a warning threshold and a higher critical threshold. A public condition projection is derived from current hunger, thirst, and fatigue; the thresholds themselves are server/content tuning and are not copied into persistent character state.
+
+Warning is informational only. At critical condition, `economy.work` is rejected before reward, behavior, or need-cost mutation. Narrative also hides work choices and tells the player to address the affected needs, but this presentation behavior is not the security boundary: a forged work request is still rejected server-side.
+
+The guard deliberately preserves recovery paths. Hunger can be reduced by gathered or purchased food, thirst by gathered or purchased water, and fatigue by the minimal deterministic `survival.rest` action. Travel, gathering, consuming supplies, purchasing supplies, and rest are not blocked by the critical work guard. The development map keeps basic water and food reachable from the starter square so a player without money still has a recovery route.
+
+Basic rest is request-driven and only decreases fatigue by a validated Content-Pack amount; it creates no item, money, background timer, lodging state, or world-time jump. Richer sleep, accommodation, temperature, encumbrance, offline activity, illness, and environmental exposure remain later modules/rules rather than being approximated here.
+
+The Survival Module can still be disabled. Economy checks runtime action availability before applying the survival work guard, so disabling Survival does not leave stale need values as a hidden dependency that can permanently block work. Narrative likewise omits the public condition and rest utility when Survival actions are unavailable.
+
+This slice is intentionally **not a death trigger**. Reaching warning or critical need levels does not call Estate settlement and does not permanently kill a character. Permanent death requires a separately approved authoritative hazard/death rule with explicit warning and relief semantics.
 
 ## Behavior, progression, and career
 
@@ -76,12 +90,12 @@ Purpose actions express intent rather than a destination claim. The current mini
 
 ## World schema
 
-Persisted world state carries an explicit schema version. The runtime migrates supported older schemas deterministically before authoritative adjudication and rejects unknown newer schemas rather than silently resetting or guessing. Schema v2 backfills stable character sequencing and survival fractional progress from legacy v1 saves; schema v3 adds authoritative behavior-count aggregates used by derived progression and career rules; schema v4 adds bounded fixed-price trade escrow/listing state and a monotonic listing sequence; schema v5 adds empty-by-default `archivedCharacters` and `estates` collections. The v4→v5 migration is additive and does not move any existing active character assets.
+Persisted world state carries an explicit schema version. The runtime migrates supported older schemas deterministically before authoritative adjudication and rejects unknown newer schemas rather than silently resetting or guessing. Schema v2 backfills stable character sequencing and survival fractional progress from legacy v1 saves; schema v3 adds authoritative behavior-count aggregates used by derived progression and career rules; schema v4 adds bounded fixed-price trade escrow/listing state and a monotonic listing sequence; schema v5 adds empty-by-default `archivedCharacters` and `estates` collections. The v4→v5 migration is additive and does not move any existing active character assets. Survival condition is derived from existing need state and Content Pack policy, so it requires no schema change.
 
 ## Cost model
 
-No background worker, polling loop, database, AI provider, queue, analytics service, marketplace service, or production deployment is required for the current slice. World progression uses logical time plus timestamp/lazy elapsed resolution on the next authoritative request. Trade is entirely request-driven and bounded in persisted count and public payload. Estate settlement likewise runs only when a future authoritative death event explicitly invokes it; there is no death scanner or estate scheduler.
+No background worker, polling loop, database, AI provider, queue, analytics service, marketplace service, or production deployment is required for the current slice. World progression uses logical time plus timestamp/lazy elapsed resolution on the next authoritative request. Trade is entirely request-driven and bounded in persisted count and public payload. Survival condition classification and rest are synchronous deterministic calculations on a player request. Estate settlement likewise runs only when a future authoritative death event explicitly invokes it; there is no death scanner or estate scheduler.
 
 ## Deferred production adapters
 
-Production persistence, real authentication/session, production serverless adapter, Estate distribution rules, migrations beyond the currently implemented schema path, and platform-level Event Bus/Registry/Feature Flag contracts remain intentionally deferred until their concrete integration is required.
+Production persistence, real authentication/session, production serverless adapter, Estate distribution rules, permanent death triggers, richer survival/environment rules, migrations beyond the currently implemented schema path, and platform-level Event Bus/Registry/Feature Flag contracts remain intentionally deferred until their concrete integration is required.
