@@ -1,5 +1,6 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { formatTravelDuration } from '../location/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 
@@ -7,7 +8,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 1,
+  dataVersion: 2,
   actions: ['situation.observe'],
 });
 
@@ -84,9 +85,11 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
     : [];
 
   const travel = isActionAvailable('location.travel')
-    ? (location.routes ?? []).map((destinationId) => {
-      const destination = contentPack.locations[destinationId];
-      return destination ? option(`前往${destination.name}`, 'location.travel', { destinationId }) : null;
+    ? (location.routes ?? []).map((route) => {
+      const destination = contentPack.locations[route.destinationId];
+      return destination
+        ? option(`前往${destination.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.destinationId })
+        : null;
     }).filter(Boolean)
     : [];
 
