@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -40,6 +40,17 @@ function assertKnowledgeIds(character) {
   }
 }
 
+function assertCurrentEmployment(character) {
+  const employment = character.currentEmployment;
+  if (employment === null) return;
+  if (!isRecord(employment)
+    || !isNonEmptyText(employment.jobId)
+    || !isNonEmptyText(employment.employerNpcId)
+    || !isNonEmptyText(employment.workLocationId)) {
+    throw new Error('invalid current employment');
+  }
+}
+
 function assertInventory(inventory, label = 'inventory') {
   if (!isRecord(inventory)) throw new Error(`invalid ${label} state`);
   for (const [itemId, quantity] of Object.entries(inventory)) {
@@ -55,6 +66,7 @@ function assertCharacterState(sessionId, character) {
 
   assertNeedsAndBehavior(character);
   assertKnowledgeIds(character);
+  assertCurrentEmployment(character);
   assertInventory(character.inventory);
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
 }
@@ -72,6 +84,7 @@ function assertArchiveAndEstateState(world) {
     if (archived.status !== 'dead' || !isNonEmptyText(archived.locationId)) throw new Error('invalid archived character state');
     assertNeedsAndBehavior(archived);
     assertKnowledgeIds(archived);
+    assertCurrentEmployment(archived);
     if (Object.hasOwn(archived, 'inventory') || Object.hasOwn(archived, 'money')) throw new Error('archived character duplicates estate assets');
     if (!isNonEmptyText(archived.estateId) || !isNonEmptyText(archived.deathCauseCode)) throw new Error('invalid archived character death');
     if (!Number.isSafeInteger(archived.diedLogicalTimeSeconds)
