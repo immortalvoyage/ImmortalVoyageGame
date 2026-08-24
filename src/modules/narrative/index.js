@@ -8,10 +8,11 @@ import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
 import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
+import { buildSituationOpportunities } from '../situation/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 14, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 15, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -39,6 +40,10 @@ function scene({ world, actor, context }) {
   const survivalCondition = survivalActive
     ? buildPublicSurvivalCondition(character, contentPack.survival)
     : null;
+  const narrativeOptions = isActionAvailable('situation.observe')
+    ? buildSituationOpportunities({ character, contentPack, isActionAvailable })
+    : buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition);
+
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
@@ -54,7 +59,7 @@ function scene({ world, actor, context }) {
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view, survivalCondition),
-        options: buildOptions(view, character, isActionAvailable, contentPack, survivalCondition),
+        options: narrativeOptions,
       },
       utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
@@ -76,7 +81,8 @@ function sceneText(view, survivalCondition) {
   return location.description;
 }
 
-function buildOptions(view, character, isActionAvailable, contentPack, survivalCondition) {
+// Safe fallback while the Situation Module is feature-disabled.
+function buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
   const location = contentPack.locations[character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
