@@ -76,6 +76,40 @@ test('Content Pack rejects unsafe crafting recipes', () => {
   assert.throws(() => validateContentPack(invalidOutput), /output.quantity must be an integer/);
 });
 
+test('Content Pack rejects missing behavior ids on gatherables and recipes', () => {
+  const missingGatherBehavior = clonePack();
+  delete missingGatherBehavior.locations['starter-grove'].gatherables[0].behaviorId;
+  assert.throws(() => validateContentPack(missingGatherBehavior), /behaviorId must be non-empty text/);
+
+  const missingRecipeBehavior = clonePack();
+  delete missingRecipeBehavior.locations['starter-square'].recipes[0].behaviorId;
+  assert.throws(() => validateContentPack(missingRecipeBehavior), /behaviorId must be non-empty text/);
+});
+
+test('Content Pack rejects broken progression tag rules', () => {
+  const missingTags = clonePack();
+  delete missingTags.progressionTags;
+  assert.throws(() => validateContentPack(missingTags), /progressionTags must be an object/);
+
+  const invalidKind = clonePack();
+  invalidKind.progressionTags['starter-foraging-basics'].kind = 'secret';
+  assert.throws(() => validateContentPack(invalidKind), /kind must be skill or social/);
+
+  const unknownBehavior = clonePack();
+  unknownBehavior.progressionTags['starter-foraging-basics'].requirements[0].behaviorId = 'gather:missing';
+  assert.throws(() => validateContentPack(unknownBehavior), /references unknown behavior/);
+
+  const zeroThreshold = clonePack();
+  zeroThreshold.progressionTags['starter-foraging-basics'].requirements[0].minCount = 0;
+  assert.throws(() => validateContentPack(zeroThreshold), /minCount must be an integer/);
+
+  const duplicateRequirement = clonePack();
+  duplicateRequirement.progressionTags['starter-foraging-basics'].requirements.push(
+    structuredClone(duplicateRequirement.progressionTags['starter-foraging-basics'].requirements[0]),
+  );
+  assert.throws(() => validateContentPack(duplicateRequirement), /requirements behavior ids contains duplicate value/);
+});
+
 test('Content Pack rejects broken career behavior rules', () => {
   const missingJobBehavior = clonePack();
   delete missingJobBehavior.locations['starter-square'].jobs[0].behaviorId;
