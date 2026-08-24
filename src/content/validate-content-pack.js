@@ -66,7 +66,7 @@ function validateBehaviorRequirements(requirements, path, declaredBehaviorIds) {
   }
 }
 
-function validateNpcRelationship(npc, path, declaredBehaviorIds) {
+function validateNpcRelationship(npc, path, declaredBehaviorIds, knowledge) {
   if (npc.relationship === undefined) return;
   const relationship = requireRecord(npc.relationship, `${path}.relationship`);
   const behaviorId = requireText(relationship.behaviorId, `${path}.relationship.behaviorId`);
@@ -95,6 +95,17 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds) {
         rememberUnique(topicIds, topicId, `${path}.relationship topic ids`);
         requireText(topic.label, `${topicPath}.label`);
         requireText(topic.responseText, `${topicPath}.responseText`);
+        if (topic.grantsKnowledgeIds !== undefined) {
+          const grantsKnowledgeIds = requireArray(topic.grantsKnowledgeIds, `${topicPath}.grantsKnowledgeIds`);
+          if (grantsKnowledgeIds.length === 0) fail(`${topicPath}.grantsKnowledgeIds must not be empty`);
+          const grantedIds = new Set();
+          for (const [grantIndex, knowledgeId] of grantsKnowledgeIds.entries()) {
+            const grantPath = `${topicPath}.grantsKnowledgeIds[${grantIndex}]`;
+            requireText(knowledgeId, grantPath);
+            rememberUnique(grantedIds, knowledgeId, `${topicPath}.grantsKnowledgeIds`);
+            if (!Object.hasOwn(knowledge, knowledgeId)) fail(`${grantPath} references unknown knowledge: ${knowledgeId}`);
+          }
+        }
       }
     }
     previousMinCount = minCount;
@@ -117,6 +128,7 @@ export function validateContentPack(pack) {
   const locations = requireRecord(pack.locations, 'pack.locations');
   const progressionTags = requireRecord(pack.progressionTags, 'pack.progressionTags');
   const careers = requireRecord(pack.careers, 'pack.careers');
+  const knowledge = requireRecord(pack.knowledge, 'pack.knowledge');
   const npcs = requireRecord(pack.npcs, 'pack.npcs');
 
   if (Object.keys(items).length === 0) fail('pack.items must not be empty');
@@ -129,6 +141,24 @@ export function validateContentPack(pack) {
     requireText(item.name, `items.${itemId}.name`);
     if (item.consumeLabel !== undefined) requireText(item.consumeLabel, `items.${itemId}.consumeLabel`);
     validateNeedMap(item.consumeEffect, `items.${itemId}.consumeEffect`, { min: -100, max: 100 });
+  }
+
+  for (const [knowledgeId, fact] of Object.entries(knowledge)) {
+    requireText(knowledgeId, 'knowledge id');
+    const path = `knowledge.${knowledgeId}`;
+    requireRecord(fact, path);
+    requireText(fact.name, `${path}.name`);
+    if (fact.revealsNpcIds !== undefined) {
+      const revealsNpcIds = requireArray(fact.revealsNpcIds, `${path}.revealsNpcIds`);
+      if (revealsNpcIds.length === 0) fail(`${path}.revealsNpcIds must not be empty`);
+      const revealedNpcIds = new Set();
+      for (const [index, npcId] of revealsNpcIds.entries()) {
+        const revealPath = `${path}.revealsNpcIds[${index}]`;
+        requireText(npcId, revealPath);
+        rememberUnique(revealedNpcIds, npcId, `${path}.revealsNpcIds`);
+        if (!Object.hasOwn(npcs, npcId)) fail(`${revealPath} references unknown npc: ${npcId}`);
+      }
+    }
   }
 
   const declaredBehaviorIds = new Set();
@@ -218,7 +248,7 @@ export function validateContentPack(pack) {
     if (npc.knownAtStart !== undefined && typeof npc.knownAtStart !== 'boolean') {
       fail(`${path}.knownAtStart must be boolean`);
     }
-    validateNpcRelationship(npc, path, declaredBehaviorIds);
+    validateNpcRelationship(npc, path, declaredBehaviorIds, knowledge);
   }
 
   for (const [tagId, tag] of Object.entries(progressionTags)) {
