@@ -11,6 +11,8 @@ async function dispatch(runtime, requestId, type, payload = {}) {
 async function bornGame(options = {}) {
   const game = createDevelopmentGame({ now: () => 1000, ...options });
   await dispatch(game.runtime, 'birth', 'character.birth', { name: '求生旅人' });
+  const employment = await dispatch(game.runtime, 'employment', 'employment.accept', { jobId: 'starter-labor' });
+  if (employment.code !== 'UNKNOWN_ACTION') assert.equal(employment.code, 'EMPLOYMENT_STARTED');
   return game;
 }
 
@@ -20,7 +22,7 @@ async function setCharacter(game, mutator) {
   await game.store.replace(world);
 }
 
-test('warning condition is visible but does not block work', async () => {
+test('warning condition is visible but does not block contracted work', async () => {
   const game = await bornGame();
   await setCharacter(game, (character) => { character.needs.hunger = 60; });
 
