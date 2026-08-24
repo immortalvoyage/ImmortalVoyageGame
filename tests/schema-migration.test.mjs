@@ -35,6 +35,7 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.deepEqual(migrated.characters.s1.needs, { hunger: 3, thirst: 4, fatigue: 5 });
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
   assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
+  assert.deepEqual(migrated.characters.s1.knowledgeIds, []);
   assert.deepEqual(migrated.tradeListings, {});
   assert.equal(migrated.nextTradeListingSequence, 1);
   assert.deepEqual(migrated.archivedCharacters, {});
@@ -108,6 +109,45 @@ test('schema v4 backfills empty archive and estate collections without moving ac
   assert.deepEqual(migrated.characters.s1.inventory, { food: 2 });
   assert.equal(migrated.characters.s1.money, 9);
   assert.equal(assertWorldState(migrated), migrated);
+});
+
+test('schema v5 backfills active and archived knowledge without inventing inheritance', () => {
+  const v5 = migrateWorldState(legacyWorld());
+  v5.schemaVersion = 5;
+  delete v5.characters.s1.knowledgeIds;
+  v5.archivedCharacters['char:old'] = {
+    id: 'char:old',
+    ownerSessionId: 'old-session',
+    name: '故人',
+    status: 'dead',
+    locationId: 'retired-location',
+    needs: { hunger: 0, thirst: 0, fatigue: 0 },
+    needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    behaviorCounts: {},
+    estateId: 'estate:char:old',
+    diedLogicalTimeSeconds: 0,
+    deathCauseCode: 'hazard.accident',
+  };
+  v5.estates['estate:char:old'] = {
+    id: 'estate:char:old',
+    deceasedCharacterId: 'char:old',
+    status: 'pending',
+    openedLogicalTimeSeconds: 0,
+    money: 0,
+    inventory: {},
+  };
+
+  const migrated = migrateWorldState(v5);
+  assert.deepEqual(migrated.characters.s1.knowledgeIds, []);
+  assert.deepEqual(migrated.archivedCharacters['char:old'].knowledgeIds, []);
+  assert.equal(assertWorldState(migrated), migrated);
+
+  const withKnowledge = structuredClone(v5);
+  withKnowledge.characters.s1.knowledgeIds = ['starter-living-advice'];
+  withKnowledge.archivedCharacters['char:old'].knowledgeIds = ['retired-historical-fact'];
+  const preserved = migrateWorldState(withKnowledge);
+  assert.deepEqual(preserved.characters.s1.knowledgeIds, ['starter-living-advice']);
+  assert.deepEqual(preserved.archivedCharacters['char:old'].knowledgeIds, ['retired-historical-fact']);
 });
 
 test('newer world schemas fail closed', () => {
