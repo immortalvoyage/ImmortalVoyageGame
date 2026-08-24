@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { applyTravelStep, findNextRouteStep, publicLocation } from '../location/index.js';
+import { isKnownNpcTarget } from './known-targets.js';
 
-const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 2, actions: ['purpose.find-npc'] });
+const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 3, actions: ['purpose.find-npc'] });
 
 function foundResult(character, npcId, npc, extra = {}) {
   return {
@@ -23,7 +24,9 @@ function findNpc({ world, actor, action, context }) {
 
   const npcId = action.payload?.npcId;
   const npc = contentPack.npcs[npcId];
-  if (!npc?.searchLabel) return { ok: false, code: 'PURPOSE_TARGET_UNKNOWN' };
+  if (!npc?.searchLabel || !isKnownNpcTarget(character, npcId, contentPack)) {
+    return { ok: false, code: 'PURPOSE_TARGET_UNKNOWN' };
+  }
 
   if (npc.locationId === character.locationId) return foundResult(character, npcId, npc);
 
