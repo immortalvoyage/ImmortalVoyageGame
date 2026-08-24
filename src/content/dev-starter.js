@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 11,
+  dataVersion: 12,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -118,6 +118,7 @@ export const devStarterPack = Object.freeze({
       locationId: 'starter-square',
       greeting: '這裡總有些搬運和整理的活計。',
       searchLabel: '尋找聚落雜役領班',
+      knownAtStart: true,
       relationship: Object.freeze({
         behaviorId: 'interact:npc:foreman',
         levels: Object.freeze([
@@ -141,7 +142,8 @@ export const devStarterPack = Object.freeze({
               Object.freeze({
                 id: 'foreman-living-advice',
                 label: '問問在聚落討生活的建議',
-                responseText: '先把吃喝和休息顧好，再談長遠打算；餓著肚子硬撐，活也做不好。',
+                responseText: '先把吃喝和休息顧好，再談長遠打算；近郊樹林裡也常有一名採藥人出沒。',
+                revealsNpcIds: Object.freeze(['herbalist']),
               }),
             ]),
           }),
@@ -152,6 +154,12 @@ export const devStarterPack = Object.freeze({
           }),
         ]),
       }),
+    }),
+    herbalist: Object.freeze({
+      name: '近郊採藥人',
+      locationId: 'starter-grove',
+      greeting: '採藥時別踩壞旁邊剛長出的嫩芽。',
+      searchLabel: '尋找近郊採藥人',
     }),
   }),
 });
