@@ -1,10 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
-import { devStarterPack } from '../../content/dev-starter.js';
 
 const manifest = validateGameModuleManifest({ name: 'career', dataVersion: 1, actions: ['career.observe'] });
 
-export function buildCareerView(character, careers = devStarterPack.careers) {
+export function buildCareerView(character, careers = {}) {
   if (!character?.behaviorCounts || !careers) return [];
   return Object.values(careers)
     .filter((career) => career.requirements.every(
@@ -13,13 +12,13 @@ export function buildCareerView(character, careers = devStarterPack.careers) {
     .map((career) => ({ name: career.name }));
 }
 
-export function buildCareerViewForActor(world, actor) {
+export function buildCareerViewForActor(world, actor, careers = {}) {
   const character = getOwnedActiveCharacter(world, actor);
-  return character ? buildCareerView(character) : null;
+  return character ? buildCareerView(character, careers) : null;
 }
 
-function observe({ world, actor }) {
-  const careers = buildCareerViewForActor(world, actor);
+function observe({ world, actor, context }) {
+  const careers = buildCareerViewForActor(world, actor, context.contentPack.careers);
   if (!careers) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   return { ok: true, code: 'CAREER_OBSERVED', data: { careers } };
 }
