@@ -34,6 +34,22 @@ function dedupeAndLimit(opportunities) {
   return result;
 }
 
+function normalOpportunityOrder({ social, purpose, work, gather, travel }) {
+  const livelihood = work[0] ?? gather[0] ?? null;
+  const primary = [purpose[0], social[0], livelihood, travel[0]].filter(Boolean);
+
+  const workRemainder = livelihood === work[0] ? work.slice(1) : work;
+  const gatherRemainder = livelihood === gather[0] ? gather.slice(1) : gather;
+  return [
+    ...primary,
+    ...purpose.slice(1),
+    ...workRemainder,
+    ...gatherRemainder,
+    ...social.slice(1),
+    ...travel.slice(1),
+  ];
+}
+
 export function buildSituationOpportunities({ character, contentPack, isActionAvailable }) {
   if (!character || !contentPack || typeof isActionAvailable !== 'function') return [];
   const location = contentPack.locations[character.locationId];
@@ -74,11 +90,11 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
     }).filter(Boolean)
     : [];
 
-  // Under critical survival pressure, keep immediate recovery/exits ahead of optional social/work content.
-  // Otherwise preserve the familiar social → purpose → work → gather → travel reading flow.
+  // Critical pressure keeps immediate recovery/exits ahead of optional social/purpose content.
+  // Normal flow reserves category diversity so a crowded location cannot crowd out livelihood or an exit.
   const ordered = survivalCondition?.severity === 'critical'
     ? [...gather, ...travel, ...social, ...purpose]
-    : [...social, ...purpose, ...work, ...gather, ...travel];
+    : normalOpportunityOrder({ social, purpose, work, gather, travel });
 
   return dedupeAndLimit(ordered);
 }
