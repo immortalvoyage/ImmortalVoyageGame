@@ -1,11 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { devStarterPack } from '../src/content/dev-starter.js';
 import { createDevelopmentGame } from '../src/game.js';
 
 const actor = { sessionId: 'known-purpose-session' };
 
 async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
+}
+
+function hiddenNpcPack() {
+  const pack = structuredClone(devStarterPack);
+  pack.id = 'known-target-test-pack';
+  pack.npcs.herbalist = {
+    name: '近郊採藥人',
+    locationId: 'starter-grove',
+    greeting: '採藥時別踩壞旁邊剛長出的嫩芽。',
+    searchLabel: '尋找近郊採藥人',
+    relationship: {
+      behaviorId: 'interact:npc:herbalist',
+      levels: [{ name: '見過幾面', minCount: 1 }],
+    },
+  };
+  return pack;
 }
 
 function purposeChoices(scene) {
@@ -17,7 +34,7 @@ function topicUtilities(scene) {
 }
 
 test('unknown hidden NPC is absent from Narrative and forged purpose search fails without mutation', async () => {
-  const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
+  const { runtime, store } = createDevelopmentGame({ now: () => 1000, contentPack: hiddenNpcPack() });
   await dispatch(runtime, 'birth-hidden', 'character.birth', { name: '不知情旅人' });
 
   const scene = await dispatch(runtime, 'scene-hidden', 'narrative.scene');
@@ -33,7 +50,7 @@ test('unknown hidden NPC is absent from Narrative and forged purpose search fail
 });
 
 test('unlocking unrelated familiarity topics does not silently turn hidden NPCs into known targets', async () => {
-  const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
+  const { runtime, store } = createDevelopmentGame({ now: () => 1000, contentPack: hiddenNpcPack() });
   await dispatch(runtime, 'birth-topic', 'character.birth', { name: '熟客旅人' });
   await dispatch(runtime, 'talk-topic-1', 'npc.interact', { npcId: 'foreman' });
   await dispatch(runtime, 'talk-topic-2', 'npc.interact', { npcId: 'foreman' });
@@ -51,7 +68,7 @@ test('unlocking unrelated familiarity topics does not silently turn hidden NPCs 
 });
 
 test('manual discovery plus successful interaction keeps an NPC known after leaving', async () => {
-  const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
+  const { runtime, store } = createDevelopmentGame({ now: () => 1000, contentPack: hiddenNpcPack() });
   await dispatch(runtime, 'birth-manual', 'character.birth', { name: '探路旅人' });
   await dispatch(runtime, 'walk-grove', 'location.travel', { destinationId: 'starter-grove' });
 
@@ -74,7 +91,11 @@ test('interaction evidence keeps a discovered NPC known even when Relationship M
     'character', 'inventory', 'location', 'npc', 'purpose', 'survival', 'economy', 'trade',
     'crafting', 'progression', 'career', 'estate', 'narrative',
   ];
-  const { runtime } = createDevelopmentGame({ now: () => 1000, enabledModules });
+  const { runtime } = createDevelopmentGame({
+    now: () => 1000,
+    enabledModules,
+    contentPack: hiddenNpcPack(),
+  });
   await dispatch(runtime, 'birth-module-off', 'character.birth', { name: '關係停用探路者' });
   await dispatch(runtime, 'walk-grove-off', 'location.travel', { destinationId: 'starter-grove' });
   const interaction = await dispatch(runtime, 'meet-herbalist-off', 'npc.interact', { npcId: 'herbalist' });
