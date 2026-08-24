@@ -4,6 +4,7 @@ import { MemoryGameStore } from './adapters/memory-game-store.js';
 import { FileGameStore } from './adapters/file-game-store.js';
 import { devStarterPack } from './content/dev-starter.js';
 import { validateContentPack } from './content/validate-content-pack.js';
+import { validateWorldContentCompatibility } from './content/validate-world-content-compatibility.js';
 import { characterModule } from './modules/character/index.js';
 import { inventoryModule } from './modules/inventory/index.js';
 import { locationModule } from './modules/location/index.js';
@@ -27,7 +28,13 @@ export function createGame({
   validateContentPack(contentPack);
   const enabled = new Set(enabledModules);
   const modules = allModules.filter((module) => enabled.has(module.manifest.name));
-  const runtime = new GameRuntime({ store, modules, runtimeContext: { contentPack }, now });
+  const runtime = new GameRuntime({
+    store,
+    modules,
+    runtimeContext: { contentPack },
+    validateLoadedWorld: (world) => validateWorldContentCompatibility(world, contentPack),
+    now,
+  });
   return { runtime, store };
 }
 
