@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { recordBehavior } from '../character/behavior.js';
 import { addStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 3, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 4, actions: ['economy.work', 'economy.buy'] });
 
 function work({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -17,8 +18,7 @@ function work({ world, actor, action, context }) {
     if (!(need in character.needs)) continue;
     character.needs[need] = Math.min(100, character.needs[need] + cost);
   }
-  const behaviorCount = (character.behaviorCounts[job.behaviorId] ?? 0) + 1;
-  character.behaviorCounts[job.behaviorId] = behaviorCount;
+  const behaviorCount = recordBehavior(character, job.behaviorId);
 
   return {
     ok: true,
