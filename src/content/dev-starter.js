@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 12,
+  dataVersion: 13,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -112,6 +112,11 @@ export const devStarterPack = Object.freeze({
       ]),
     }),
   }),
+  knowledge: Object.freeze({
+    'starter-living-advice': Object.freeze({
+      name: '聚落生活的基本建議',
+    }),
+  }),
   npcs: Object.freeze({
     foreman: Object.freeze({
       name: '聚落雜役領班',
@@ -143,6 +148,7 @@ export const devStarterPack = Object.freeze({
                 id: 'foreman-living-advice',
                 label: '問問在聚落討生活的建議',
                 responseText: '先把吃喝和休息顧好，再談長遠打算；餓著肚子硬撐，活也做不好。',
+                grantsKnowledgeIds: Object.freeze(['starter-living-advice']),
               }),
             ]),
           }),
