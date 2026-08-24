@@ -70,6 +70,7 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds) {
   if (npc.relationship === undefined) return;
   const relationship = requireRecord(npc.relationship, `${path}.relationship`);
   const behaviorId = requireText(relationship.behaviorId, `${path}.relationship.behaviorId`);
+  if (declaredBehaviorIds.has(behaviorId)) fail(`${path}.relationship.behaviorId must be unique: ${behaviorId}`);
   declaredBehaviorIds.add(behaviorId);
 
   const levels = requireArray(relationship.levels, `${path}.relationship.levels`);
