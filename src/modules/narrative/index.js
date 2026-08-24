@@ -1,3 +1,4 @@
+import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
@@ -14,6 +15,8 @@ const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 14
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
+  const character = getOwnedActiveCharacter(world, actor);
+  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const view = buildLocationView(world, actor, contentPack);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const isActionAvailable = context?.isActionAvailable ?? (() => true);
@@ -34,7 +37,7 @@ function scene({ world, actor, context }) {
     : null;
   const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
   const survivalCondition = survivalActive
-    ? buildPublicSurvivalCondition(view.character, contentPack.survival)
+    ? buildPublicSurvivalCondition(character, contentPack.survival)
     : null;
   return {
     ok: true,
@@ -51,7 +54,7 @@ function scene({ world, actor, context }) {
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view, survivalCondition),
-        options: buildOptions(view, isActionAvailable, contentPack, survivalCondition),
+        options: buildOptions(view, character, isActionAvailable, contentPack, survivalCondition),
       },
       utilities: buildUtilities(view, isActionAvailable, contentPack),
     },
@@ -73,14 +76,14 @@ function sceneText(view, survivalCondition) {
   return location.description;
 }
 
-function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
+function buildOptions(view, character, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
-  const location = contentPack.locations[view.character.locationId];
+  const location = contentPack.locations[character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
   const knowledgeActive = isActionAvailable('knowledge.observe');
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const target of buildKnownPurposeTargets(view.character, contentPack, { knowledgeActive })) {
+  for (const target of buildKnownPurposeTargets(character, contentPack, { knowledgeActive })) {
     if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
