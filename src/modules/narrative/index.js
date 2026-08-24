@@ -4,10 +4,11 @@ import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
+import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 11, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 12, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -94,6 +95,14 @@ function buildUtilities(view, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('survival.rest') && view.character.needs.fatigue > 0) {
     utilities.push(option('休息片刻', 'survival.rest'));
+  }
+  if (isActionAvailable('npc.ask') && isActionAvailable('relationship.observe')) {
+    for (const publicNpc of view.visibleNpcs) {
+      const npc = contentPack.npcs[publicNpc.id];
+      for (const topic of findUnlockedFamiliarityTopics(view.character, npc)) {
+        utilities.push(option(`${publicNpc.name}：${topic.label}`, 'npc.ask', { npcId: publicNpc.id, topicId: topic.id }));
+      }
+    }
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {
