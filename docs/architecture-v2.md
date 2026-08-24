@@ -5,14 +5,14 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 ## Current boundaries
 
 - Core: world clock, world state, action resolution, schema migration, module manifest validation, permission boundary, bounded idempotency/event/trade state, archived-character/estate structural invariants.
-- Modules: character, inventory, location, NPC, purpose action, survival, economy, trade, crafting, progression, career, estate, narrative.
+- Modules: character, inventory, location, NPC, purpose action, survival, economy, trade, crafting, progression, career, relationship, estate, narrative.
 - Content: disposable versioned starter content used only to prove the critical path and small post-loop modules. Game wiring validates one server-owned Content Pack before gameplay consumes it.
 - Browser: submits intents through `/api/action`; it does not import Core modules or own world truth.
 - Local dev server: zero-dependency Node server with local file-backed world persistence for development only.
 
 ## Content Pack boundary
 
-Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, progression tags, career rules, survival warning/critical thresholds, basic rest relief, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, invalid progression kinds or thresholds, invalid or reversed survival thresholds, invalid rest relief, duplicate local rules, free recipes with no inputs, empty behavior requirements, unknown need keys, invalid quantities/prices/rewards, and a missing starting location before the pack is accepted by game wiring.
+Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, progression tags, career rules, optional NPC familiarity rules, survival warning/critical thresholds, basic rest relief, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, invalid progression kinds or thresholds, invalid or reversed survival thresholds, invalid rest relief, malformed or colliding NPC relationship behavior IDs, unordered/duplicate familiarity levels, duplicate local rules, free recipes with no inputs, empty behavior requirements, unknown need keys, invalid quantities/prices/rewards, and a missing starting location before the pack is accepted by game wiring.
 
 `src/game.js` is the composition boundary: it validates the selected Content Pack and injects it into the authoritative runtime context. `GameRuntime` remains content-agnostic and only forwards server-owned runtime context to registered action handlers. Gameplay modules do not import the development starter pack directly; modules that need current content consume the injected pack. This makes a future validated Content Pack replaceable without editing gameplay modules or creating a second registry.
 
@@ -48,15 +48,21 @@ The Survival Module can still be disabled. Economy checks runtime action availab
 
 This slice is intentionally **not a death trigger**. Reaching warning or critical need levels does not call Estate settlement and does not permanently kill a character. Permanent death requires a separately approved authoritative hazard/death rule with explicit warning and relief semantics.
 
-## Behavior, progression, and career
+## Behavior, progression, career, and relationships
 
-Characters do not choose a fixed profession at birth. Successful authoritative work, gather, and craft actions may record compact Content-Pack-defined behavior counts. Rejected actions do not record behavior, request idempotency prevents retries from incrementing a behavior twice, and the shared behavior writer saturates at `Number.MAX_SAFE_INTEGER` instead of overflowing persisted counters.
+Characters do not choose a fixed profession at birth. Successful authoritative work, gather, craft, and configured NPC-interaction actions may record compact Content-Pack-defined behavior counts. Rejected actions do not record behavior, request idempotency prevents retries from incrementing a behavior twice, and the shared behavior writer saturates at `Number.MAX_SAFE_INTEGER` instead of overflowing persisted counters.
 
 The Progression Module derives public skill/social tags from those authoritative behavior counts plus Content Pack requirements. Derived tags are not persisted as duplicate state and expose only public names; raw behavior IDs, thresholds, and counters remain server-side. Disabling the Progression Module hides these derived tags without disabling work, gathering, crafting, or Core gameplay.
 
 Career identities use the same authoritative behavior source but remain a separate module and a higher-order derived identity. Career identity is likewise not stored as duplicate permanent state: Career recomputes the currently satisfied public identities when observed. Disabling the Career Module hides derived identities without disabling the underlying actions.
 
-World schema v3 adds `behaviorCounts` and migrates v2 saves by backfilling an empty map while preserving any valid existing counts. Adding more deterministic behavior sources or derived Progression tags does not require another schema change.
+The Relationship Module follows the same pattern for NPC familiarity. A configured NPC interaction records a unique server-only behavior ID only after authoritative ownership/location checks pass. Familiarity levels live in the Content Pack with strictly increasing interaction-count thresholds. Relationship observation returns only NPC public identity plus the highest satisfied familiarity name; it does not expose the raw behavior ID, count, or thresholds, and NPCs with no satisfied familiarity level are not added to the relationship list. This prevents the module from revealing otherwise unknown NPCs merely because they exist in server content.
+
+Relationship is derived state, not a second persisted relationship table. Turning the Relationship Module off hides the projection but does not disable NPC interaction or erase its authoritative behavior evidence. Because a newly born character starts with empty `behaviorCounts`, a later life does not automatically inherit the prior character's familiarity. A deceased character's archived behavior aggregates remain historical evidence tied to that archived character.
+
+NPC relationship behavior IDs must not collide with other authoritative behavior sources. This avoids one NPC interaction accidentally advancing another NPC or a work/gather/craft action advancing familiarity. Once declared, an NPC interaction behavior may be referenced by other Content-Pack-derived rules such as a future social tag or career condition.
+
+World schema v3 adds `behaviorCounts` and migrates v2 saves by backfilling an empty map while preserving any valid existing counts. Adding deterministic NPC interaction sources or derived Relationship views does not require another schema change.
 
 ## Trade
 
@@ -74,7 +80,7 @@ The current Estate Module establishes a server-side settlement primitive only; i
 
 Settlement is one authoritative draft operation. The active character is removed from the session slot and written to `archivedCharacters` with death time, cause code, final location, survival state, and behavior aggregates. The archive deliberately contains no money or inventory. Current inventory, money, and every still-listed Trade escrow stack owned by that exact character are consolidated into one `pending` Estate record; the corresponding listings are removed. This makes spendable assets exist in exactly one authoritative place after death.
 
-The archive remains tied server-side to its original session for historical/account evidence, but the active session slot becomes empty. The same account may therefore start a new character with the normal birth flow and a new monotonic character ID. The new character receives no automatic money, items, family control, or knowledge from the prior character. Estate distribution is intentionally unresolved: law, wills, debt, family/NPC, property, auctions, historical-item promotion, and other inheritance rules must decide future disposition in later modules rather than being guessed by this primitive.
+The archive remains tied server-side to its original session for historical/account evidence, but the active session slot becomes empty. The same account may therefore start a new character with the normal birth flow and a new monotonic character ID. The new character receives no automatic money, items, family control, knowledge, or NPC familiarity from the prior character. Estate distribution is intentionally unresolved: law, wills, debt, family/NPC, property, auctions, historical-item promotion, and other inheritance rules must decide future disposition in later modules rather than being guessed by this primitive.
 
 Historical archive locations may outlive current Content Pack entries. Pending Estate items cannot: until an Estate is resolved, those stacks remain current authoritative assets and are protected by the same fail-closed Content Pack compatibility boundary as active inventory and Trade escrow.
 
@@ -90,12 +96,12 @@ Purpose actions express intent rather than a destination claim. The current mini
 
 ## World schema
 
-Persisted world state carries an explicit schema version. The runtime migrates supported older schemas deterministically before authoritative adjudication and rejects unknown newer schemas rather than silently resetting or guessing. Schema v2 backfills stable character sequencing and survival fractional progress from legacy v1 saves; schema v3 adds authoritative behavior-count aggregates used by derived progression and career rules; schema v4 adds bounded fixed-price trade escrow/listing state and a monotonic listing sequence; schema v5 adds empty-by-default `archivedCharacters` and `estates` collections. The v4→v5 migration is additive and does not move any existing active character assets. Survival condition is derived from existing need state and Content Pack policy, so it requires no schema change.
+Persisted world state carries an explicit schema version. The runtime migrates supported older schemas deterministically before authoritative adjudication and rejects unknown newer schemas rather than silently resetting or guessing. Schema v2 backfills stable character sequencing and survival fractional progress from legacy v1 saves; schema v3 adds authoritative behavior-count aggregates used by derived progression, career, and relationship rules; schema v4 adds bounded fixed-price trade escrow/listing state and a monotonic listing sequence; schema v5 adds empty-by-default `archivedCharacters` and `estates` collections. The v4→v5 migration is additive and does not move any existing active character assets. Survival condition and NPC familiarity are derived from existing authoritative state plus Content Pack policy, so neither requires a schema change.
 
 ## Cost model
 
-No background worker, polling loop, database, AI provider, queue, analytics service, marketplace service, or production deployment is required for the current slice. World progression uses logical time plus timestamp/lazy elapsed resolution on the next authoritative request. Trade is entirely request-driven and bounded in persisted count and public payload. Survival condition classification and rest are synchronous deterministic calculations on a player request. Estate settlement likewise runs only when a future authoritative death event explicitly invokes it; there is no death scanner or estate scheduler.
+No background worker, polling loop, database, AI provider, queue, analytics service, marketplace service, or production deployment is required for the current slice. World progression uses logical time plus timestamp/lazy elapsed resolution on the next authoritative request. Trade is entirely request-driven and bounded in persisted count and public payload. Survival condition classification, rest, NPC familiarity recording, and Relationship projection are synchronous deterministic calculations on player requests. Estate settlement likewise runs only when a future authoritative death event explicitly invokes it; there is no death scanner or estate scheduler.
 
 ## Deferred production adapters
 
-Production persistence, real authentication/session, production serverless adapter, Estate distribution rules, permanent death triggers, richer survival/environment rules, migrations beyond the currently implemented schema path, and platform-level Event Bus/Registry/Feature Flag contracts remain intentionally deferred until their concrete integration is required.
+Production persistence, real authentication/session, production serverless adapter, Estate distribution rules, permanent death triggers, richer survival/environment rules, richer NPC relationship consequences, migrations beyond the currently implemented schema path, and platform-level Event Bus/Registry/Feature Flag contracts remain intentionally deferred until their concrete integration is required.

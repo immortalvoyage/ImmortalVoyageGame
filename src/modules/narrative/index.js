@@ -3,10 +3,11 @@ import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { buildRelationshipViewForActor } from '../relationship/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 10, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 11, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -18,6 +19,9 @@ function scene({ world, actor, context }) {
     : [];
   const progression = isActionAvailable('progression.observe')
     ? buildProgressionViewForActor(world, actor, contentPack.progressionTags)
+    : null;
+  const relationships = isActionAvailable('relationship.observe')
+    ? buildRelationshipViewForActor(world, actor, contentPack.npcs) ?? []
     : null;
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
@@ -33,6 +37,7 @@ function scene({ world, actor, context }) {
       ...view,
       careers,
       progression,
+      relationships,
       trade,
       survivalCondition,
       inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
