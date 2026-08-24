@@ -160,6 +160,12 @@ export const devStarterPack = Object.freeze({
       locationId: 'starter-grove',
       greeting: '採藥時別踩壞旁邊剛長出的嫩芽。',
       searchLabel: '尋找近郊採藥人',
+      relationship: Object.freeze({
+        behaviorId: 'interact:npc:herbalist',
+        levels: Object.freeze([
+          Object.freeze({ name: '見過幾面', minCount: 1 }),
+        ]),
+      }),
     }),
   }),
 });
