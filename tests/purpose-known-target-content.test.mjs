@@ -7,15 +7,18 @@ function clonePack() {
   return structuredClone(devStarterPack);
 }
 
-test('valid public and initially hidden NPC discovery config passes', () => {
+test('starter public NPC discovery config passes', () => {
   assert.equal(validateContentPack(devStarterPack), devStarterPack);
   assert.equal(devStarterPack.npcs.foreman.knownAtStart, true);
-  assert.equal(devStarterPack.npcs.herbalist.knownAtStart, undefined);
 });
 
-test('knownAtStart may be true or false when configured', () => {
+test('knownAtStart may be omitted, true, or false', () => {
+  const omitted = clonePack();
+  delete omitted.npcs.foreman.knownAtStart;
+  assert.equal(validateContentPack(omitted), omitted);
+
   const publicPack = clonePack();
-  publicPack.npcs.herbalist.knownAtStart = true;
+  publicPack.npcs.foreman.knownAtStart = true;
   assert.equal(validateContentPack(publicPack), publicPack);
 
   const hiddenPack = clonePack();
