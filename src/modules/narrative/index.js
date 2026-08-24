@@ -1,5 +1,4 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
-import { devStarterPack } from '../../content/dev-starter.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
@@ -7,23 +6,26 @@ import { buildLocationView } from '../location/index.js';
 const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 6, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
-  const view = buildLocationView(world, actor);
+  const contentPack = context.contentPack;
+  const view = buildLocationView(world, actor, contentPack);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const isActionAvailable = context?.isActionAvailable ?? (() => true);
-  const careers = isActionAvailable('career.observe') ? buildCareerViewForActor(world, actor) ?? [] : [];
+  const careers = isActionAvailable('career.observe')
+    ? buildCareerViewForActor(world, actor, contentPack.careers) ?? []
+    : [];
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
     data: {
       ...view,
       careers,
-      inventoryItems: buildPublicInventory(view.character.inventory, devStarterPack.items),
+      inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view),
-        options: buildOptions(view, isActionAvailable),
+        options: buildOptions(view, isActionAvailable, contentPack),
       },
-      utilities: buildUtilities(view, isActionAvailable),
+      utilities: buildUtilities(view, isActionAvailable, contentPack),
     },
   };
 }
@@ -35,13 +37,13 @@ function sceneText(view) {
   return location.description;
 }
 
-function buildOptions(view, isActionAvailable) {
+function buildOptions(view, isActionAvailable, contentPack) {
   const options = [];
-  const location = devStarterPack.locations[view.character.locationId];
+  const location = contentPack.locations[view.character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const [npcId, npc] of Object.entries(devStarterPack.npcs)) {
+  for (const [npcId, npc] of Object.entries(contentPack.npcs)) {
     if (npc.searchLabel && !visibleNpcIds.has(npcId)) options.push(option(npc.searchLabel, 'purpose.find-npc', { npcId }));
   }
   for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
@@ -50,26 +52,26 @@ function buildOptions(view, isActionAvailable) {
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
-function buildUtilities(view, isActionAvailable) {
+function buildUtilities(view, isActionAvailable, contentPack) {
   const utilities = [];
-  const location = devStarterPack.locations[view.character.locationId];
+  const location = contentPack.locations[view.character.locationId];
   if (isActionAvailable('survival.consume')) {
     for (const [itemId, quantity] of Object.entries(view.character.inventory)) {
-      const item = devStarterPack.items[itemId];
+      const item = contentPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {
       const ingredients = recipe.inputs
-        .map((input) => `${devStarterPack.items[input.itemId].name}×${input.quantity}`)
+        .map((input) => `${contentPack.items[input.itemId].name}×${input.quantity}`)
         .join('＋');
       utilities.push(option(`${recipe.label}（${ingredients}）`, 'crafting.craft', { recipeId: recipe.id }));
     }
   }
   if (isActionAvailable('economy.buy')) {
     for (const offer of location.market ?? []) {
-      const item = devStarterPack.items[offer.itemId];
+      const item = contentPack.items[offer.itemId];
       if (item) utilities.push(option(`購買${item.name}（${offer.price}）`, 'economy.buy', { itemId: offer.itemId }));
     }
   }
