@@ -3,7 +3,7 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
-import { buildLocationView } from '../location/index.js';
+import { buildLocationView, formatTravelDuration } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
@@ -12,7 +12,7 @@ import { buildSituationOpportunities } from '../situation/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 15, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 16, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -96,7 +96,9 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
     for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
   }
   for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
-  for (const route of view.routes) options.push(option(`前往${route.name}`, 'location.travel', { destinationId: route.id }));
+  for (const route of view.routes) {
+    options.push(option(`前往${route.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.id }));
+  }
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
