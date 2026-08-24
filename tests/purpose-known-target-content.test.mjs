@@ -7,28 +7,24 @@ function clonePack() {
   return structuredClone(devStarterPack);
 }
 
-test('valid known-at-start and topic NPC reveal rules pass', () => {
+test('valid public and initially hidden NPC discovery config passes', () => {
   assert.equal(validateContentPack(devStarterPack), devStarterPack);
+  assert.equal(devStarterPack.npcs.foreman.knownAtStart, true);
+  assert.equal(devStarterPack.npcs.herbalist.knownAtStart, undefined);
+});
+
+test('knownAtStart may be true or false when configured', () => {
+  const publicPack = clonePack();
+  publicPack.npcs.herbalist.knownAtStart = true;
+  assert.equal(validateContentPack(publicPack), publicPack);
+
+  const hiddenPack = clonePack();
+  hiddenPack.npcs.foreman.knownAtStart = false;
+  assert.equal(validateContentPack(hiddenPack), hiddenPack);
 });
 
 test('knownAtStart must be boolean when configured', () => {
   const pack = clonePack();
   pack.npcs.foreman.knownAtStart = 'yes';
   assert.throws(() => validateContentPack(pack), /knownAtStart must be boolean/);
-});
-
-test('topic NPC reveals must reference existing NPCs', () => {
-  const pack = clonePack();
-  pack.npcs.foreman.relationship.levels[1].topics[0].revealsNpcIds = ['missing-npc'];
-  assert.throws(() => validateContentPack(pack), /revealsNpcIds\[0\] references unknown npc: missing-npc/);
-});
-
-test('topic NPC reveal list must not be empty or contain duplicates', () => {
-  const empty = clonePack();
-  empty.npcs.foreman.relationship.levels[1].topics[0].revealsNpcIds = [];
-  assert.throws(() => validateContentPack(empty), /revealsNpcIds must not be empty/);
-
-  const duplicate = clonePack();
-  duplicate.npcs.foreman.relationship.levels[1].topics[0].revealsNpcIds = ['herbalist', 'herbalist'];
-  assert.throws(() => validateContentPack(duplicate), /revealsNpcIds contains duplicate value: herbalist/);
 });
