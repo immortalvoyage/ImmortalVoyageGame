@@ -4,10 +4,11 @@ import { assertWorldState, recordGameEvents, rememberRequest } from './world-sta
 import { resolveWorldTime } from './world-clock.js';
 
 export class GameRuntime {
-  constructor({ store, modules, now = () => Date.now() }) {
+  constructor({ store, modules, runtimeContext = {}, now = () => Date.now() }) {
     this.store = store;
     this.now = now;
     this.modules = modules;
+    this.runtimeContext = runtimeContext;
     this.resolver = new ActionResolver();
     for (const module of modules) this.resolver.registerModule(module);
   }
@@ -37,6 +38,7 @@ export class GameRuntime {
         actor,
         action,
         context: {
+          ...this.runtimeContext,
           nowMs: world.lastResolvedAtMs,
           isActionAvailable: (actionType) => this.resolver.hasAction(actionType),
         },
