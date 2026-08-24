@@ -15,20 +15,29 @@ function isRevealedByUnlockedTopic(character, npcId, npcs) {
   return false;
 }
 
-export function isKnownNpcTarget(character, npcId, contentPack) {
+export function isKnownNpcTarget(
+  character,
+  npcId,
+  contentPack,
+  { allowRelationshipReveals = false } = {},
+) {
   const npcs = contentPack?.npcs;
   const npc = npcs?.[npcId];
   if (!character || !npc) return false;
   if (npc.locationId === character.locationId) return true;
   if (npc.knownAtStart === true) return true;
   if (hasRecordedInteraction(character, npc)) return true;
-  return isRevealedByUnlockedTopic(character, npcId, npcs);
+  return allowRelationshipReveals && isRevealedByUnlockedTopic(character, npcId, npcs);
 }
 
-export function buildKnownPurposeTargets(character, contentPack) {
+export function buildKnownPurposeTargets(
+  character,
+  contentPack,
+  { allowRelationshipReveals = false } = {},
+) {
   const targets = [];
   for (const [npcId, npc] of Object.entries(contentPack?.npcs ?? {})) {
-    if (!npc.searchLabel || !isKnownNpcTarget(character, npcId, contentPack)) continue;
+    if (!npc.searchLabel || !isKnownNpcTarget(character, npcId, contentPack, { allowRelationshipReveals })) continue;
     targets.push({ id: npcId, name: npc.name, searchLabel: npc.searchLabel });
   }
   return targets;
