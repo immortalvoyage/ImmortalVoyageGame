@@ -26,6 +26,12 @@ Historical event evidence is intentionally not revalidated against current catal
 
 `GameRuntime` only owns a generic post-migration `validateLoadedWorld` callback. The Content Pack-specific compatibility logic remains under `src/content/` and is wired by `src/game.js`, so Core does not become a second content registry.
 
+## Authoritative world-state invariants
+
+After supported schema migration, Core validates the structural invariants that every current save must satisfy before gameplay or cached replay can proceed. This includes world identity/time, character ownership and identity, bounded 0–100 survival needs, nonnegative survival progress and behavior counters, stack inventory quantities, nonnegative integer money, and internal consistency/size limits for request-result and game-event ledgers.
+
+These checks are validation only: malformed state is rejected instead of silently repaired. Existing writer functions remain responsible for trimming request/event ledgers to their 256-entry caps. Content-specific references remain outside Core and are checked separately by the world/content compatibility guard.
+
 ## Career and behavior
 
 Characters do not choose a fixed profession at birth. Authoritative actions may record compact aggregate behavior counts; the current minimal work action increments a Content-Pack-defined behavior ID only after a valid job is adjudicated. Request idempotency prevents retries from increasing the count twice, and rejected actions do not mutate it.
