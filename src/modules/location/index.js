@@ -62,21 +62,25 @@ export function findNextRouteStep(fromLocationId, targetLocationId, contentPack)
   if (fromLocationId === targetLocationId) return null;
   if (!contentPack.locations[fromLocationId] || !contentPack.locations[targetLocationId]) return null;
 
-  const visited = new Set([fromLocationId]);
-  const queue = contentPack.locations[fromLocationId].routes.map((route) => ({
-    id: route.destinationId,
-    firstStep: route.destinationId,
-  }));
-  for (const entry of queue) visited.add(entry.id);
+  const best = new Map([[fromLocationId, { totalSeconds: 0, firstStep: null }]]);
+  const frontier = [{ id: fromLocationId, totalSeconds: 0, firstStep: null }];
 
-  while (queue.length > 0) {
-    const current = queue.shift();
+  while (frontier.length > 0) {
+    frontier.sort((left, right) => left.totalSeconds - right.totalSeconds);
+    const current = frontier.shift();
+    const known = best.get(current.id);
+    if (!known || current.totalSeconds !== known.totalSeconds || current.firstStep !== known.firstStep) continue;
     if (current.id === targetLocationId) return current.firstStep;
+
     for (const route of contentPack.locations[current.id]?.routes ?? []) {
       const nextId = route.destinationId;
-      if (visited.has(nextId)) continue;
-      visited.add(nextId);
-      queue.push({ id: nextId, firstStep: current.firstStep });
+      if (!contentPack.locations[nextId]) continue;
+      const totalSeconds = current.totalSeconds + route.travelSeconds;
+      const firstStep = current.firstStep ?? nextId;
+      const previous = best.get(nextId);
+      if (previous && previous.totalSeconds <= totalSeconds) continue;
+      best.set(nextId, { totalSeconds, firstStep });
+      frontier.push({ id: nextId, totalSeconds, firstStep });
     }
   }
   return null;
