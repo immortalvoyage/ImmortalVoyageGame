@@ -12,6 +12,7 @@ import { npcModule } from './modules/npc/index.js';
 import { purposeModule } from './modules/purpose/index.js';
 import { survivalModule } from './modules/survival/index.js';
 import { economyModule } from './modules/economy/index.js';
+import { tradeModule } from './modules/trade/index.js';
 import { craftingModule } from './modules/crafting/index.js';
 import { progressionModule } from './modules/progression/index.js';
 import { careerModule } from './modules/career/index.js';
@@ -25,6 +26,7 @@ const allModules = [
   purposeModule,
   survivalModule,
   economyModule,
+  tradeModule,
   craftingModule,
   progressionModule,
   careerModule,
