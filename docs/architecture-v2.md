@@ -18,6 +18,14 @@ Gameplay content stays server-side and versioned. The current starter pack owns 
 
 The default development wiring still selects `devStarterPack`, while tests or future server wiring may supply another validated pack. There is no remote content fetch, hot reload service, database, scheduler, polling loop, AI call, or other runtime dependency associated with this injection boundary.
 
+### Persisted world compatibility
+
+A Content Pack that is internally valid can still be incompatible with an existing authoritative save. After supported world-schema migration and before idempotent replay or elapsed/action resolution, game wiring runs a deterministic world/content compatibility assertion. Current character locations must still exist in the injected pack, and authoritative inventory stacks must reference existing item templates with positive safe-integer quantities.
+
+Historical event evidence is intentionally not revalidated against current catalogs: old events may legitimately reference retired locations/items and remain historical records. By contrast, current authoritative references may not silently become orphans. A mismatch fails closed and does not rewrite the save. This guard does not guess replacement IDs, discard inventory, teleport characters, or perform automatic content migration; intentional content removal therefore requires an explicit data/content migration decision.
+
+`GameRuntime` only owns a generic post-migration `validateLoadedWorld` callback. The Content Pack-specific compatibility logic remains under `src/content/` and is wired by `src/game.js`, so Core does not become a second content registry.
+
 ## Career and behavior
 
 Characters do not choose a fixed profession at birth. Authoritative actions may record compact aggregate behavior counts; the current minimal work action increments a Content-Pack-defined behavior ID only after a valid job is adjudicated. Request idempotency prevents retries from increasing the count twice, and rejected actions do not mutate it.

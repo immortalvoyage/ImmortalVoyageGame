@@ -4,11 +4,13 @@ import { assertWorldState, recordGameEvents, rememberRequest } from './world-sta
 import { resolveWorldTime } from './world-clock.js';
 
 export class GameRuntime {
-  constructor({ store, modules, runtimeContext = {}, now = () => Date.now() }) {
+  constructor({ store, modules, runtimeContext = {}, validateLoadedWorld = () => {}, now = () => Date.now() }) {
+    if (typeof validateLoadedWorld !== 'function') throw new TypeError('validateLoadedWorld must be a function');
     this.store = store;
     this.now = now;
     this.modules = modules;
     this.runtimeContext = runtimeContext;
+    this.validateLoadedWorld = validateLoadedWorld;
     this.resolver = new ActionResolver();
     for (const module of modules) this.resolver.registerModule(module);
   }
@@ -19,6 +21,7 @@ export class GameRuntime {
 
     return this.store.transact(async (loaded) => {
       let world = assertWorldState(migrateWorldState(loaded));
+      this.validateLoadedWorld(world);
       const prior = world.requestResults[requestId];
       if (prior) {
         if (prior.sessionId !== actor.sessionId) return { ok: false, code: 'REQUEST_ID_COLLISION' };
