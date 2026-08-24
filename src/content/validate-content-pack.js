@@ -72,6 +72,11 @@ export function validateContentPack(pack) {
   requireInteger(pack.dataVersion, 'pack.dataVersion', { min: 1 });
   requireText(pack.startingLocationId, 'pack.startingLocationId');
 
+  const survival = requireRecord(pack.survival, 'pack.survival');
+  const warningThreshold = requireInteger(survival.warningThreshold, 'pack.survival.warningThreshold', { min: 1, max: 99 });
+  const criticalThreshold = requireInteger(survival.criticalThreshold, 'pack.survival.criticalThreshold', { min: 2, max: 100 });
+  if (warningThreshold >= criticalThreshold) fail('pack.survival.warningThreshold must be lower than criticalThreshold');
+
   const items = requireRecord(pack.items, 'pack.items');
   const locations = requireRecord(pack.locations, 'pack.locations');
   const progressionTags = requireRecord(pack.progressionTags, 'pack.progressionTags');
