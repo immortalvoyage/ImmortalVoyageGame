@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { recordBehavior } from '../character/behavior.js';
 import { addStack, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 3, actions: ['survival.gather', 'survival.consume'] });
+const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 4, actions: ['survival.gather', 'survival.consume'] });
 
 function gather({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -12,7 +13,16 @@ function gather({ world, actor, action, context }) {
   const gatherable = location?.gatherables?.find((entry) => entry.itemId === itemId);
   if (!gatherable) return { ok: false, code: 'RESOURCE_NOT_AVAILABLE' };
   addStack(character, itemId, gatherable.quantity);
-  return { ok: true, code: 'RESOURCE_GATHERED', data: { inventory: structuredClone(character.inventory) } };
+  const behaviorCount = recordBehavior(character, gatherable.behaviorId);
+  return {
+    ok: true,
+    code: 'RESOURCE_GATHERED',
+    data: { inventory: structuredClone(character.inventory) },
+    events: [{
+      type: 'character.behavior-recorded',
+      data: { characterId: character.id, behaviorId: gatherable.behaviorId, count: behaviorCount },
+    }],
+  };
 }
 
 function consume({ world, actor, action, context }) {

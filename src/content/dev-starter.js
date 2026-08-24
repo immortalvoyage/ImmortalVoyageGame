@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 6,
+  dataVersion: 7,
   startingLocationId: 'starter-square',
   items: Object.freeze({
     water: Object.freeze({
@@ -44,6 +44,7 @@ export const devStarterPack = Object.freeze({
         Object.freeze({
           id: 'starter-simple-meal',
           label: '製作簡單餐食',
+          behaviorId: 'craft:starter-simple-meal',
           inputs: Object.freeze([
             Object.freeze({ itemId: 'food', quantity: 1 }),
             Object.freeze({ itemId: 'water', quantity: 1 }),
@@ -59,7 +60,7 @@ export const devStarterPack = Object.freeze({
       jobs: Object.freeze([]),
       market: Object.freeze([]),
       gatherables: Object.freeze([
-        Object.freeze({ itemId: 'water', quantity: 1, label: '在水井取水' }),
+        Object.freeze({ itemId: 'water', quantity: 1, label: '在水井取水', behaviorId: 'gather:water' }),
       ]),
       recipes: Object.freeze([]),
     }),
@@ -70,9 +71,32 @@ export const devStarterPack = Object.freeze({
       jobs: Object.freeze([]),
       market: Object.freeze([]),
       gatherables: Object.freeze([
-        Object.freeze({ itemId: 'food', quantity: 1, label: '採集可食用的東西' }),
+        Object.freeze({ itemId: 'food', quantity: 1, label: '採集可食用的東西', behaviorId: 'gather:food' }),
       ]),
       recipes: Object.freeze([]),
+    }),
+  }),
+  progressionTags: Object.freeze({
+    'starter-odd-job-regular': Object.freeze({
+      name: '常做雜役',
+      kind: 'social',
+      requirements: Object.freeze([
+        Object.freeze({ behaviorId: 'work:starter-labor', minCount: 2 }),
+      ]),
+    }),
+    'starter-foraging-basics': Object.freeze({
+      name: '採集入門',
+      kind: 'skill',
+      requirements: Object.freeze([
+        Object.freeze({ behaviorId: 'gather:food', minCount: 2 }),
+      ]),
+    }),
+    'starter-simple-cooking': Object.freeze({
+      name: '簡單料理',
+      kind: 'skill',
+      requirements: Object.freeze([
+        Object.freeze({ behaviorId: 'craft:starter-simple-meal', minCount: 1 }),
+      ]),
     }),
   }),
   careers: Object.freeze({

@@ -2,8 +2,9 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
+import { buildProgressionViewForActor } from '../progression/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 6, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 7, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -13,12 +14,16 @@ function scene({ world, actor, context }) {
   const careers = isActionAvailable('career.observe')
     ? buildCareerViewForActor(world, actor, contentPack.careers) ?? []
     : [];
+  const progression = isActionAvailable('progression.observe')
+    ? buildProgressionViewForActor(world, actor, contentPack.progressionTags)
+    : null;
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
     data: {
       ...view,
       careers,
+      progression,
       inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',

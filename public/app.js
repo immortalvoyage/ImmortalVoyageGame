@@ -86,12 +86,19 @@ function render() {
   const rows = [
     ['姓名', character.name],
     ['身分', careerText],
+  ];
+  if (view.progression) {
+    const skillText = (view.progression.skills ?? []).map((skill) => skill.name).join('、') || '尚未形成';
+    const socialTagText = (view.progression.socialTags ?? []).map((tag) => tag.name).join('、') || '尚未形成';
+    rows.push(['技能', skillText], ['社會標籤', socialTagText]);
+  }
+  rows.push(
     ['貨幣', String(character.money)],
     ['飢餓', String(character.needs.hunger)],
     ['口渴', String(character.needs.thirst)],
     ['疲勞', String(character.needs.fatigue)],
     ['背包', inventoryText],
-  ];
+  );
   for (const [key, value] of rows) {
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');

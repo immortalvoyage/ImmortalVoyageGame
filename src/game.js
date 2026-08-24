@@ -13,10 +13,23 @@ import { purposeModule } from './modules/purpose/index.js';
 import { survivalModule } from './modules/survival/index.js';
 import { economyModule } from './modules/economy/index.js';
 import { craftingModule } from './modules/crafting/index.js';
+import { progressionModule } from './modules/progression/index.js';
 import { careerModule } from './modules/career/index.js';
 import { narrativeModule } from './modules/narrative/index.js';
 
-const allModules = [characterModule, inventoryModule, locationModule, npcModule, purposeModule, survivalModule, economyModule, craftingModule, careerModule, narrativeModule];
+const allModules = [
+  characterModule,
+  inventoryModule,
+  locationModule,
+  npcModule,
+  purposeModule,
+  survivalModule,
+  economyModule,
+  craftingModule,
+  progressionModule,
+  careerModule,
+  narrativeModule,
+];
 
 export function createGame({
   store,
