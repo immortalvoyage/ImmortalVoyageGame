@@ -190,7 +190,11 @@ export function validateContentPack(pack) {
       requireRecord(job, path);
       requireText(job.id, `${path}.id`);
       rememberUnique(jobIds, job.id, `locations.${locationId}.jobs ids`);
+      requireText(job.title, `${path}.title`);
       requireText(job.label, `${path}.label`);
+      const employerNpcId = requireText(job.employerNpcId, `${path}.employerNpcId`);
+      if (!Object.hasOwn(npcs, employerNpcId)) fail(`${path}.employerNpcId references unknown npc: ${employerNpcId}`);
+      if (npcs[employerNpcId]?.locationId !== locationId) fail(`${path}.employerNpcId must reference an npc at the work location`);
       requireText(job.behaviorId, `${path}.behaviorId`);
       declaredBehaviorIds.add(job.behaviorId);
       requireInteger(job.rewardMoney, `${path}.rewardMoney`, { min: 0 });
