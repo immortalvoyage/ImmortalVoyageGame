@@ -15,6 +15,8 @@ function failureMessage(code, fallbackLabel) {
       return '目前沒有可行的路線。';
     case 'NPC_NOT_AVAILABLE':
       return '這個人目前不在你能互動的位置。';
+    case 'NPC_TOPIC_NOT_AVAILABLE':
+      return '你目前還無法從這個人那裡問到這件事。';
     case 'PURPOSE_TARGET_UNKNOWN':
       return '你目前沒有足夠情報尋找這個目標。';
     case 'WORK_NOT_AVAILABLE':
@@ -66,6 +68,7 @@ export function formatActionResult(result, fallbackLabel = '行動') {
 
   switch (result.code) {
     case 'NPC_INTERACTION':
+    case 'NPC_TOPIC_RESPONSE':
       return text(result.data?.text, fallback);
     case 'TRAVEL_COMPLETED': {
       const location = text(result.data?.location?.name);
