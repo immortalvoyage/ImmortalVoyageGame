@@ -37,6 +37,8 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
   assert.deepEqual(migrated.tradeListings, {});
   assert.equal(migrated.nextTradeListingSequence, 1);
+  assert.deepEqual(migrated.archivedCharacters, {});
+  assert.deepEqual(migrated.estates, {});
   assert.equal(assertWorldState(migrated), migrated);
 });
 
@@ -90,6 +92,22 @@ test('schema v3 backfills bounded trade state and preserves a valid existing seq
   const preserved = migrateWorldState(withListing);
   assert.equal(preserved.nextTradeListingSequence, 10);
   assert.ok(preserved.tradeListings['listing:4']);
+});
+
+test('schema v4 backfills empty archive and estate collections without moving active assets', () => {
+  const v4 = migrateWorldState(legacyWorld());
+  v4.schemaVersion = 4;
+  delete v4.archivedCharacters;
+  delete v4.estates;
+  v4.characters.s1.inventory = { food: 2 };
+  v4.characters.s1.money = 9;
+
+  const migrated = migrateWorldState(v4);
+  assert.deepEqual(migrated.archivedCharacters, {});
+  assert.deepEqual(migrated.estates, {});
+  assert.deepEqual(migrated.characters.s1.inventory, { food: 2 });
+  assert.equal(migrated.characters.s1.money, 9);
+  assert.equal(assertWorldState(migrated), migrated);
 });
 
 test('newer world schemas fail closed', () => {

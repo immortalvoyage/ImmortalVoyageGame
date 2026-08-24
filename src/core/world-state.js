@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -13,12 +13,7 @@ function isNonEmptyText(value) {
   return typeof value === 'string' && value.length > 0;
 }
 
-function assertCharacterState(sessionId, character) {
-  if (!isNonEmptyText(sessionId) || !isRecord(character)) throw new Error('invalid character state');
-  if (!isNonEmptyText(character.id) || character.ownerSessionId !== sessionId) throw new Error('invalid character ownership');
-  if (!isNonEmptyText(character.name) || character.name.length > 24) throw new Error('invalid character identity');
-  if (!isNonEmptyText(character.status) || !isNonEmptyText(character.locationId)) throw new Error('invalid character state');
-
+function assertNeedsAndBehavior(character) {
   if (!isRecord(character.needs)) throw new Error('invalid survival needs');
   if (!isRecord(character.needProgressSeconds)) throw new Error('invalid survival progress');
   for (const need of NEED_KEYS) {
@@ -32,13 +27,64 @@ function assertCharacterState(sessionId, character) {
   for (const [behaviorId, count] of Object.entries(character.behaviorCounts)) {
     if (!isNonEmptyText(behaviorId) || !Number.isSafeInteger(count) || count < 0) throw new Error('invalid behavior counts');
   }
+}
 
-  if (!isRecord(character.inventory)) throw new Error('invalid inventory state');
-  for (const [itemId, quantity] of Object.entries(character.inventory)) {
-    if (!isNonEmptyText(itemId) || !Number.isSafeInteger(quantity) || quantity < 1) throw new Error('invalid inventory state');
+function assertInventory(inventory, label = 'inventory') {
+  if (!isRecord(inventory)) throw new Error(`invalid ${label} state`);
+  for (const [itemId, quantity] of Object.entries(inventory)) {
+    if (!isNonEmptyText(itemId) || !Number.isSafeInteger(quantity) || quantity < 1) throw new Error(`invalid ${label} state`);
+  }
+}
+
+function assertCharacterState(sessionId, character) {
+  if (!isNonEmptyText(sessionId) || !isRecord(character)) throw new Error('invalid character state');
+  if (!isNonEmptyText(character.id) || character.ownerSessionId !== sessionId) throw new Error('invalid character ownership');
+  if (!isNonEmptyText(character.name) || character.name.length > 24) throw new Error('invalid character identity');
+  if (character.status !== 'alive' || !isNonEmptyText(character.locationId)) throw new Error('invalid character state');
+
+  assertNeedsAndBehavior(character);
+  assertInventory(character.inventory);
+  if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
+}
+
+function assertArchiveAndEstateState(world) {
+  if (!isRecord(world.archivedCharacters)) throw new Error('invalid character archive');
+  if (!isRecord(world.estates)) throw new Error('invalid estate collection');
+
+  const activeCharacterIds = new Set(Object.values(world.characters).map((character) => character.id));
+  for (const [characterId, archived] of Object.entries(world.archivedCharacters)) {
+    if (!isNonEmptyText(characterId) || !isRecord(archived) || archived.id !== characterId) throw new Error('invalid archived character');
+    if (activeCharacterIds.has(characterId)) throw new Error('character cannot be active and archived');
+    if (!isNonEmptyText(archived.ownerSessionId)) throw new Error('invalid archived character owner');
+    if (!isNonEmptyText(archived.name) || archived.name.length > 24) throw new Error('invalid archived character identity');
+    if (archived.status !== 'dead' || !isNonEmptyText(archived.locationId)) throw new Error('invalid archived character state');
+    assertNeedsAndBehavior(archived);
+    if (Object.hasOwn(archived, 'inventory') || Object.hasOwn(archived, 'money')) throw new Error('archived character duplicates estate assets');
+    if (!isNonEmptyText(archived.estateId) || !isNonEmptyText(archived.deathCauseCode)) throw new Error('invalid archived character death');
+    if (!Number.isSafeInteger(archived.diedLogicalTimeSeconds)
+      || archived.diedLogicalTimeSeconds < 0
+      || archived.diedLogicalTimeSeconds > world.logicalTimeSeconds) {
+      throw new Error('invalid archived character death time');
+    }
+
+    const estate = world.estates[archived.estateId];
+    if (!estate || estate.deceasedCharacterId !== characterId) throw new Error('archived character estate mismatch');
   }
 
-  if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
+  for (const [estateId, estate] of Object.entries(world.estates)) {
+    if (!isNonEmptyText(estateId) || !isRecord(estate) || estate.id !== estateId) throw new Error('invalid estate');
+    if (estate.status !== 'pending') throw new Error('invalid estate status');
+    if (!isNonEmptyText(estate.deceasedCharacterId)) throw new Error('invalid estate owner');
+    const archived = world.archivedCharacters[estate.deceasedCharacterId];
+    if (!archived || archived.estateId !== estateId) throw new Error('estate archive mismatch');
+    if (!Number.isSafeInteger(estate.openedLogicalTimeSeconds)
+      || estate.openedLogicalTimeSeconds < 0
+      || estate.openedLogicalTimeSeconds > world.logicalTimeSeconds) {
+      throw new Error('invalid estate time');
+    }
+    if (!Number.isSafeInteger(estate.money) || estate.money < 0) throw new Error('invalid estate money');
+    assertInventory(estate.inventory, 'estate inventory');
+  }
 }
 
 function assertTradeState(world) {
@@ -116,6 +162,8 @@ export function createInitialWorld({ nowMs = Date.now() } = {}) {
     logicalTimeSeconds: 0,
     lastResolvedAtMs: nowMs,
     characters: {},
+    archivedCharacters: {},
+    estates: {},
     nextCharacterSequence: 1,
     tradeListings: {},
     nextTradeListingSequence: 1,
@@ -137,7 +185,13 @@ export function assertWorldState(world) {
   if (!isRecord(world.characters)) throw new Error('invalid character collection');
   if (!Number.isSafeInteger(world.nextCharacterSequence) || world.nextCharacterSequence < 1) throw new Error('invalid character sequence');
 
-  for (const [sessionId, character] of Object.entries(world.characters)) assertCharacterState(sessionId, character);
+  const activeIds = new Set();
+  for (const [sessionId, character] of Object.entries(world.characters)) {
+    assertCharacterState(sessionId, character);
+    if (activeIds.has(character.id)) throw new Error('duplicate active character id');
+    activeIds.add(character.id);
+  }
+  assertArchiveAndEstateState(world);
   assertTradeState(world);
   assertRequestLedger(world);
   assertGameEventLedger(world);

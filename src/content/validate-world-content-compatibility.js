@@ -6,6 +6,14 @@ function characterLabel(character, sessionId) {
   return typeof character?.id === 'string' && character.id ? character.id : `session:${sessionId}`;
 }
 
+function validateInventoryItems(inventory, items, label) {
+  if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) fail(`${label} has invalid inventory state`);
+  for (const [itemId, quantity] of Object.entries(inventory)) {
+    if (!Object.hasOwn(items, itemId)) fail(`${label} references unknown item: ${itemId}`);
+    if (!Number.isSafeInteger(quantity) || quantity < 1) fail(`${label} has invalid quantity for item: ${itemId}`);
+  }
+}
+
 export function validateWorldContentCompatibility(world, contentPack) {
   const locations = contentPack?.locations;
   const items = contentPack?.items;
@@ -18,24 +26,17 @@ export function validateWorldContentCompatibility(world, contentPack) {
     if (!Object.hasOwn(locations, character.locationId)) {
       fail(`${label} references unknown location: ${String(character.locationId)}`);
     }
-
-    if (!character.inventory || typeof character.inventory !== 'object' || Array.isArray(character.inventory)) {
-      fail(`${label} has invalid inventory state`);
-    }
-    for (const [itemId, quantity] of Object.entries(character.inventory)) {
-      if (!Object.hasOwn(items, itemId)) {
-        fail(`${label} inventory references unknown item: ${itemId}`);
-      }
-      if (!Number.isSafeInteger(quantity) || quantity < 1) {
-        fail(`${label} inventory has invalid quantity for item: ${itemId}`);
-      }
-    }
+    validateInventoryItems(character.inventory, items, `${label} inventory`);
   }
 
   for (const [listingId, listing] of Object.entries(world.tradeListings ?? {})) {
     if (!Object.hasOwn(items, listing.itemId)) {
       fail(`${listingId} trade escrow references unknown item: ${String(listing.itemId)}`);
     }
+  }
+
+  for (const [estateId, estate] of Object.entries(world.estates ?? {})) {
+    validateInventoryItems(estate.inventory, items, `${estateId} estate inventory`);
   }
 
   return world;

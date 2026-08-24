@@ -21,6 +21,10 @@ export function migrateWorldState(input) {
       world = migrateV3ToV4(world);
       continue;
     }
+    if (world.schemaVersion === 4) {
+      world = migrateV4ToV5(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -75,5 +79,13 @@ function migrateV3ToV4(world) {
     : 1;
   migrated.nextTradeListingSequence = Math.max(existingSequence, inferredNextSequence);
   migrated.schemaVersion = 4;
+  return migrated;
+}
+
+function migrateV4ToV5(world) {
+  const migrated = cloneWorld(world);
+  migrated.archivedCharacters ??= {};
+  migrated.estates ??= {};
+  migrated.schemaVersion = 5;
   return migrated;
 }
