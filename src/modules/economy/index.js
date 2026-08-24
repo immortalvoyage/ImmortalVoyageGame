@@ -1,10 +1,11 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
+import { hasEmploymentForJob } from '../employment/index.js';
 import { addStack } from '../inventory/index.js';
 import { canPerformSurvivalLimitedWork } from '../survival/condition.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 5, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 6, actions: ['economy.work', 'economy.buy'] });
 
 function survivalGuardEnabled(context) {
   const isActionAvailable = context?.isActionAvailable;
@@ -12,13 +13,21 @@ function survivalGuardEnabled(context) {
   return isActionAvailable('survival.gather') || isActionAvailable('survival.consume');
 }
 
+function employmentGuardEnabled(context) {
+  return context?.isActionAvailable?.('employment.observe') ?? false;
+}
+
 function work({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const location = context.contentPack.locations[character.locationId];
+  const locationId = character.locationId;
+  const location = context.contentPack.locations[locationId];
   const jobId = action.payload?.jobId;
   const job = location?.jobs?.find((entry) => entry.id === jobId);
   if (!job) return { ok: false, code: 'WORK_NOT_AVAILABLE' };
+  if (employmentGuardEnabled(context) && !hasEmploymentForJob(character, job, locationId)) {
+    return { ok: false, code: 'EMPLOYMENT_REQUIRED' };
+  }
   if (survivalGuardEnabled(context) && !canPerformSurvivalLimitedWork(character, context.contentPack.survival)) {
     return { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' };
   }
