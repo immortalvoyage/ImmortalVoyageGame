@@ -19,6 +19,7 @@ test('file store survives runtime restart without external database', async (t) 
 
   const first = createFileBackedDevelopmentGame({ filePath, now: () => 1000 });
   await dispatch(first.runtime, 'birth', 'character.birth', { name: '留存旅人' });
+  await dispatch(first.runtime, 'employment', 'employment.accept', { jobId: 'starter-labor' });
   await dispatch(first.runtime, 'work', 'economy.work', { jobId: 'starter-labor' });
 
   const second = createFileBackedDevelopmentGame({ filePath, now: () => 2000 });
@@ -26,10 +27,18 @@ test('file store survives runtime restart without external database', async (t) 
   assert.equal(observed.data.character.name, '留存旅人');
   assert.equal(observed.data.character.money, 2);
   assert.equal(observed.data.character.ownerSessionId, undefined);
+  assert.equal(observed.data.character.currentEmployment, undefined);
+  const employment = await dispatch(second.runtime, 'employment-observe', 'employment.observe');
+  assert.equal(employment.data.current.job.title, '聚落雜役');
 
   const stored = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(stored.characters['persist-session'].money, 2);
   assert.deepEqual(stored.characters['persist-session'].knowledgeIds, []);
+  assert.deepEqual(stored.characters['persist-session'].currentEmployment, {
+    jobId: 'starter-labor',
+    employerNpcId: 'foreman',
+    workLocationId: 'starter-square',
+  });
 });
 
 test('legacy schema v1 save migrates on the next successful authoritative action', async (t) => {
@@ -69,6 +78,7 @@ test('legacy schema v1 save migrates on the next successful authoritative action
   assert.equal(stored.nextCharacterSequence, 8);
   assert.deepEqual(stored.characters['persist-session'].needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
   assert.deepEqual(stored.characters['persist-session'].knowledgeIds, []);
+  assert.equal(stored.characters['persist-session'].currentEmployment, null);
 });
 
 test('corrupted save fails closed instead of silently resetting world', async (t) => {

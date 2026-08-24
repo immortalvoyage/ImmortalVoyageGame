@@ -24,6 +24,7 @@ function makeInjectedPack() {
 
   injectedSquare.name = '注入測試廣場';
   injectedSquare.description = '這段描述只存在於注入測試內容。';
+  injectedSquare.jobs[0].title = '注入測試雜役';
   injectedSquare.jobs[0].rewardMoney = 7;
   pack.locations['starter-well'].gatherables[0].quantity = 2;
   pack.npcs.foreman.name = '注入測試領班';
@@ -47,9 +48,17 @@ test('validated injected Content Pack drives gameplay and public narrative data'
   assert.equal(scene.data.narrative.text, '這段描述只存在於注入測試內容。');
   assert.ok(scene.data.visibleNpcs.some((npc) => npc.name === '注入測試領班'));
   assert.ok(scene.data.utilities.some((entry) => entry.label.includes('注入測試食物')));
+  assert.ok(scene.data.narrative.options.some(
+    (entry) => entry.intent.type === 'employment.accept' && entry.label.includes('注入測試雜役'),
+  ));
 
   const interaction = await dispatch(runtime, 'npc', 'npc.interact', { npcId: 'foreman' });
   assert.equal(interaction.data.text, '這是由注入 Content Pack 提供的招呼。');
+
+  const employment = await dispatch(runtime, 'employment', 'employment.accept', { jobId: 'starter-labor' });
+  assert.equal(employment.code, 'EMPLOYMENT_STARTED');
+  assert.equal(employment.data.employment.job.title, '注入測試雜役');
+  assert.equal(employment.data.employment.employer.name, '注入測試領班');
 
   for (let i = 1; i <= 3; i += 1) {
     const work = await dispatch(runtime, `work-${i}`, 'economy.work', { jobId: 'starter-labor' });

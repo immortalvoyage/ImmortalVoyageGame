@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 14,
+  dataVersion: 15,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -45,7 +45,9 @@ export const devStarterPack = Object.freeze({
       jobs: Object.freeze([
         Object.freeze({
           id: 'starter-labor',
-          label: '找一份雜役工作',
+          title: '聚落雜役',
+          label: '做一輪雜役工作',
+          employerNpcId: 'foreman',
           behaviorId: 'work:starter-labor',
           rewardMoney: 2,
           needCosts: Object.freeze({ hunger: 5, thirst: 5 }),

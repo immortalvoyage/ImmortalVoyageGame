@@ -1,7 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 
 const CAUSE_RE = /^[a-z][a-z0-9._:-]{0,63}$/;
-const manifest = validateGameModuleManifest({ name: 'estate', dataVersion: 2, actions: [] });
+const manifest = validateGameModuleManifest({ name: 'estate', dataVersion: 3, actions: [] });
 
 function failure(code) {
   return { ok: false, code };
@@ -52,6 +52,7 @@ export function settleCharacterDeath({ world, sessionId, characterId, causeCode 
     needProgressSeconds: structuredClone(character.needProgressSeconds),
     behaviorCounts: structuredClone(character.behaviorCounts),
     knowledgeIds: structuredClone(character.knowledgeIds),
+    currentEmployment: structuredClone(character.currentEmployment),
     estateId,
     diedLogicalTimeSeconds: world.logicalTimeSeconds,
     deathCauseCode: causeCode,

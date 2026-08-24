@@ -36,6 +36,7 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
   assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
   assert.deepEqual(migrated.characters.s1.knowledgeIds, []);
+  assert.equal(migrated.characters.s1.currentEmployment, null);
   assert.deepEqual(migrated.tradeListings, {});
   assert.equal(migrated.nextTradeListingSequence, 1);
   assert.deepEqual(migrated.archivedCharacters, {});
@@ -115,6 +116,7 @@ test('schema v5 backfills active and archived knowledge without inventing inheri
   const v5 = migrateWorldState(legacyWorld());
   v5.schemaVersion = 5;
   delete v5.characters.s1.knowledgeIds;
+  delete v5.characters.s1.currentEmployment;
   v5.archivedCharacters['char:old'] = {
     id: 'char:old',
     ownerSessionId: 'old-session',
@@ -140,6 +142,8 @@ test('schema v5 backfills active and archived knowledge without inventing inheri
   const migrated = migrateWorldState(v5);
   assert.deepEqual(migrated.characters.s1.knowledgeIds, []);
   assert.deepEqual(migrated.archivedCharacters['char:old'].knowledgeIds, []);
+  assert.equal(migrated.characters.s1.currentEmployment, null);
+  assert.equal(migrated.archivedCharacters['char:old'].currentEmployment, null);
   assert.equal(assertWorldState(migrated), migrated);
 
   const withKnowledge = structuredClone(v5);
@@ -148,6 +152,55 @@ test('schema v5 backfills active and archived knowledge without inventing inheri
   const preserved = migrateWorldState(withKnowledge);
   assert.deepEqual(preserved.characters.s1.knowledgeIds, ['starter-living-advice']);
   assert.deepEqual(preserved.archivedCharacters['char:old'].knowledgeIds, ['retired-historical-fact']);
+});
+
+test('schema v6 backfills current employment and preserves an existing valid contract', () => {
+  const v6 = migrateWorldState(legacyWorld());
+  v6.schemaVersion = 6;
+  delete v6.characters.s1.currentEmployment;
+  v6.archivedCharacters['char:old'] = {
+    id: 'char:old',
+    ownerSessionId: 'old-session',
+    name: '故人',
+    status: 'dead',
+    locationId: 'retired-location',
+    needs: { hunger: 0, thirst: 0, fatigue: 0 },
+    needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    behaviorCounts: {},
+    knowledgeIds: [],
+    estateId: 'estate:char:old',
+    diedLogicalTimeSeconds: 0,
+    deathCauseCode: 'hazard.accident',
+  };
+  v6.estates['estate:char:old'] = {
+    id: 'estate:char:old',
+    deceasedCharacterId: 'char:old',
+    status: 'pending',
+    openedLogicalTimeSeconds: 0,
+    money: 0,
+    inventory: {},
+  };
+
+  const backfilled = migrateWorldState(v6);
+  assert.equal(backfilled.characters.s1.currentEmployment, null);
+  assert.equal(backfilled.archivedCharacters['char:old'].currentEmployment, null);
+  assert.equal(assertWorldState(backfilled), backfilled);
+
+  const withEmployment = structuredClone(v6);
+  withEmployment.characters.s1.currentEmployment = {
+    jobId: 'starter-labor',
+    employerNpcId: 'foreman',
+    workLocationId: 'starter-square',
+  };
+  withEmployment.archivedCharacters['char:old'].currentEmployment = {
+    jobId: 'retired-job',
+    employerNpcId: 'retired-employer',
+    workLocationId: 'retired-location',
+  };
+  const preserved = migrateWorldState(withEmployment);
+  assert.deepEqual(preserved.characters.s1.currentEmployment, withEmployment.characters.s1.currentEmployment);
+  assert.deepEqual(preserved.archivedCharacters['char:old'].currentEmployment, withEmployment.archivedCharacters['char:old'].currentEmployment);
+  assert.equal(assertWorldState(preserved), preserved);
 });
 
 test('newer world schemas fail closed', () => {

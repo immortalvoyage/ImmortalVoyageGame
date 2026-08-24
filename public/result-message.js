@@ -30,6 +30,14 @@ function failureMessage(code, fallbackLabel) {
       return '你目前沒有足夠情報尋找這個目標。';
     case 'KNOWLEDGE_LIMIT_REACHED':
       return '你目前能保留的已知情報已達上限。';
+    case 'EMPLOYMENT_ALREADY_ACTIVE':
+      return '你目前已經有一份現職，必須先離職才能接受另一份工作。';
+    case 'EMPLOYMENT_OFFER_NOT_AVAILABLE':
+      return '這份工作目前無法受雇。';
+    case 'EMPLOYMENT_NOT_ACTIVE':
+      return '你目前沒有可離開的現職。';
+    case 'EMPLOYMENT_REQUIRED':
+      return '這份工作需要先與雇主建立受雇關係。';
     case 'WORK_NOT_AVAILABLE':
       return '這裡目前沒有這份工作。';
     case 'SURVIVAL_CONDITION_TOO_POOR':
@@ -98,6 +106,16 @@ export function formatActionResult(result, fallbackLabel = '行動') {
     case 'PURPOSE_TARGET_FOUND': {
       const target = text(result.data?.npc?.name);
       return target ? `你找到了${target}。` : fallback;
+    }
+    case 'EMPLOYMENT_STARTED': {
+      const title = text(result.data?.employment?.job?.title);
+      const employer = text(result.data?.employment?.employer?.name);
+      if (title && employer) return `你已受雇為${title}，雇主是${employer}。`;
+      return fallback;
+    }
+    case 'EMPLOYMENT_ENDED': {
+      const title = text(result.data?.employment?.job?.title);
+      return title ? `你已離開${title}這份工作。` : '你已離開目前的工作。';
     }
     case 'RESOURCE_GATHERED':
       return `${text(fallbackLabel, '採集')}：已取得資源。`;

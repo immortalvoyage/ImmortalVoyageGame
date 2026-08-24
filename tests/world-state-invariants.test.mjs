@@ -24,6 +24,7 @@ function character(overrides = {}) {
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
     knowledgeIds: [],
+    currentEmployment: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -51,6 +52,7 @@ function archivedWorld() {
     needProgressSeconds: structuredClone(active.needProgressSeconds),
     behaviorCounts: structuredClone(active.behaviorCounts),
     knowledgeIds: structuredClone(active.knowledgeIds),
+    currentEmployment: structuredClone(active.currentEmployment),
     estateId: 'estate:char:1',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',
@@ -91,12 +93,18 @@ test('valid authoritative world and normal gameplay output satisfy invariants', 
     money: 3,
     behaviorCounts: { 'work:starter-labor': 1 },
     knowledgeIds: ['starter-living-advice'],
+    currentEmployment: {
+      jobId: 'starter-labor',
+      employerNpcId: 'foreman',
+      workLocationId: 'starter-square',
+    },
   });
   assert.equal(assertWorldState(world), world);
   assert.equal(assertWorldState(archivedWorld()).schemaVersion, CURRENT_SCHEMA_VERSION);
 
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await runtime.dispatch({ actor, requestId: 'birth', action: { type: 'character.birth', payload: { name: '正常旅人' } } });
+  await runtime.dispatch({ actor, requestId: 'employment', action: { type: 'employment.accept', payload: { jobId: 'starter-labor' } } });
   await runtime.dispatch({ actor, requestId: 'work', action: { type: 'economy.work', payload: { jobId: 'starter-labor' } } });
   await runtime.dispatch({ actor, requestId: 'scene', action: { type: 'narrative.scene', payload: {} } });
   assert.equal(assertWorldState(store.snapshot()).schemaVersion, CURRENT_SCHEMA_VERSION);
@@ -136,9 +144,36 @@ test('character knowledge is bounded, unique, and structurally valid', () => {
   assert.throws(() => assertWorldState(oversized), /character knowledge exceeds limit/);
 });
 
+test('current employment is null or a bounded structural reference tuple', () => {
+  const employed = validWorld({
+    currentEmployment: {
+      jobId: 'starter-labor',
+      employerNpcId: 'foreman',
+      workLocationId: 'starter-square',
+    },
+  });
+  assert.equal(assertWorldState(employed), employed);
+
+  expectInvalid((world) => { world.characters[actor.sessionId].currentEmployment = {}; }, /invalid current employment/);
+  expectInvalid((world) => {
+    world.characters[actor.sessionId].currentEmployment = { jobId: '', employerNpcId: 'foreman', workLocationId: 'starter-square' };
+  }, /invalid current employment/);
+  expectInvalid((world) => {
+    world.characters[actor.sessionId].currentEmployment = { jobId: 'starter-labor', employerNpcId: '', workLocationId: 'starter-square' };
+  }, /invalid current employment/);
+  expectInvalid((world) => {
+    world.characters[actor.sessionId].currentEmployment = { jobId: 'starter-labor', employerNpcId: 'foreman', workLocationId: '' };
+  }, /invalid current employment/);
+});
+
 test('archived characters and pending estates are paired without duplicating spendable assets', () => {
   const valid = archivedWorld();
   valid.archivedCharacters['char:1'].knowledgeIds = ['historical-fact'];
+  valid.archivedCharacters['char:1'].currentEmployment = {
+    jobId: 'retired-job',
+    employerNpcId: 'retired-employer',
+    workLocationId: 'retired-place',
+  };
   assert.equal(assertWorldState(valid), valid);
 
   const missingEstate = archivedWorld();

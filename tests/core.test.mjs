@@ -9,6 +9,10 @@ async function dispatch(runtime, requestId, type, payload, acting = actor) {
   return runtime.dispatch({ actor: acting, requestId, action: { type, payload } });
 }
 
+async function acceptStarterEmployment(runtime, requestId = 'employment') {
+  return dispatch(runtime, requestId, 'employment.accept', { jobId: 'starter-labor' });
+}
+
 test('birth creates one owned character without exposing server-only fields', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   const result = await dispatch(runtime, 'r1', 'character.birth', { name: '旅人' });
@@ -17,9 +21,11 @@ test('birth creates one owned character without exposing server-only fields', as
   assert.equal(result.data.character.needProgressSeconds, undefined);
   assert.equal(result.data.character.behaviorCounts, undefined);
   assert.equal(result.data.character.knowledgeIds, undefined);
+  assert.equal(result.data.character.currentEmployment, undefined);
   assert.equal(result.data.character.id, 'char:1');
   assert.equal(store.snapshot().characters.s1.name, '旅人');
   assert.deepEqual(store.snapshot().characters.s1.knowledgeIds, []);
+  assert.equal(store.snapshot().characters.s1.currentEmployment, null);
   assert.equal((await dispatch(runtime, 'r2', 'character.birth', { name: '二號' })).code, 'CHARACTER_EXISTS');
 });
 
@@ -33,7 +39,7 @@ test('request ids are idempotent and cannot be stolen by another session', async
   assert.equal(collision.code, 'REQUEST_ID_COLLISION');
 });
 
-test('critical path supports observe, npc interaction, travel, gather, consume, earn and spend', async () => {
+test('critical path supports observe, npc interaction, travel, gather, consume, employment, earn and spend', async () => {
   const { runtime } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'b', 'character.birth', { name: '旅人' });
   const observed = await dispatch(runtime, 'o', 'location.observe');
@@ -43,6 +49,7 @@ test('critical path supports observe, npc interaction, travel, gather, consume, 
   assert.equal((await dispatch(runtime, 'g1', 'survival.gather', { itemId: 'water' })).ok, true);
   assert.equal((await dispatch(runtime, 'c1', 'survival.consume', { itemId: 'water' })).ok, true);
   await dispatch(runtime, 't2', 'location.travel', { destinationId: 'starter-square' });
+  assert.equal((await acceptStarterEmployment(runtime, 'e1')).code, 'EMPLOYMENT_STARTED');
   assert.equal((await dispatch(runtime, 'w1', 'economy.work', { jobId: 'starter-labor' })).data.money, 2);
   const purchase = await dispatch(runtime, 'p1', 'economy.buy', { itemId: 'food' });
   assert.equal(purchase.data.money, 1);
@@ -112,6 +119,7 @@ test('idempotency ledger is bounded', async () => {
 test('money source and sink leave bounded game event evidence', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 0 });
   await dispatch(runtime, 'b', 'character.birth', { name: '旅人' });
+  await acceptStarterEmployment(runtime, 'e');
   await dispatch(runtime, 'w', 'economy.work', { jobId: 'starter-labor' });
   await dispatch(runtime, 'p', 'economy.buy', { itemId: 'food' });
   const types = store.snapshot().gameEvents.map((event) => event.type);
@@ -151,9 +159,12 @@ test('starter gameplay rules are driven by content pack data instead of location
   const { runtime } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'cb', 'character.birth', { name: '資料旅人' });
   const scene = await dispatch(runtime, 'cs', 'narrative.scene');
-  assert.ok(scene.data.narrative.options.some((choice) => choice.intent.payload?.jobId === 'starter-labor'));
+  assert.ok(scene.data.narrative.options.some(
+    (choice) => choice.intent.type === 'employment.accept' && choice.intent.payload?.jobId === 'starter-labor',
+  ));
   assert.ok(scene.data.utilities.some((choice) => choice.intent.type === 'economy.buy' && choice.intent.payload.itemId === 'food'));
 
+  await acceptStarterEmployment(runtime, 'ce');
   await dispatch(runtime, 'cw', 'economy.work', { jobId: 'starter-labor' });
   await dispatch(runtime, 'ct', 'location.travel', { destinationId: 'starter-well' });
   const wellScene = await dispatch(runtime, 'cws', 'narrative.scene');

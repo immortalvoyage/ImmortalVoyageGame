@@ -8,10 +8,15 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
+async function acceptStarterEmployment(runtime, requestId) {
+  return dispatch(runtime, requestId, 'employment.accept', { jobId: 'starter-labor' });
+}
+
 test('career identity emerges from repeated behavior instead of character creation choice', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   const born = await dispatch(runtime, 'birth', 'character.birth', { name: '無職旅人' });
   assert.equal(born.data.character.behaviorCounts, undefined);
+  await acceptStarterEmployment(runtime, 'employment');
 
   let scene = await dispatch(runtime, 'scene-0', 'narrative.scene');
   assert.deepEqual(scene.data.careers, []);
@@ -31,6 +36,7 @@ test('career identity emerges from repeated behavior instead of character creati
 test('work request idempotency cannot accelerate career progress', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'birth-idempotent', 'character.birth', { name: '重試旅人' });
+  await acceptStarterEmployment(runtime, 'employment-idempotent');
   const first = await dispatch(runtime, 'same-work', 'economy.work', { jobId: 'starter-labor' });
   const replay = await dispatch(runtime, 'same-work', 'economy.work', { jobId: 'starter-labor' });
   assert.deepEqual(replay, first);

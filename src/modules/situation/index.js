@@ -1,5 +1,6 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { hasEmploymentForJob } from '../employment/index.js';
 import { formatTravelDuration } from '../location/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
@@ -8,7 +9,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 2,
+  dataVersion: 3,
   actions: ['situation.observe'],
 });
 
@@ -35,15 +36,17 @@ function dedupeAndLimit(opportunities) {
   return result;
 }
 
-function normalOpportunityOrder({ social, purpose, work, gather, travel }) {
-  const livelihood = work[0] ?? gather[0] ?? null;
+function normalOpportunityOrder({ social, purpose, employment, work, gather, travel }) {
+  const livelihood = work[0] ?? employment[0] ?? gather[0] ?? null;
   const primary = [purpose[0], social[0], livelihood, travel[0]].filter(Boolean);
 
+  const employmentRemainder = livelihood === employment[0] ? employment.slice(1) : employment;
   const workRemainder = livelihood === work[0] ? work.slice(1) : work;
   const gatherRemainder = livelihood === gather[0] ? gather.slice(1) : gather;
   return [
     ...primary,
     ...purpose.slice(1),
+    ...employmentRemainder,
     ...workRemainder,
     ...gatherRemainder,
     ...social.slice(1),
@@ -65,6 +68,7 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
     ? buildPublicSurvivalCondition(character, contentPack.survival)
     : null;
   const knowledgeActive = isActionAvailable('knowledge.observe');
+  const employmentActive = isActionAvailable('employment.observe') && isActionAvailable('employment.accept');
 
   const social = visibleNpcs
     .filter(() => isActionAvailable('npc.interact'))
@@ -76,9 +80,20 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
       .map((target) => option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }))
     : [];
 
+  const employment = employmentActive && !character.currentEmployment
+    ? (location.jobs ?? [])
+      .filter((job) => visibleNpcIds.has(job.employerNpcId))
+      .map((job) => {
+        const employer = contentPack.npcs[job.employerNpcId];
+        return option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id });
+      })
+    : [];
+
   const work = survivalCondition?.severity === 'critical' || !isActionAvailable('economy.work')
     ? []
-    : (location.jobs ?? []).map((job) => option(job.label, 'economy.work', { jobId: job.id }));
+    : (location.jobs ?? [])
+      .filter((job) => !employmentActive || hasEmploymentForJob(character, job, character.locationId))
+      .map((job) => option(job.label, 'economy.work', { jobId: job.id }));
 
   const gather = isActionAvailable('survival.gather')
     ? (location.gatherables ?? []).map((entry) => option(entry.label, 'survival.gather', { itemId: entry.itemId }))
@@ -93,11 +108,11 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
     }).filter(Boolean)
     : [];
 
-  // Critical pressure keeps immediate recovery/exits ahead of optional social/purpose content.
+  // Critical pressure keeps immediate recovery/exits ahead of optional social, purpose, or job-contract content.
   // Normal flow reserves category diversity so a crowded location cannot crowd out livelihood or an exit.
   const ordered = survivalCondition?.severity === 'critical'
-    ? [...gather, ...travel, ...social, ...purpose]
-    : normalOpportunityOrder({ social, purpose, work, gather, travel });
+    ? [...gather, ...travel, ...social, ...purpose, ...employment]
+    : normalOpportunityOrder({ social, purpose, employment, work, gather, travel });
 
   return dedupeAndLimit(ordered);
 }

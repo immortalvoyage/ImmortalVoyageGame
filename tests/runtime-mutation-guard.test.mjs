@@ -17,6 +17,7 @@ function validCharacter() {
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
     knowledgeIds: [],
+    currentEmployment: null,
     inventory: {},
     money: 0,
   };

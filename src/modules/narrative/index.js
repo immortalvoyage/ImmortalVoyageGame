@@ -1,6 +1,7 @@
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
+import { buildEmploymentViewForActor, hasEmploymentForJob } from '../employment/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
@@ -12,7 +13,7 @@ import { buildSituationOpportunities } from '../situation/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 16, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 17, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -32,6 +33,9 @@ function scene({ world, actor, context }) {
     : null;
   const knowledge = isActionAvailable('knowledge.observe')
     ? buildKnowledgeViewForActor(world, actor, contentPack.knowledge) ?? []
+    : null;
+  const employment = isActionAvailable('employment.observe')
+    ? buildEmploymentViewForActor(world, actor, contentPack)
     : null;
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
@@ -53,6 +57,7 @@ function scene({ world, actor, context }) {
       progression,
       relationships,
       knowledge,
+      employment,
       trade,
       survivalCondition,
       inventoryItems: buildPublicInventory(character.inventory, contentPack.items),
@@ -87,13 +92,25 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
   const location = contentPack.locations[character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
   const knowledgeActive = isActionAvailable('knowledge.observe');
+  const employmentActive = isActionAvailable('employment.observe') && isActionAvailable('employment.accept');
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
   for (const target of buildKnownPurposeTargets(character, contentPack, { knowledgeActive })) {
     if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
-    for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));
+    if (employmentActive && !character.currentEmployment) {
+      for (const job of location.jobs ?? []) {
+        if (!visibleNpcIds.has(job.employerNpcId)) continue;
+        const employer = contentPack.npcs[job.employerNpcId];
+        options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
+      }
+    }
+    for (const job of location.jobs ?? []) {
+      if (!employmentActive || hasEmploymentForJob(character, job, character.locationId)) {
+        options.push(option(job.label, 'economy.work', { jobId: job.id }));
+      }
+    }
   }
   for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
   for (const route of view.routes) {
@@ -113,6 +130,9 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('survival.rest') && character.needs.fatigue > 0) {
     utilities.push(option('休息片刻', 'survival.rest'));
+  }
+  if (isActionAvailable('employment.resign') && character.currentEmployment) {
+    utilities.push(option('離開目前工作', 'employment.resign'));
   }
   if (isActionAvailable('npc.ask') && isActionAvailable('relationship.observe')) {
     for (const publicNpc of view.visibleNpcs) {

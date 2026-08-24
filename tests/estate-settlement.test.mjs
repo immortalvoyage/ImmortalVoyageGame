@@ -16,6 +16,7 @@ function character(sessionId, id, overrides = {}) {
     needProgressSeconds: { hunger: 1, thirst: 2, fatigue: 3 },
     behaviorCounts: { 'work:starter-labor': 2 },
     knowledgeIds: [],
+    currentEmployment: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -28,6 +29,11 @@ function baseWorld() {
   world.characters.seller = character('seller', 'char:1', {
     name: '故人',
     knowledgeIds: ['starter-living-advice'],
+    currentEmployment: {
+      jobId: 'starter-labor',
+      employerNpcId: 'foreman',
+      workLocationId: 'starter-square',
+    },
     inventory: { food: 2, water: 1 },
     money: 7,
   });
@@ -59,7 +65,7 @@ function baseWorld() {
   return world;
 }
 
-test('death settlement archives character, knowledge, and behavior while moving spendable assets to Estate', () => {
+test('death settlement archives character knowledge, behavior, and employment while moving spendable assets to Estate', () => {
   const world = baseWorld();
   const result = settleCharacterDeath({
     world,
@@ -81,6 +87,11 @@ test('death settlement archives character, knowledge, and behavior while moving 
   assert.equal(archived.deathCauseCode, 'hazard.starvation');
   assert.equal(archived.diedLogicalTimeSeconds, 42);
   assert.deepEqual(archived.knowledgeIds, ['starter-living-advice']);
+  assert.deepEqual(archived.currentEmployment, {
+    jobId: 'starter-labor',
+    employerNpcId: 'foreman',
+    workLocationId: 'starter-square',
+  });
   assert.equal(Object.hasOwn(archived, 'inventory'), false);
   assert.equal(Object.hasOwn(archived, 'money'), false);
 
@@ -88,11 +99,12 @@ test('death settlement archives character, knowledge, and behavior while moving 
   assert.equal(estate.status, 'pending');
   assert.equal(estate.money, 7);
   assert.deepEqual(estate.inventory, { food: 5, water: 1 });
+  assert.equal(Object.hasOwn(estate, 'currentEmployment'), false);
   assert.deepEqual(result.events[1].data.settledTradeListingIds, ['listing:1']);
   assert.equal(assertWorldState(world), world);
 });
 
-test('same account may start a new life only after the old character is archived, without asset or knowledge inheritance', async () => {
+test('same account may start a new life only after the old character is archived, without asset, knowledge, or employment inheritance', async () => {
   const world = baseWorld();
   const settled = settleCharacterDeath({
     world,
@@ -115,9 +127,12 @@ test('same account may start a new life only after the old character is archived
   assert.equal(born.data.character.money, 0);
   assert.deepEqual(born.data.character.inventory, {});
   assert.equal(born.data.character.knowledgeIds, undefined);
+  assert.equal(born.data.character.currentEmployment, undefined);
   const stored = store.snapshot();
   assert.deepEqual(stored.characters.seller.knowledgeIds, []);
+  assert.equal(stored.characters.seller.currentEmployment, null);
   assert.deepEqual(stored.archivedCharacters['char:1'].knowledgeIds, ['starter-living-advice']);
+  assert.equal(stored.archivedCharacters['char:1'].currentEmployment.jobId, 'starter-labor');
   assert.equal(stored.estates['estate:char:1'].money, 7);
   assert.deepEqual(stored.estates['estate:char:1'].inventory, { food: 5, water: 1 });
 });
