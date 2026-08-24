@@ -157,6 +157,10 @@ function render() {
       .join('、') || '尚未形成';
     rows.push(['關係', relationshipText]);
   }
+  if (Array.isArray(view.knowledge)) {
+    const knowledgeText = view.knowledge.map((fact) => fact.name).join('、') || '尚無';
+    rows.push(['已知情報', knowledgeText]);
+  }
   rows.push(
     ['貨幣', String(character.money)],
     ['飢餓', String(character.needs.hunger)],
