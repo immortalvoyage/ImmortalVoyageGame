@@ -103,7 +103,7 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
       for (const job of location.jobs ?? []) {
         if (!visibleNpcIds.has(job.employerNpcId)) continue;
         const employer = contentPack.npcs[job.employerNpcId];
-        options.push(option(`接受${employer.name}的${job.title}工作`, 'employment.accept', { jobId: job.id }));
+        options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
       }
     }
     for (const job of location.jobs ?? []) {
