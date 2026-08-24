@@ -66,7 +66,7 @@ function validateBehaviorRequirements(requirements, path, declaredBehaviorIds) {
   }
 }
 
-function validateNpcRelationship(npc, path, declaredBehaviorIds, npcs) {
+function validateNpcRelationship(npc, path, declaredBehaviorIds) {
   if (npc.relationship === undefined) return;
   const relationship = requireRecord(npc.relationship, `${path}.relationship`);
   const behaviorId = requireText(relationship.behaviorId, `${path}.relationship.behaviorId`);
@@ -95,17 +95,6 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds, npcs) {
         rememberUnique(topicIds, topicId, `${path}.relationship topic ids`);
         requireText(topic.label, `${topicPath}.label`);
         requireText(topic.responseText, `${topicPath}.responseText`);
-        if (topic.revealsNpcIds !== undefined) {
-          const revealsNpcIds = requireArray(topic.revealsNpcIds, `${topicPath}.revealsNpcIds`);
-          if (revealsNpcIds.length === 0) fail(`${topicPath}.revealsNpcIds must not be empty`);
-          const revealedNpcIds = new Set();
-          for (const [revealIndex, revealedNpcId] of revealsNpcIds.entries()) {
-            const revealPath = `${topicPath}.revealsNpcIds[${revealIndex}]`;
-            requireText(revealedNpcId, revealPath);
-            rememberUnique(revealedNpcIds, revealedNpcId, `${topicPath}.revealsNpcIds`);
-            if (!Object.hasOwn(npcs, revealedNpcId)) fail(`${revealPath} references unknown npc: ${revealedNpcId}`);
-          }
-        }
       }
     }
     previousMinCount = minCount;
@@ -229,7 +218,7 @@ export function validateContentPack(pack) {
     if (npc.knownAtStart !== undefined && typeof npc.knownAtStart !== 'boolean') {
       fail(`${path}.knownAtStart must be boolean`);
     }
-    validateNpcRelationship(npc, path, declaredBehaviorIds, npcs);
+    validateNpcRelationship(npc, path, declaredBehaviorIds);
   }
 
   for (const [tagId, tag] of Object.entries(progressionTags)) {
