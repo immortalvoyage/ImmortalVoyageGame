@@ -50,13 +50,13 @@ function scene({ world, actor, context }) {
       knowledge,
       trade,
       survivalCondition,
-      inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
+      inventoryItems: buildPublicInventory(character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view, survivalCondition),
         options: buildOptions(view, character, isActionAvailable, contentPack, survivalCondition),
       },
-      utilities: buildUtilities(view, isActionAvailable, contentPack),
+      utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
   };
 }
@@ -94,22 +94,22 @@ function buildOptions(view, character, isActionAvailable, contentPack, survivalC
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
-function buildUtilities(view, isActionAvailable, contentPack) {
+function buildUtilities(view, character, isActionAvailable, contentPack) {
   const utilities = [];
-  const location = contentPack.locations[view.character.locationId];
+  const location = contentPack.locations[character.locationId];
   if (isActionAvailable('survival.consume')) {
-    for (const [itemId, quantity] of Object.entries(view.character.inventory)) {
+    for (const [itemId, quantity] of Object.entries(character.inventory)) {
       const item = contentPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
   }
-  if (isActionAvailable('survival.rest') && view.character.needs.fatigue > 0) {
+  if (isActionAvailable('survival.rest') && character.needs.fatigue > 0) {
     utilities.push(option('休息片刻', 'survival.rest'));
   }
   if (isActionAvailable('npc.ask') && isActionAvailable('relationship.observe')) {
     for (const publicNpc of view.visibleNpcs) {
       const npc = contentPack.npcs[publicNpc.id];
-      for (const topic of findUnlockedFamiliarityTopics(view.character, npc)) {
+      for (const topic of findUnlockedFamiliarityTopics(character, npc)) {
         utilities.push(option(`${publicNpc.name}：${topic.label}`, 'npc.ask', { npcId: publicNpc.id, topicId: topic.id }));
       }
     }
