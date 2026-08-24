@@ -13,7 +13,7 @@ import { buildSituationOpportunities } from '../situation/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 17, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 18, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -128,8 +128,8 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
   }
-  if (isActionAvailable('survival.rest') && character.needs.fatigue > 0) {
-    utilities.push(option('休息片刻', 'survival.rest'));
+  if (isActionAvailable('survival.rest') && character.needs.fatigue > 0 && location.rest) {
+    utilities.push(option(location.rest.label, 'survival.rest'));
   }
   if (isActionAvailable('employment.resign') && character.currentEmployment) {
     utilities.push(option('離開目前工作', 'employment.resign'));
