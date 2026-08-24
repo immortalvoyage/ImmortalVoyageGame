@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "verify": "node scripts/verify.mjs",
-    "dev": "node dev/server.mjs"
+    "dev": "node dev/server.mjs",
+    "dev:first-settlement": "node dev/server.mjs --first-settlement"
   },
   "engines": {
     "node": ">=22"
