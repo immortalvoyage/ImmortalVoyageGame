@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 9,
+  dataVersion: 10,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -121,9 +121,21 @@ export const devStarterPack = Object.freeze({
       relationship: Object.freeze({
         behaviorId: 'interact:npc:foreman',
         levels: Object.freeze([
-          Object.freeze({ name: '見過幾面', minCount: 1 }),
-          Object.freeze({ name: '逐漸熟悉', minCount: 3 }),
-          Object.freeze({ name: '熟識', minCount: 5 }),
+          Object.freeze({
+            name: '見過幾面',
+            minCount: 1,
+            responseText: '又來了？這裡的活還是那些，熟門熟路就自己看著辦。',
+          }),
+          Object.freeze({
+            name: '逐漸熟悉',
+            minCount: 3,
+            responseText: '最近常看到你，這些雜活你也做熟了。',
+          }),
+          Object.freeze({
+            name: '熟識',
+            minCount: 5,
+            responseText: '你算是這裡的熟面孔了，有活我會先想到你。',
+          }),
         ]),
       }),
     }),
