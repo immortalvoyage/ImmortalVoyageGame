@@ -19,6 +19,8 @@ function failureMessage(code, fallbackLabel) {
       return '你目前沒有足夠情報尋找這個目標。';
     case 'WORK_NOT_AVAILABLE':
       return '這裡目前沒有這份工作。';
+    case 'SURVIVAL_CONDITION_TOO_POOR':
+      return '目前的飢餓、口渴或疲勞狀況太差，先補給或休整後再工作。';
     case 'MARKET_NOT_AVAILABLE':
       return '這裡目前無法交易。';
     case 'ITEM_NOT_SOLD':
