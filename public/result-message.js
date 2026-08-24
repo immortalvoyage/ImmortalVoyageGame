@@ -43,6 +43,8 @@ function failureMessage(code, fallbackLabel) {
       return '賣方目前無法完成交易。';
     case 'TRADE_BALANCE_LIMIT':
       return '這筆交易目前無法結算。';
+    case 'TRADE_INVENTORY_LIMIT':
+      return '物品數量已達目前可安全保存的上限。';
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
     case 'INVALID_NAME':
