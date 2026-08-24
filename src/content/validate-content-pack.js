@@ -77,6 +77,7 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds) {
   if (levels.length === 0) fail(`${path}.relationship.levels must not be empty`);
   let previousMinCount = 0;
   const names = new Set();
+  const topicIds = new Set();
   for (const [index, level] of levels.entries()) {
     const levelPath = `${path}.relationship.levels[${index}]`;
     requireRecord(level, levelPath);
@@ -85,6 +86,17 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds) {
     const minCount = requireInteger(level.minCount, `${levelPath}.minCount`, { min: 1 });
     if (minCount <= previousMinCount) fail(`${path}.relationship.levels must have strictly increasing minCount`);
     if (level.responseText !== undefined) requireText(level.responseText, `${levelPath}.responseText`);
+    if (level.topics !== undefined) {
+      const topics = requireArray(level.topics, `${levelPath}.topics`);
+      for (const [topicIndex, topic] of topics.entries()) {
+        const topicPath = `${levelPath}.topics[${topicIndex}]`;
+        requireRecord(topic, topicPath);
+        const topicId = requireText(topic.id, `${topicPath}.id`);
+        rememberUnique(topicIds, topicId, `${path}.relationship topic ids`);
+        requireText(topic.label, `${topicPath}.label`);
+        requireText(topic.responseText, `${topicPath}.responseText`);
+      }
+    }
     previousMinCount = minCount;
   }
 }
