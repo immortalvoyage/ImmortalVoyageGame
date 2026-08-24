@@ -49,7 +49,7 @@ function knowledgeTargetPack() {
   return pack;
 }
 
-test('Situation observe returns at most four server-shaped world opportunities', async () => {
+test('Situation observe returns at most four server-shaped world opportunities including an employer offer', async () => {
   const game = await bornGame();
   const situation = await dispatch(game.runtime, 'situation', 'situation.observe');
 
@@ -57,10 +57,22 @@ test('Situation observe returns at most four server-shaped world opportunities',
   assert.ok(situation.data.opportunities.length > 0);
   assert.ok(situation.data.opportunities.length <= MAX_SITUATION_OPPORTUNITIES);
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'npc.interact'));
-  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'));
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'), false);
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'));
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type.startsWith('trade.')), false);
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type.startsWith('crafting.')), false);
+});
+
+test('accepted employment replaces the employer offer with the contracted work opportunity', async () => {
+  const game = await bornGame();
+  await dispatch(game.runtime, 'accept', 'employment.accept', { jobId: 'starter-labor' });
+  const situation = await dispatch(game.runtime, 'after-accept', 'situation.observe');
+
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'), false);
+  assert.ok(situation.data.opportunities.some(
+    (entry) => entry.intent.type === 'economy.work' && entry.intent.payload.jobId === 'starter-labor',
+  ));
 });
 
 test('Narrative uses the same Situation opportunity contract when the module is active', async () => {
@@ -95,7 +107,7 @@ test('crowded locations cannot crowd livelihood and travel out of the bounded op
 
   assert.equal(situation.data.opportunities.length, MAX_SITUATION_OPPORTUNITIES);
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'npc.interact'));
-  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'));
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'));
 });
 
