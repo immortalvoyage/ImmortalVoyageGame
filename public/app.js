@@ -146,6 +146,13 @@ function render() {
     ['姓名', character.name],
     ['身分', careerText],
   ];
+  if (view.employment) {
+    const current = view.employment.current;
+    const employmentText = current
+      ? `${current.job.title}｜雇主：${current.employer.name}｜工作地：${current.workplace.name}｜每次報酬：${current.wagePerWork}`
+      : '尚無';
+    rows.push(['現職', employmentText]);
+  }
   if (view.progression) {
     const skillText = (view.progression.skills ?? []).map((skill) => skill.name).join('、') || '尚未形成';
     const socialTagText = (view.progression.socialTags ?? []).map((tag) => tag.name).join('、') || '尚未形成';
