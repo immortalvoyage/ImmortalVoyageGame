@@ -3,12 +3,13 @@ import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
 import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 12, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 13, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -73,8 +74,8 @@ function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const [npcId, npc] of Object.entries(contentPack.npcs)) {
-    if (npc.searchLabel && !visibleNpcIds.has(npcId)) options.push(option(npc.searchLabel, 'purpose.find-npc', { npcId }));
+  for (const target of buildKnownPurposeTargets(view.character, contentPack)) {
+    if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
     for (const job of location.jobs ?? []) options.push(option(job.label, 'economy.work', { jobId: job.id }));

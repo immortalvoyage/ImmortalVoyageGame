@@ -215,6 +215,9 @@ export function validateContentPack(pack) {
     if (!Object.hasOwn(locations, npc.locationId)) fail(`${path}.locationId references unknown location: ${npc.locationId}`);
     requireText(npc.greeting, `${path}.greeting`);
     if (npc.searchLabel !== undefined) requireText(npc.searchLabel, `${path}.searchLabel`);
+    if (npc.knownAtStart !== undefined && typeof npc.knownAtStart !== 'boolean') {
+      fail(`${path}.knownAtStart must be boolean`);
+    }
     validateNpcRelationship(npc, path, declaredBehaviorIds);
   }
 

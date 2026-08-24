@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 11,
+  dataVersion: 12,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -118,6 +118,7 @@ export const devStarterPack = Object.freeze({
       locationId: 'starter-square',
       greeting: '這裡總有些搬運和整理的活計。',
       searchLabel: '尋找聚落雜役領班',
+      knownAtStart: true,
       relationship: Object.freeze({
         behaviorId: 'interact:npc:foreman',
         levels: Object.freeze([
