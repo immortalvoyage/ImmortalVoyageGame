@@ -35,6 +35,16 @@ test('NPC familiarity thresholds must increase and public names must be unique',
   assert.throws(() => validateContentPack(duplicateName), /level names contains duplicate value/);
 });
 
+test('familiarity response text is optional but must be non-empty when configured', () => {
+  const fallback = clonePack();
+  delete fallback.npcs.foreman.relationship.levels[0].responseText;
+  assert.equal(validateContentPack(fallback), fallback);
+
+  const emptyResponse = clonePack();
+  emptyResponse.npcs.foreman.relationship.levels[0].responseText = '   ';
+  assert.throws(() => validateContentPack(emptyResponse), /responseText must be non-empty text/);
+});
+
 test('NPC relationship behavior cannot collide with another authoritative behavior source', () => {
   const collision = clonePack();
   collision.npcs.foreman.relationship.behaviorId = 'work:starter-labor';
