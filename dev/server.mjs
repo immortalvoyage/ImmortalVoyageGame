@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { firstSettlementPack } from '../src/content/first-settlement.js';
 import { createFileBackedDevelopmentGame } from '../src/game.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -58,8 +59,11 @@ function sendJson(res, statusCode, body) {
   res.end(JSON.stringify(body));
 }
 
-export function createDevServer({ runtime } = {}) {
-  const authoritativeRuntime = runtime ?? createFileBackedDevelopmentGame({ filePath: join(here, '..', '.data', 'world.json') }).runtime;
+export function createDevServer({ runtime, contentPack, filePath } = {}) {
+  const authoritativeRuntime = runtime ?? createFileBackedDevelopmentGame({
+    filePath: filePath ?? join(here, '..', '.data', 'world.json'),
+    ...(contentPack ? { contentPack } : {}),
+  }).runtime;
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -98,9 +102,16 @@ export function createDevServer({ runtime } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const server = createDevServer();
+  const useFirstSettlement = process.argv.includes('--first-settlement');
+  const server = useFirstSettlement
+    ? createDevServer({
+      contentPack: firstSettlementPack,
+      filePath: join(here, '..', '.data', 'first-settlement-world.json'),
+    })
+    : createDevServer();
   const port = Number(process.env.PORT ?? 8787);
   server.listen(port, '127.0.0.1', () => {
-    console.log(`ImmortalVoyage V2 local dev server: http://127.0.0.1:${port}`);
+    const mode = useFirstSettlement ? ' first-settlement' : '';
+    console.log(`ImmortalVoyage V2${mode} local dev server: http://127.0.0.1:${port}`);
   });
 }
