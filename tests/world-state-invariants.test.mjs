@@ -35,6 +35,34 @@ function validWorld(characterOverrides = {}) {
   return world;
 }
 
+function archivedWorld() {
+  const world = validWorld();
+  const active = world.characters[actor.sessionId];
+  delete world.characters[actor.sessionId];
+  world.archivedCharacters['char:1'] = {
+    id: active.id,
+    ownerSessionId: active.ownerSessionId,
+    name: active.name,
+    status: 'dead',
+    locationId: active.locationId,
+    needs: structuredClone(active.needs),
+    needProgressSeconds: structuredClone(active.needProgressSeconds),
+    behaviorCounts: structuredClone(active.behaviorCounts),
+    estateId: 'estate:char:1',
+    diedLogicalTimeSeconds: 0,
+    deathCauseCode: 'hazard.accident',
+  };
+  world.estates['estate:char:1'] = {
+    id: 'estate:char:1',
+    deceasedCharacterId: 'char:1',
+    status: 'pending',
+    openedLogicalTimeSeconds: 0,
+    money: 3,
+    inventory: { food: 2 },
+  };
+  return world;
+}
+
 function listing(overrides = {}) {
   return {
     id: 'listing:1',
@@ -57,6 +85,7 @@ function expectInvalid(mutator, pattern) {
 test('valid authoritative world and normal gameplay output satisfy invariants', async () => {
   const world = validWorld({ inventory: { food: 2 }, money: 3, behaviorCounts: { 'work:starter-labor': 1 } });
   assert.equal(assertWorldState(world), world);
+  assert.equal(assertWorldState(archivedWorld()).schemaVersion, CURRENT_SCHEMA_VERSION);
 
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await runtime.dispatch({ actor, requestId: 'birth', action: { type: 'character.birth', payload: { name: '正常旅人' } } });
@@ -71,6 +100,7 @@ test('identity, ownership, and world clock corruption fail closed', () => {
   expectInvalid((world) => { world.lastResolvedAtMs = Number.NaN; }, /invalid world timestamp/);
   expectInvalid((world) => { world.characters[actor.sessionId].ownerSessionId = 'other-session'; }, /invalid character ownership/);
   expectInvalid((world) => { world.characters[actor.sessionId].name = ''; }, /invalid character identity/);
+  expectInvalid((world) => { world.characters[actor.sessionId].status = 'dead'; }, /invalid character state/);
 });
 
 test('survival, money, and inventory corruption fail closed', () => {
@@ -85,6 +115,31 @@ test('survival, money, and inventory corruption fail closed', () => {
 test('behavior counters remain bounded integer aggregates', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].behaviorCounts.bad = -1; }, /invalid behavior counts/);
   expectInvalid((world) => { world.characters[actor.sessionId].behaviorCounts.bad = 1.5; }, /invalid behavior counts/);
+});
+
+test('archived characters and pending estates are paired without duplicating spendable assets', () => {
+  const valid = archivedWorld();
+  assert.equal(assertWorldState(valid), valid);
+
+  const missingEstate = archivedWorld();
+  delete missingEstate.estates['estate:char:1'];
+  assert.throws(() => assertWorldState(missingEstate), /archived character estate mismatch/);
+
+  const missingArchive = archivedWorld();
+  delete missingArchive.archivedCharacters['char:1'];
+  assert.throws(() => assertWorldState(missingArchive), /estate archive mismatch/);
+
+  const duplicateAssets = archivedWorld();
+  duplicateAssets.archivedCharacters['char:1'].inventory = { food: 2 };
+  assert.throws(() => assertWorldState(duplicateAssets), /duplicates estate assets/);
+
+  const activeAndArchived = archivedWorld();
+  activeAndArchived.characters[actor.sessionId] = character();
+  assert.throws(() => assertWorldState(activeAndArchived), /active and archived/);
+
+  const invalidEstateAsset = archivedWorld();
+  invalidEstateAsset.estates['estate:char:1'].inventory.food = 0;
+  assert.throws(() => assertWorldState(invalidEstateAsset), /invalid estate inventory state/);
 });
 
 test('trade listing collection is bounded and internally consistent', () => {
