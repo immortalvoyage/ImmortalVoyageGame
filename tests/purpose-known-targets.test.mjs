@@ -12,6 +12,10 @@ function purposeChoices(scene) {
   return scene.data.narrative.options.filter((choice) => choice.intent.type === 'purpose.find-npc');
 }
 
+function topicUtilities(scene) {
+  return scene.data.utilities.filter((entry) => entry.intent.type === 'npc.ask');
+}
+
 test('unknown hidden NPC is absent from Narrative and forged purpose search fails without mutation', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'birth-hidden', 'character.birth', { name: '不知情旅人' });
@@ -19,7 +23,6 @@ test('unknown hidden NPC is absent from Narrative and forged purpose search fail
   const scene = await dispatch(runtime, 'scene-hidden', 'narrative.scene');
   assert.equal(purposeChoices(scene).some((choice) => choice.intent.payload.npcId === 'herbalist'), false);
   assert.equal(JSON.stringify(scene.data.narrative.options).includes('近郊採藥人'), false);
-  assert.equal(JSON.stringify(scene.data).includes('revealsNpcIds'), false);
 
   const before = store.snapshot();
   const forged = await dispatch(runtime, 'guess-hidden', 'purpose.find-npc', { npcId: 'herbalist' });
@@ -29,26 +32,22 @@ test('unknown hidden NPC is absent from Narrative and forged purpose search fail
   assert.deepEqual(store.snapshot(), before);
 });
 
-test('unlocked structured topic reveals a hidden NPC as a purpose target without leaking its location', async () => {
+test('unlocking unrelated familiarity topics does not silently turn hidden NPCs into known targets', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
-  await dispatch(runtime, 'birth-rumor', 'character.birth', { name: '聽聞旅人' });
-  await dispatch(runtime, 'talk-rumor-1', 'npc.interact', { npcId: 'foreman' });
-  await dispatch(runtime, 'talk-rumor-2', 'npc.interact', { npcId: 'foreman' });
-  await dispatch(runtime, 'talk-rumor-3', 'npc.interact', { npcId: 'foreman' });
+  await dispatch(runtime, 'birth-topic', 'character.birth', { name: '熟客旅人' });
+  await dispatch(runtime, 'talk-topic-1', 'npc.interact', { npcId: 'foreman' });
+  await dispatch(runtime, 'talk-topic-2', 'npc.interact', { npcId: 'foreman' });
+  await dispatch(runtime, 'talk-topic-3', 'npc.interact', { npcId: 'foreman' });
 
-  const scene = await dispatch(runtime, 'scene-rumor', 'narrative.scene');
-  const search = purposeChoices(scene).find((choice) => choice.intent.payload.npcId === 'herbalist');
-  assert.ok(search);
-  assert.equal(search.label, '尋找近郊採藥人');
-  assert.deepEqual(search.intent.payload, { npcId: 'herbalist' });
-  assert.equal(search.intent.payload.locationId, undefined);
+  const scene = await dispatch(runtime, 'scene-topic', 'narrative.scene');
+  assert.ok(topicUtilities(scene).some((entry) => entry.intent.payload.topicId === 'foreman-living-advice'));
+  assert.equal(purposeChoices(scene).some((choice) => choice.intent.payload.npcId === 'herbalist'), false);
 
-  const found = await dispatch(runtime, 'find-rumor-target', search.intent.type, search.intent.payload);
-  assert.equal(found.ok, true);
-  assert.equal(found.code, 'PURPOSE_TARGET_FOUND');
-  assert.deepEqual(found.data.npc, { id: 'herbalist', name: '近郊採藥人' });
-  assert.equal(found.data.npc.locationId, undefined);
-  assert.equal(store.snapshot().characters[actor.sessionId].locationId, 'starter-grove');
+  const before = store.snapshot();
+  const forged = await dispatch(runtime, 'guess-after-topic-unlock', 'purpose.find-npc', { npcId: 'herbalist' });
+  assert.equal(forged.ok, false);
+  assert.equal(forged.code, 'PURPOSE_TARGET_UNKNOWN');
+  assert.deepEqual(store.snapshot(), before);
 });
 
 test('manual discovery plus successful interaction keeps an NPC known after leaving', async () => {
@@ -64,26 +63,24 @@ test('manual discovery plus successful interaction keeps an NPC known after leav
 
   await dispatch(runtime, 'walk-back', 'location.travel', { destinationId: 'starter-square' });
   const awayScene = await dispatch(runtime, 'scene-after-meet', 'narrative.scene');
-  assert.ok(purposeChoices(awayScene).some((choice) => choice.intent.payload.npcId === 'herbalist'));
+  const search = purposeChoices(awayScene).find((choice) => choice.intent.payload.npcId === 'herbalist');
+  assert.ok(search);
+  assert.deepEqual(search.intent.payload, { npcId: 'herbalist' });
+  assert.equal(search.intent.payload.locationId, undefined);
 });
 
-test('Relationship Module off prevents topic-derived target knowledge from leaking through Purpose', async () => {
+test('interaction evidence keeps a discovered NPC known even when Relationship Module is off', async () => {
   const enabledModules = [
     'character', 'inventory', 'location', 'npc', 'purpose', 'survival', 'economy', 'trade',
     'crafting', 'progression', 'career', 'estate', 'narrative',
   ];
-  const { runtime, store } = createDevelopmentGame({ now: () => 1000, enabledModules });
-  await dispatch(runtime, 'birth-module-off', 'character.birth', { name: '關係停用旅人' });
-  await dispatch(runtime, 'talk-off-1', 'npc.interact', { npcId: 'foreman' });
-  await dispatch(runtime, 'talk-off-2', 'npc.interact', { npcId: 'foreman' });
-  await dispatch(runtime, 'talk-off-3', 'npc.interact', { npcId: 'foreman' });
+  const { runtime } = createDevelopmentGame({ now: () => 1000, enabledModules });
+  await dispatch(runtime, 'birth-module-off', 'character.birth', { name: '關係停用探路者' });
+  await dispatch(runtime, 'walk-grove-off', 'location.travel', { destinationId: 'starter-grove' });
+  const interaction = await dispatch(runtime, 'meet-herbalist-off', 'npc.interact', { npcId: 'herbalist' });
+  assert.equal(interaction.ok, true);
+  await dispatch(runtime, 'walk-back-off', 'location.travel', { destinationId: 'starter-square' });
 
   const scene = await dispatch(runtime, 'scene-module-off', 'narrative.scene');
-  assert.equal(purposeChoices(scene).some((choice) => choice.intent.payload.npcId === 'herbalist'), false);
-
-  const before = store.snapshot();
-  const forged = await dispatch(runtime, 'find-module-off', 'purpose.find-npc', { npcId: 'herbalist' });
-  assert.equal(forged.ok, false);
-  assert.equal(forged.code, 'PURPOSE_TARGET_UNKNOWN');
-  assert.deepEqual(store.snapshot(), before);
+  assert.ok(purposeChoices(scene).some((choice) => choice.intent.payload.npcId === 'herbalist'));
 });
