@@ -14,6 +14,11 @@ function isPositiveSafeInteger(value) {
   return Number.isSafeInteger(value) && value > 0;
 }
 
+function canAddStack(character, itemId, quantity) {
+  const existing = character.inventory[itemId] ?? 0;
+  return Number.isSafeInteger(existing) && existing >= 0 && Number.isSafeInteger(existing + quantity);
+}
+
 function listingSequence(listingId) {
   const match = /^listing:(\d+)$/.exec(String(listingId));
   return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
@@ -129,6 +134,7 @@ function buy({ world, actor, action, context }) {
   if (buyer.money < listing.totalPrice) return { ok: false, code: 'INSUFFICIENT_FUNDS' };
   if (!Number.isSafeInteger(seller.money + listing.totalPrice)) return { ok: false, code: 'TRADE_BALANCE_LIMIT' };
   if (!Object.hasOwn(context.contentPack.items, listing.itemId)) return { ok: false, code: 'TRADE_ITEM_NOT_AVAILABLE' };
+  if (!canAddStack(buyer, listing.itemId, listing.quantity)) return { ok: false, code: 'TRADE_INVENTORY_LIMIT' };
 
   buyer.money -= listing.totalPrice;
   seller.money += listing.totalPrice;
@@ -182,6 +188,7 @@ function cancel({ world, actor, action, context }) {
     return { ok: false, code: 'TRADE_NOT_OWNER' };
   }
   if (!Object.hasOwn(context.contentPack.items, listing.itemId)) return { ok: false, code: 'TRADE_ITEM_NOT_AVAILABLE' };
+  if (!canAddStack(character, listing.itemId, listing.quantity)) return { ok: false, code: 'TRADE_INVENTORY_LIMIT' };
 
   addStack(character, listing.itemId, listing.quantity);
   delete world.tradeListings[listing.id];
