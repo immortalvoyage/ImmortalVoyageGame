@@ -72,9 +72,10 @@ function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
   const location = contentPack.locations[view.character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
+  const allowRelationshipReveals = isActionAvailable('relationship.observe');
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const target of buildKnownPurposeTargets(view.character, contentPack)) {
+  for (const target of buildKnownPurposeTargets(view.character, contentPack, { allowRelationshipReveals })) {
     if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
