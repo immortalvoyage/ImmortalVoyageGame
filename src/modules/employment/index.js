@@ -40,14 +40,10 @@ export function buildPublicEmployment(character, contentPack) {
   const { location, job, employer } = resolved;
   return {
     job: { title: job.title, workLabel: job.label },
-    employer: { id: currentEmployerId(character), name: employer.name },
+    employer: { id: character.currentEmployment.employerNpcId, name: employer.name },
     workplace: { id: character.currentEmployment.workLocationId, name: location.name },
     wagePerWork: job.rewardMoney,
   };
-}
-
-function currentEmployerId(character) {
-  return character.currentEmployment?.employerNpcId ?? null;
 }
 
 export function buildEmploymentViewForActor(world, actor, contentPack) {
@@ -63,7 +59,7 @@ function accept({ world, actor, action, context }) {
 
   const resolved = localJob(character, context.contentPack, action.payload?.jobId);
   if (!resolved) return { ok: false, code: 'EMPLOYMENT_OFFER_NOT_AVAILABLE' };
-  const { job, employer } = resolved;
+  const { job } = resolved;
 
   character.currentEmployment = {
     jobId: job.id,
@@ -81,7 +77,7 @@ function accept({ world, actor, action, context }) {
       data: {
         characterId: character.id,
         jobId: job.id,
-        employerNpcId: employer === context.contentPack.npcs[job.employerNpcId] ? job.employerNpcId : job.employerNpcId,
+        employerNpcId: job.employerNpcId,
         workLocationId: character.locationId,
       },
     }],
