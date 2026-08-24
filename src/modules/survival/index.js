@@ -3,7 +3,11 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { addStack, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'survival', dataVersion: 4, actions: ['survival.gather', 'survival.consume'] });
+const manifest = validateGameModuleManifest({
+  name: 'survival',
+  dataVersion: 5,
+  actions: ['survival.gather', 'survival.consume', 'survival.rest'],
+});
 
 function gather({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -38,6 +42,18 @@ function consume({ world, actor, action, context }) {
   return { ok: true, code: 'ITEM_CONSUMED', data: { needs: structuredClone(character.needs), inventory: structuredClone(character.inventory) } };
 }
 
+function rest({ world, actor, context }) {
+  const character = getOwnedActiveCharacter(world, actor);
+  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  const relief = context.contentPack.survival.restFatigueRelief;
+  character.needs.fatigue = Math.max(0, character.needs.fatigue - relief);
+  return {
+    ok: true,
+    code: 'REST_COMPLETED',
+    data: { needs: structuredClone(character.needs) },
+  };
+}
+
 const NEED_INTERVAL_SECONDS = Object.freeze({
   hunger: 30 * 60,
   thirst: 20 * 60,
@@ -58,4 +74,12 @@ function resolveElapsed({ world, elapsedSeconds }) {
   }
 }
 
-export const survivalModule = { manifest, actions: { 'survival.gather': gather, 'survival.consume': consume }, resolveElapsed };
+export const survivalModule = {
+  manifest,
+  actions: {
+    'survival.gather': gather,
+    'survival.consume': consume,
+    'survival.rest': rest,
+  },
+  resolveElapsed,
+};
