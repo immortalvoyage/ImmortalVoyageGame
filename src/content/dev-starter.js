@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 8,
+  dataVersion: 9,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -118,6 +118,14 @@ export const devStarterPack = Object.freeze({
       locationId: 'starter-square',
       greeting: '這裡總有些搬運和整理的活計。',
       searchLabel: '尋找聚落雜役領班',
+      relationship: Object.freeze({
+        behaviorId: 'interact:npc:foreman',
+        levels: Object.freeze([
+          Object.freeze({ name: '見過幾面', minCount: 1 }),
+          Object.freeze({ name: '逐漸熟悉', minCount: 3 }),
+          Object.freeze({ name: '熟識', minCount: 5 }),
+        ]),
+      }),
     }),
   }),
 });
