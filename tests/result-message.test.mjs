@@ -23,7 +23,30 @@ test('purpose progress describes public next step without requiring hidden targe
   assert.equal(message, '你先前往開發聚落廣場，繼續尋找聚落雜役領班。');
 });
 
-test('purpose found and travel results produce useful deterministic feedback', () => {
+test('travel duration is shown when the server provides validated movement metadata', () => {
+  assert.equal(
+    formatActionResult({
+      ok: true,
+      code: 'TRAVEL_COMPLETED',
+      data: { location: { name: '公共水井' }, travelSeconds: 5 * 60 },
+    }),
+    '已抵達公共水井（旅程約5分鐘）。',
+  );
+  assert.equal(
+    formatActionResult({
+      ok: true,
+      code: 'PURPOSE_SEARCH_PROGRESS',
+      data: {
+        location: { name: '開發聚落廣場' },
+        target: { name: '聚落雜役領班' },
+        travelSeconds: 65 * 60,
+      },
+    }),
+    '你先前往開發聚落廣場（約1小時5分鐘），繼續尋找聚落雜役領班。',
+  );
+});
+
+test('purpose found and travel results keep safe fallback feedback when duration is absent', () => {
   assert.equal(
     formatActionResult({ ok: true, code: 'PURPOSE_TARGET_FOUND', data: { npc: { name: '聚落雜役領班' } } }),
     '你找到了聚落雜役領班。',

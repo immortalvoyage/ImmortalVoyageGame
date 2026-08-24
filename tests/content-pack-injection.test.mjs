@@ -18,8 +18,8 @@ function makeInjectedPack() {
   delete pack.locations['starter-square'];
   pack.locations['injected-square'] = injectedSquare;
   pack.startingLocationId = 'injected-square';
-  pack.locations['starter-well'].routes = ['injected-square'];
-  pack.locations['starter-grove'].routes = ['injected-square'];
+  pack.locations['starter-well'].routes[0].destinationId = 'injected-square';
+  pack.locations['starter-grove'].routes[0].destinationId = 'injected-square';
   pack.npcs.foreman.locationId = 'injected-square';
 
   injectedSquare.name = '注入測試廣場';
@@ -65,6 +65,7 @@ test('validated injected Content Pack drives gameplay and public narrative data'
   const found = await dispatch(runtime, 'find-foreman', 'purpose.find-npc', { npcId: 'foreman' });
   assert.equal(found.code, 'PURPOSE_TARGET_FOUND');
   assert.equal(found.data.location.id, 'injected-square');
+  assert.equal(found.data.travelSeconds, 5 * 60);
 
   await dispatch(runtime, 'to-grove', 'location.travel', { destinationId: 'starter-grove' });
   await dispatch(runtime, 'gather-food', 'survival.gather', { itemId: 'food' });

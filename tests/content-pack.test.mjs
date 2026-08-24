@@ -20,8 +20,32 @@ test('Content Pack rejects missing starting location and broken route references
   assert.throws(() => validateContentPack(missingStart), /starting location does not exist/);
 
   const brokenRoute = clonePack();
-  brokenRoute.locations['starter-square'].routes.push('missing-route');
+  brokenRoute.locations['starter-square'].routes.push({
+    destinationId: 'missing-route',
+    travelSeconds: 60,
+    needCosts: {},
+  });
   assert.throws(() => validateContentPack(brokenRoute), /routes targets unknown location/);
+});
+
+test('Content Pack requires bounded structured route movement rules', () => {
+  const stringRoute = clonePack();
+  stringRoute.locations['starter-square'].routes[0] = 'starter-well';
+  assert.throws(() => validateContentPack(stringRoute), /routes\[0\] must be an object/);
+
+  const zeroDuration = clonePack();
+  zeroDuration.locations['starter-square'].routes[0].travelSeconds = 0;
+  assert.throws(() => validateContentPack(zeroDuration), /travelSeconds must be an integer/);
+
+  const badNeed = clonePack();
+  badNeed.locations['starter-square'].routes[0].needCosts.courage = 1;
+  assert.throws(() => validateContentPack(badNeed), /needCosts\.courage is not a known need/);
+
+  const duplicateDestination = clonePack();
+  duplicateDestination.locations['starter-square'].routes.push(
+    structuredClone(duplicateDestination.locations['starter-square'].routes[0]),
+  );
+  assert.throws(() => validateContentPack(duplicateDestination), /routes destination ids contains duplicate value/);
 });
 
 test('Content Pack rejects unknown item references and duplicate local rules', () => {

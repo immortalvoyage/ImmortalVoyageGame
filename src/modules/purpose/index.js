@@ -3,7 +3,7 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { applyTravelStep, findNextRouteStep, publicLocation } from '../location/index.js';
 import { isKnownNpcTarget } from './known-targets.js';
 
-const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 4, actions: ['purpose.find-npc'] });
+const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 5, actions: ['purpose.find-npc'] });
 
 function foundResult(character, npcId, npc, extra = {}) {
   return {
@@ -15,6 +15,12 @@ function foundResult(character, npcId, npc, extra = {}) {
     },
     events: [{ type: 'purpose.target-found', data: { characterId: character.id, npcId } }],
   };
+}
+
+function survivalIsActive(context) {
+  const available = context?.isActionAvailable;
+  if (typeof available !== 'function') return true;
+  return available('survival.gather') || available('survival.consume') || available('survival.rest');
 }
 
 function findNpc({ world, actor, action, context }) {
@@ -32,18 +38,25 @@ function findNpc({ world, actor, action, context }) {
   if (npc.locationId === character.locationId) return foundResult(character, npcId, npc);
 
   const nextLocationId = findNextRouteStep(character.locationId, npc.locationId, contentPack);
-  if (!nextLocationId || !applyTravelStep(character, nextLocationId, contentPack)) {
-    return { ok: false, code: 'PURPOSE_ROUTE_UNAVAILABLE' };
-  }
+  const route = nextLocationId
+    ? applyTravelStep(character, nextLocationId, contentPack, { applyNeedCosts: survivalIsActive(context) })
+    : null;
+  if (!nextLocationId || !route) return { ok: false, code: 'PURPOSE_ROUTE_UNAVAILABLE' };
 
   const travelEvent = {
     type: 'character.travelled',
-    data: { characterId: character.id, destinationId: nextLocationId, reason: 'purpose.find-npc' },
+    data: {
+      characterId: character.id,
+      destinationId: nextLocationId,
+      reason: 'purpose.find-npc',
+      travelSeconds: route.travelSeconds,
+    },
   };
   if (nextLocationId === npc.locationId) {
     const found = foundResult(character, npcId, npc, {
       location: publicLocation(nextLocationId, contentPack),
       needs: structuredClone(character.needs),
+      travelSeconds: route.travelSeconds,
     });
     found.events.unshift(travelEvent);
     return found;
@@ -56,6 +69,7 @@ function findNpc({ world, actor, action, context }) {
       location: publicLocation(nextLocationId, contentPack),
       needs: structuredClone(character.needs),
       target: { id: npcId, name: npc.name },
+      travelSeconds: route.travelSeconds,
     },
     events: [
       travelEvent,

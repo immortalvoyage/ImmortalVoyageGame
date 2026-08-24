@@ -1,5 +1,6 @@
 const NEED_KEYS = new Set(['hunger', 'thirst', 'fatigue']);
 const PROGRESSION_KINDS = new Set(['skill', 'social']);
+const MAX_ROUTE_TRAVEL_SECONDS = 30 * 24 * 60 * 60;
 
 function fail(message) {
   throw new Error(`invalid content pack: ${message}`);
@@ -170,11 +171,16 @@ export function validateContentPack(pack) {
 
     const routes = requireArray(location.routes, `locations.${locationId}.routes`);
     const routeIds = new Set();
-    for (const destinationId of routes) {
-      requireText(destinationId, `locations.${locationId}.routes[]`);
-      rememberUnique(routeIds, destinationId, `locations.${locationId}.routes`);
+    for (const [index, route] of routes.entries()) {
+      const routePath = `locations.${locationId}.routes[${index}]`;
+      requireRecord(route, routePath);
+      const destinationId = requireText(route.destinationId, `${routePath}.destinationId`);
+      rememberUnique(routeIds, destinationId, `locations.${locationId}.routes destination ids`);
       if (destinationId === locationId) fail(`locations.${locationId}.routes cannot target itself`);
       if (!Object.hasOwn(locations, destinationId)) fail(`locations.${locationId}.routes targets unknown location: ${destinationId}`);
+      requireInteger(route.travelSeconds, `${routePath}.travelSeconds`, { min: 1, max: MAX_ROUTE_TRAVEL_SECONDS });
+      requireRecord(route.needCosts, `${routePath}.needCosts`);
+      validateNeedMap(route.needCosts, `${routePath}.needCosts`, { min: 0, max: 100 });
     }
 
     const jobs = requireArray(location.jobs, `locations.${locationId}.jobs`);

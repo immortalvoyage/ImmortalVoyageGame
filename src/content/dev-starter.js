@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 13,
+  dataVersion: 14,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -30,7 +30,18 @@ export const devStarterPack = Object.freeze({
     'starter-square': Object.freeze({
       name: '開發聚落廣場',
       description: '供 V2 垂直切片驗證使用的臨時聚落。',
-      routes: Object.freeze(['starter-well', 'starter-grove']),
+      routes: Object.freeze([
+        Object.freeze({
+          destinationId: 'starter-well',
+          travelSeconds: 5 * 60,
+          needCosts: Object.freeze({ thirst: 1 }),
+        }),
+        Object.freeze({
+          destinationId: 'starter-grove',
+          travelSeconds: 15 * 60,
+          needCosts: Object.freeze({ hunger: 1, thirst: 1 }),
+        }),
+      ]),
       jobs: Object.freeze([
         Object.freeze({
           id: 'starter-labor',
@@ -61,7 +72,13 @@ export const devStarterPack = Object.freeze({
     'starter-well': Object.freeze({
       name: '公共水井',
       description: '可取得基礎飲水。',
-      routes: Object.freeze(['starter-square']),
+      routes: Object.freeze([
+        Object.freeze({
+          destinationId: 'starter-square',
+          travelSeconds: 5 * 60,
+          needCosts: Object.freeze({ thirst: 1 }),
+        }),
+      ]),
       jobs: Object.freeze([]),
       market: Object.freeze([]),
       gatherables: Object.freeze([
@@ -72,7 +89,13 @@ export const devStarterPack = Object.freeze({
     'starter-grove': Object.freeze({
       name: '近郊樹林',
       description: '可採集少量基礎食物。',
-      routes: Object.freeze(['starter-square']),
+      routes: Object.freeze([
+        Object.freeze({
+          destinationId: 'starter-square',
+          travelSeconds: 15 * 60,
+          needCosts: Object.freeze({ hunger: 1, thirst: 1 }),
+        }),
+      ]),
       jobs: Object.freeze([]),
       market: Object.freeze([]),
       gatherables: Object.freeze([
