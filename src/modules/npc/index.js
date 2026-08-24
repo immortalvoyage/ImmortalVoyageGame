@@ -1,9 +1,10 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
+import { grantKnowledge } from '../knowledge/index.js';
 import { findHighestFamiliarityLevel, findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 
-const manifest = validateGameModuleManifest({ name: 'npc', dataVersion: 4, actions: ['npc.interact', 'npc.ask'] });
+const manifest = validateGameModuleManifest({ name: 'npc', dataVersion: 5, actions: ['npc.interact', 'npc.ask'] });
 
 function interact({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -47,6 +48,13 @@ function ask({ world, actor, action, context }) {
 
   const topic = findUnlockedFamiliarityTopics(character, npc).find((entry) => entry.id === topicId);
   if (!topic) return { ok: false, code: 'NPC_TOPIC_NOT_AVAILABLE' };
+
+  const knowledgeActive = context?.isActionAvailable?.('knowledge.observe') ?? false;
+  const knowledgeGrant = knowledgeActive
+    ? grantKnowledge(character, topic.grantsKnowledgeIds ?? [])
+    : { ok: true, learnedIds: [] };
+  if (!knowledgeGrant.ok) return { ok: false, code: knowledgeGrant.code };
+
   return {
     ok: true,
     code: 'NPC_TOPIC_RESPONSE',
@@ -55,6 +63,16 @@ function ask({ world, actor, action, context }) {
       topic: { id: topic.id, label: topic.label },
       text: topic.responseText,
     },
+    events: knowledgeGrant.learnedIds.map((knowledgeId) => ({
+      type: 'knowledge.learned',
+      data: {
+        characterId: character.id,
+        knowledgeId,
+        sourceType: 'npc-topic',
+        sourceNpcId: npcId,
+        sourceTopicId: topic.id,
+      },
+    })),
   };
 }
 

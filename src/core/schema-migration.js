@@ -25,6 +25,10 @@ export function migrateWorldState(input) {
       world = migrateV4ToV5(world);
       continue;
     }
+    if (world.schemaVersion === 5) {
+      world = migrateV5ToV6(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -87,5 +91,18 @@ function migrateV4ToV5(world) {
   migrated.archivedCharacters ??= {};
   migrated.estates ??= {};
   migrated.schemaVersion = 5;
+  return migrated;
+}
+
+function migrateV5ToV6(world) {
+  const migrated = cloneWorld(world);
+  for (const collection of [migrated.characters, migrated.archivedCharacters]) {
+    if (!collection || typeof collection !== 'object' || Array.isArray(collection)) continue;
+    for (const character of Object.values(collection)) {
+      if (!character || typeof character !== 'object' || Array.isArray(character)) continue;
+      character.knowledgeIds ??= [];
+    }
+  }
+  migrated.schemaVersion = 6;
   return migrated;
 }

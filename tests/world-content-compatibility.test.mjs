@@ -18,6 +18,7 @@ function character(overrides = {}) {
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
+    knowledgeIds: [],
     inventory: {},
     money: 0,
     ...overrides,
@@ -31,7 +32,11 @@ function currentWorld(characterOverrides = {}) {
   return world;
 }
 
-function addHistoricalArchive(world, { locationId = 'retired-location', inventory = { food: 1 } } = {}) {
+function addHistoricalArchive(world, {
+  locationId = 'retired-location',
+  inventory = { food: 1 },
+  knowledgeIds = [],
+} = {}) {
   world.archivedCharacters['char:old'] = {
     id: 'char:old',
     ownerSessionId: 'old-session',
@@ -41,6 +46,7 @@ function addHistoricalArchive(world, { locationId = 'retired-location', inventor
     needs: { hunger: 90, thirst: 80, fatigue: 70 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
+    knowledgeIds,
     estateId: 'estate:char:old',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',
@@ -59,14 +65,21 @@ async function dispatch(runtime, requestId, type = 'location.observe', payload =
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('current authoritative references pass while historical event and archive locations may outlive Content Pack entries', () => {
-  const world = currentWorld({ inventory: { food: 1, water: 2 } });
+test('current authoritative references pass while historical event, archive locations, and archive knowledge may outlive Content Pack entries', () => {
+  const world = currentWorld({
+    inventory: { food: 1, water: 2 },
+    knowledgeIds: ['starter-living-advice'],
+  });
   world.gameEvents.push({
     type: 'historical.example',
     logicalTimeSeconds: 0,
     data: { destinationId: 'retired-location', itemId: 'retired-item' },
   });
-  addHistoricalArchive(world, { locationId: 'retired-location', inventory: { food: 1 } });
+  addHistoricalArchive(world, {
+    locationId: 'retired-location',
+    inventory: { food: 1 },
+    knowledgeIds: ['retired-historical-fact'],
+  });
   assert.equal(validateWorldContentCompatibility(world, devStarterPack), world);
 });
 
@@ -76,6 +89,18 @@ test('character location removed by the active Content Pack fails closed', () =>
     () => validateWorldContentCompatibility(world, devStarterPack),
     /world\/content mismatch: char:1 references unknown location: retired-location/,
   );
+});
+
+test('orphaned active character knowledge fails closed while historical archive knowledge remains valid evidence', () => {
+  const active = currentWorld({ knowledgeIds: ['retired-knowledge'] });
+  assert.throws(
+    () => validateWorldContentCompatibility(active, devStarterPack),
+    /world\/content mismatch: char:1 references unknown knowledge: retired-knowledge/,
+  );
+
+  const historical = currentWorld();
+  addHistoricalArchive(historical, { knowledgeIds: ['retired-knowledge'] });
+  assert.equal(validateWorldContentCompatibility(historical, devStarterPack), historical);
 });
 
 test('orphaned or malformed authoritative inventory stacks fail closed', () => {
@@ -141,6 +166,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   const world = currentWorld();
   world.schemaVersion = 2;
   delete world.characters[actor.sessionId].behaviorCounts;
+  delete world.characters[actor.sessionId].knowledgeIds;
   delete world.tradeListings;
   delete world.nextTradeListingSequence;
   delete world.archivedCharacters;
@@ -153,6 +179,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   const stored = store.snapshot();
   assert.equal(stored.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
+  assert.deepEqual(stored.characters[actor.sessionId].knowledgeIds, []);
   assert.deepEqual(stored.tradeListings, {});
   assert.equal(stored.nextTradeListingSequence, 1);
   assert.deepEqual(stored.archivedCharacters, {});

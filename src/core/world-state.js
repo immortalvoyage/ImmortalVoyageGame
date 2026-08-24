@@ -1,7 +1,8 @@
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
+export const MAX_CHARACTER_KNOWLEDGE = 128;
 
 const NEED_KEYS = Object.freeze(['hunger', 'thirst', 'fatigue']);
 
@@ -29,6 +30,16 @@ function assertNeedsAndBehavior(character) {
   }
 }
 
+function assertKnowledgeIds(character) {
+  if (!Array.isArray(character.knowledgeIds)) throw new Error('invalid character knowledge');
+  if (character.knowledgeIds.length > MAX_CHARACTER_KNOWLEDGE) throw new Error('character knowledge exceeds limit');
+  const seen = new Set();
+  for (const knowledgeId of character.knowledgeIds) {
+    if (!isNonEmptyText(knowledgeId) || seen.has(knowledgeId)) throw new Error('invalid character knowledge');
+    seen.add(knowledgeId);
+  }
+}
+
 function assertInventory(inventory, label = 'inventory') {
   if (!isRecord(inventory)) throw new Error(`invalid ${label} state`);
   for (const [itemId, quantity] of Object.entries(inventory)) {
@@ -43,6 +54,7 @@ function assertCharacterState(sessionId, character) {
   if (character.status !== 'alive' || !isNonEmptyText(character.locationId)) throw new Error('invalid character state');
 
   assertNeedsAndBehavior(character);
+  assertKnowledgeIds(character);
   assertInventory(character.inventory);
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
 }
@@ -59,6 +71,7 @@ function assertArchiveAndEstateState(world) {
     if (!isNonEmptyText(archived.name) || archived.name.length > 24) throw new Error('invalid archived character identity');
     if (archived.status !== 'dead' || !isNonEmptyText(archived.locationId)) throw new Error('invalid archived character state');
     assertNeedsAndBehavior(archived);
+    assertKnowledgeIds(archived);
     if (Object.hasOwn(archived, 'inventory') || Object.hasOwn(archived, 'money')) throw new Error('archived character duplicates estate assets');
     if (!isNonEmptyText(archived.estateId) || !isNonEmptyText(archived.deathCauseCode)) throw new Error('invalid archived character death');
     if (!Number.isSafeInteger(archived.diedLogicalTimeSeconds)

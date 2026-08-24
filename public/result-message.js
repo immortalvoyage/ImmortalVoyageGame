@@ -19,6 +19,8 @@ function failureMessage(code, fallbackLabel) {
       return '你目前還無法從這個人那裡問到這件事。';
     case 'PURPOSE_TARGET_UNKNOWN':
       return '你目前沒有足夠情報尋找這個目標。';
+    case 'KNOWLEDGE_LIMIT_REACHED':
+      return '你目前能保留的已知情報已達上限。';
     case 'WORK_NOT_AVAILABLE':
       return '這裡目前沒有這份工作。';
     case 'SURVIVAL_CONDITION_TOO_POOR':

@@ -1,6 +1,8 @@
+import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
+import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
@@ -9,10 +11,12 @@ import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 13, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 14, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
+  const character = getOwnedActiveCharacter(world, actor);
+  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const view = buildLocationView(world, actor, contentPack);
   if (!view) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const isActionAvailable = context?.isActionAvailable ?? (() => true);
@@ -25,12 +29,15 @@ function scene({ world, actor, context }) {
   const relationships = isActionAvailable('relationship.observe')
     ? buildRelationshipViewForActor(world, actor, contentPack.npcs) ?? []
     : null;
+  const knowledge = isActionAvailable('knowledge.observe')
+    ? buildKnowledgeViewForActor(world, actor, contentPack.knowledge) ?? []
+    : null;
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
     : null;
   const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
   const survivalCondition = survivalActive
-    ? buildPublicSurvivalCondition(view.character, contentPack.survival)
+    ? buildPublicSurvivalCondition(character, contentPack.survival)
     : null;
   return {
     ok: true,
@@ -40,15 +47,16 @@ function scene({ world, actor, context }) {
       careers,
       progression,
       relationships,
+      knowledge,
       trade,
       survivalCondition,
-      inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
+      inventoryItems: buildPublicInventory(character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view, survivalCondition),
-        options: buildOptions(view, isActionAvailable, contentPack, survivalCondition),
+        options: buildOptions(view, character, isActionAvailable, contentPack, survivalCondition),
       },
-      utilities: buildUtilities(view, isActionAvailable, contentPack),
+      utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
   };
 }
@@ -68,13 +76,14 @@ function sceneText(view, survivalCondition) {
   return location.description;
 }
 
-function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
+function buildOptions(view, character, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
-  const location = contentPack.locations[view.character.locationId];
+  const location = contentPack.locations[character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
+  const knowledgeActive = isActionAvailable('knowledge.observe');
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const target of buildKnownPurposeTargets(view.character, contentPack)) {
+  for (const target of buildKnownPurposeTargets(character, contentPack, { knowledgeActive })) {
     if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
@@ -85,22 +94,22 @@ function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
-function buildUtilities(view, isActionAvailable, contentPack) {
+function buildUtilities(view, character, isActionAvailable, contentPack) {
   const utilities = [];
-  const location = contentPack.locations[view.character.locationId];
+  const location = contentPack.locations[character.locationId];
   if (isActionAvailable('survival.consume')) {
-    for (const [itemId, quantity] of Object.entries(view.character.inventory)) {
+    for (const [itemId, quantity] of Object.entries(character.inventory)) {
       const item = contentPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
   }
-  if (isActionAvailable('survival.rest') && view.character.needs.fatigue > 0) {
+  if (isActionAvailable('survival.rest') && character.needs.fatigue > 0) {
     utilities.push(option('休息片刻', 'survival.rest'));
   }
   if (isActionAvailable('npc.ask') && isActionAvailable('relationship.observe')) {
     for (const publicNpc of view.visibleNpcs) {
       const npc = contentPack.npcs[publicNpc.id];
-      for (const topic of findUnlockedFamiliarityTopics(view.character, npc)) {
+      for (const topic of findUnlockedFamiliarityTopics(character, npc)) {
         utilities.push(option(`${publicNpc.name}：${topic.label}`, 'npc.ask', { npcId: publicNpc.id, topicId: topic.id }));
       }
     }

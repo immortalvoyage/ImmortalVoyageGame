@@ -15,6 +15,7 @@ function character(sessionId, id, overrides = {}) {
     needs: { hunger: 10, thirst: 20, fatigue: 30 },
     needProgressSeconds: { hunger: 1, thirst: 2, fatigue: 3 },
     behaviorCounts: { 'work:starter-labor': 2 },
+    knowledgeIds: [],
     inventory: {},
     money: 0,
     ...overrides,
@@ -26,6 +27,7 @@ function baseWorld() {
   world.logicalTimeSeconds = 42;
   world.characters.seller = character('seller', 'char:1', {
     name: '故人',
+    knowledgeIds: ['starter-living-advice'],
     inventory: { food: 2, water: 1 },
     money: 7,
   });
@@ -57,7 +59,7 @@ function baseWorld() {
   return world;
 }
 
-test('death settlement archives character, opens pending estate, and recovers seller escrow', () => {
+test('death settlement archives character, knowledge, and behavior while moving spendable assets to Estate', () => {
   const world = baseWorld();
   const result = settleCharacterDeath({
     world,
@@ -78,6 +80,7 @@ test('death settlement archives character, opens pending estate, and recovers se
   assert.equal(archived.ownerSessionId, 'seller');
   assert.equal(archived.deathCauseCode, 'hazard.starvation');
   assert.equal(archived.diedLogicalTimeSeconds, 42);
+  assert.deepEqual(archived.knowledgeIds, ['starter-living-advice']);
   assert.equal(Object.hasOwn(archived, 'inventory'), false);
   assert.equal(Object.hasOwn(archived, 'money'), false);
 
@@ -89,7 +92,7 @@ test('death settlement archives character, opens pending estate, and recovers se
   assert.equal(assertWorldState(world), world);
 });
 
-test('same account may start a new life only after the old character is archived, without inheritance', async () => {
+test('same account may start a new life only after the old character is archived, without asset or knowledge inheritance', async () => {
   const world = baseWorld();
   const settled = settleCharacterDeath({
     world,
@@ -111,8 +114,10 @@ test('same account may start a new life only after the old character is archived
   assert.equal(born.data.character.id, 'char:3');
   assert.equal(born.data.character.money, 0);
   assert.deepEqual(born.data.character.inventory, {});
+  assert.equal(born.data.character.knowledgeIds, undefined);
   const stored = store.snapshot();
-  assert.equal(stored.archivedCharacters['char:1'].name, '故人');
+  assert.deepEqual(stored.characters.seller.knowledgeIds, []);
+  assert.deepEqual(stored.archivedCharacters['char:1'].knowledgeIds, ['starter-living-advice']);
   assert.equal(stored.estates['estate:char:1'].money, 7);
   assert.deepEqual(stored.estates['estate:char:1'].inventory, { food: 5, water: 1 });
 });

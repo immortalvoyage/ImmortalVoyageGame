@@ -4,6 +4,7 @@ import {
   assertWorldState,
   createInitialWorld,
   CURRENT_SCHEMA_VERSION,
+  MAX_CHARACTER_KNOWLEDGE,
   MAX_GAME_EVENTS,
   MAX_REQUEST_RESULTS,
   MAX_TRADE_LISTINGS,
@@ -22,6 +23,7 @@ function character(overrides = {}) {
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
+    knowledgeIds: [],
     inventory: {},
     money: 0,
     ...overrides,
@@ -48,6 +50,7 @@ function archivedWorld() {
     needs: structuredClone(active.needs),
     needProgressSeconds: structuredClone(active.needProgressSeconds),
     behaviorCounts: structuredClone(active.behaviorCounts),
+    knowledgeIds: structuredClone(active.knowledgeIds),
     estateId: 'estate:char:1',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',
@@ -83,7 +86,12 @@ function expectInvalid(mutator, pattern) {
 }
 
 test('valid authoritative world and normal gameplay output satisfy invariants', async () => {
-  const world = validWorld({ inventory: { food: 2 }, money: 3, behaviorCounts: { 'work:starter-labor': 1 } });
+  const world = validWorld({
+    inventory: { food: 2 },
+    money: 3,
+    behaviorCounts: { 'work:starter-labor': 1 },
+    knowledgeIds: ['starter-living-advice'],
+  });
   assert.equal(assertWorldState(world), world);
   assert.equal(assertWorldState(archivedWorld()).schemaVersion, CURRENT_SCHEMA_VERSION);
 
@@ -117,8 +125,20 @@ test('behavior counters remain bounded integer aggregates', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].behaviorCounts.bad = 1.5; }, /invalid behavior counts/);
 });
 
+test('character knowledge is bounded, unique, and structurally valid', () => {
+  expectInvalid((world) => { world.characters[actor.sessionId].knowledgeIds = {}; }, /invalid character knowledge/);
+  expectInvalid((world) => { world.characters[actor.sessionId].knowledgeIds = ['known', 'known']; }, /invalid character knowledge/);
+  expectInvalid((world) => { world.characters[actor.sessionId].knowledgeIds = ['']; }, /invalid character knowledge/);
+
+  const oversized = validWorld({
+    knowledgeIds: Array.from({ length: MAX_CHARACTER_KNOWLEDGE + 1 }, (_, index) => `knowledge:${index}`),
+  });
+  assert.throws(() => assertWorldState(oversized), /character knowledge exceeds limit/);
+});
+
 test('archived characters and pending estates are paired without duplicating spendable assets', () => {
   const valid = archivedWorld();
+  valid.archivedCharacters['char:1'].knowledgeIds = ['historical-fact'];
   assert.equal(assertWorldState(valid), valid);
 
   const missingEstate = archivedWorld();
