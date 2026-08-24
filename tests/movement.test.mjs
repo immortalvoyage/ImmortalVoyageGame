@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDevelopmentGame } from '../src/game.js';
+import { findNextRouteStep } from '../src/modules/location/index.js';
 
 const actor = { sessionId: 'movement-session' };
 
@@ -85,6 +86,25 @@ test('disabling Survival removes travel need costs without disabling movement', 
   assert.equal(travelled.code, 'TRAVEL_COMPLETED');
   assert.equal(travelled.data.travelSeconds, 15 * 60);
   assert.deepEqual(travelled.data.needs, { hunger: 0, thirst: 0, fatigue: 0 });
+});
+
+test('Purpose routing prefers the least travel time rather than the fewest route hops', () => {
+  const contentPack = {
+    locations: {
+      start: {
+        routes: [
+          { destinationId: 'target', travelSeconds: 60 * 60, needCosts: {} },
+          { destinationId: 'middle', travelSeconds: 5 * 60, needCosts: {} },
+        ],
+      },
+      middle: {
+        routes: [{ destinationId: 'target', travelSeconds: 5 * 60, needCosts: {} }],
+      },
+      target: { routes: [] },
+    },
+  };
+
+  assert.equal(findNextRouteStep('start', 'target', contentPack), 'middle');
 });
 
 test('Purpose movement uses the same route duration and cost contract without exposing target coordinates', async () => {
