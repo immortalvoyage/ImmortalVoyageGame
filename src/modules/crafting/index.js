@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { recordBehavior } from '../character/behavior.js';
 import { addStack, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'crafting', dataVersion: 1, actions: ['crafting.craft'] });
+const manifest = validateGameModuleManifest({ name: 'crafting', dataVersion: 2, actions: ['crafting.craft'] });
 
 function craft({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -22,6 +23,7 @@ function craft({ world, actor, action, context }) {
 
   for (const input of recipe.inputs) removeStack(character, input.itemId, input.quantity);
   addStack(character, recipe.output.itemId, recipe.output.quantity);
+  const behaviorCount = recordBehavior(character, recipe.behaviorId);
 
   const outputItem = contentPack.items[recipe.output.itemId];
   return {
@@ -30,15 +32,21 @@ function craft({ world, actor, action, context }) {
     data: {
       crafted: { name: outputItem.name, quantity: recipe.output.quantity },
     },
-    events: [{
-      type: 'crafting.completed',
-      data: {
-        characterId: character.id,
-        recipeId: recipe.id,
-        outputItemId: recipe.output.itemId,
-        outputQuantity: recipe.output.quantity,
+    events: [
+      {
+        type: 'crafting.completed',
+        data: {
+          characterId: character.id,
+          recipeId: recipe.id,
+          outputItemId: recipe.output.itemId,
+          outputQuantity: recipe.output.quantity,
+        },
       },
-    }],
+      {
+        type: 'character.behavior-recorded',
+        data: { characterId: character.id, behaviorId: recipe.behaviorId, count: behaviorCount },
+      },
+    ],
   };
 }
 
