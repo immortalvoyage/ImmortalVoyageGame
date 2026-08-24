@@ -1,6 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
+import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
@@ -9,7 +10,7 @@ import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 13, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 14, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -24,6 +25,9 @@ function scene({ world, actor, context }) {
     : null;
   const relationships = isActionAvailable('relationship.observe')
     ? buildRelationshipViewForActor(world, actor, contentPack.npcs) ?? []
+    : null;
+  const knowledge = isActionAvailable('knowledge.observe')
+    ? buildKnowledgeViewForActor(world, actor, contentPack.knowledge) ?? []
     : null;
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
@@ -40,6 +44,7 @@ function scene({ world, actor, context }) {
       careers,
       progression,
       relationships,
+      knowledge,
       trade,
       survivalCondition,
       inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
@@ -72,9 +77,10 @@ function buildOptions(view, isActionAvailable, contentPack, survivalCondition) {
   const options = [];
   const location = contentPack.locations[view.character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
+  const knowledgeActive = isActionAvailable('knowledge.observe');
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
-  for (const target of buildKnownPurposeTargets(view.character, contentPack)) {
+  for (const target of buildKnownPurposeTargets(view.character, contentPack, { knowledgeActive })) {
     if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
