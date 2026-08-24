@@ -32,5 +32,11 @@ export function validateWorldContentCompatibility(world, contentPack) {
     }
   }
 
+  for (const [listingId, listing] of Object.entries(world.tradeListings ?? {})) {
+    if (!Object.hasOwn(items, listing.itemId)) {
+      fail(`${listingId} trade escrow references unknown item: ${String(listing.itemId)}`);
+    }
+  }
+
   return world;
 }

@@ -43,6 +43,27 @@ test('crafting success and failures produce deterministic feedback', () => {
   assert.equal(formatActionResult({ ok: false, code: 'CRAFT_NOT_AVAILABLE' }, '製作'), '這裡目前無法進行這項製作。');
 });
 
+test('trade success and failures produce deterministic feedback without raw codes', () => {
+  assert.equal(
+    formatActionResult({ ok: true, code: 'TRADE_LISTED', data: {} }, '上架'),
+    '寄售已上架，物品已進入交易保管。',
+  );
+  assert.equal(
+    formatActionResult({
+      ok: true,
+      code: 'TRADE_PURCHASED',
+      data: { purchased: { name: '食物', quantity: 2, totalPrice: 3 } },
+    }, '購買'),
+    '已用 3 貨幣購買食物 × 2。',
+  );
+  assert.equal(
+    formatActionResult({ ok: true, code: 'TRADE_CANCELLED', data: { returned: { name: '水', quantity: 1 } } }, '取消'),
+    '已取消寄售，取回水 × 1。',
+  );
+  assert.equal(formatActionResult({ ok: false, code: 'TRADE_NOT_OWNER' }, '取消'), '你不能取消別人的寄售。');
+  assert.equal(formatActionResult({ ok: false, code: 'TRADE_INVENTORY_LIMIT' }, '購買'), '物品數量已達目前可安全保存的上限。');
+});
+
 test('known action failures are translated without exposing raw codes', () => {
   assert.equal(formatActionResult({ ok: false, code: 'INSUFFICIENT_FUNDS' }, '購買食物'), '金錢不足。');
   assert.equal(formatActionResult({ ok: false, code: 'PURPOSE_TARGET_UNKNOWN' }, '尋找某人'), '你目前沒有足夠情報尋找這個目標。');

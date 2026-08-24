@@ -67,6 +67,24 @@ test('orphaned or malformed authoritative inventory stacks fail closed', () => {
   );
 });
 
+test('orphaned trade escrow item references fail closed', () => {
+  const world = currentWorld();
+  world.tradeListings['listing:1'] = {
+    id: 'listing:1',
+    sellerSessionId: actor.sessionId,
+    sellerCharacterId: 'char:1',
+    itemId: 'retired-item',
+    quantity: 1,
+    totalPrice: 2,
+    createdLogicalTimeSeconds: 0,
+  };
+  world.nextTradeListingSequence = 2;
+  assert.throws(
+    () => validateWorldContentCompatibility(world, devStarterPack),
+    /listing:1 trade escrow references unknown item: retired-item/,
+  );
+});
+
 test('runtime validates compatibility before idempotent replay and never rewrites incompatible state', async () => {
   const world = currentWorld({ locationId: 'retired-location' });
   world.requestResults.cached = {
@@ -89,6 +107,8 @@ test('supported schema migration runs before Content Pack compatibility validati
   const world = currentWorld();
   world.schemaVersion = 2;
   delete world.characters[actor.sessionId].behaviorCounts;
+  delete world.tradeListings;
+  delete world.nextTradeListingSequence;
   const store = new MemoryGameStore(world);
   const { runtime } = createGame({ store, contentPack: devStarterPack, now: () => 1000 });
 
@@ -97,4 +117,6 @@ test('supported schema migration runs before Content Pack compatibility validati
   const stored = store.snapshot();
   assert.equal(stored.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
+  assert.deepEqual(stored.tradeListings, {});
+  assert.equal(stored.nextTradeListingSequence, 1);
 });

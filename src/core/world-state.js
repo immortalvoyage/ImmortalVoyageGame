@@ -1,6 +1,7 @@
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
+export const MAX_TRADE_LISTINGS = 50;
 
 const NEED_KEYS = Object.freeze(['hunger', 'thirst', 'fatigue']);
 
@@ -38,6 +39,43 @@ function assertCharacterState(sessionId, character) {
   }
 
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
+}
+
+function assertTradeState(world) {
+  if (!isRecord(world.tradeListings)) throw new Error('invalid trade listing collection');
+  if (!Number.isSafeInteger(world.nextTradeListingSequence) || world.nextTradeListingSequence < 1) {
+    throw new Error('invalid trade listing sequence');
+  }
+  const entries = Object.entries(world.tradeListings);
+  if (entries.length > MAX_TRADE_LISTINGS) throw new Error('trade listing collection exceeds limit');
+
+  let highestSequence = 0;
+  for (const [listingId, listing] of entries) {
+    if (!isNonEmptyText(listingId) || !isRecord(listing) || listing.id !== listingId) {
+      throw new Error('invalid trade listing');
+    }
+    const sequenceMatch = /^listing:(\d+)$/.exec(listingId);
+    if (!sequenceMatch) throw new Error('invalid trade listing id');
+    const sequence = Number(sequenceMatch[1]);
+    if (!Number.isSafeInteger(sequence) || sequence < 1) throw new Error('invalid trade listing id');
+    highestSequence = Math.max(highestSequence, sequence);
+
+    if (!isNonEmptyText(listing.sellerSessionId) || !isNonEmptyText(listing.sellerCharacterId)) {
+      throw new Error('invalid trade seller');
+    }
+    const seller = world.characters[listing.sellerSessionId];
+    if (!seller || seller.id !== listing.sellerCharacterId) throw new Error('invalid trade seller');
+    if (!isNonEmptyText(listing.itemId)) throw new Error('invalid trade item');
+    if (!Number.isSafeInteger(listing.quantity) || listing.quantity < 1) throw new Error('invalid trade quantity');
+    if (!Number.isSafeInteger(listing.totalPrice) || listing.totalPrice < 1) throw new Error('invalid trade price');
+    if (!Number.isSafeInteger(listing.createdLogicalTimeSeconds)
+      || listing.createdLogicalTimeSeconds < 0
+      || listing.createdLogicalTimeSeconds > world.logicalTimeSeconds) {
+      throw new Error('invalid trade listing time');
+    }
+  }
+
+  if (world.nextTradeListingSequence <= highestSequence) throw new Error('invalid trade listing sequence');
 }
 
 function assertRequestLedger(world) {
@@ -79,6 +117,8 @@ export function createInitialWorld({ nowMs = Date.now() } = {}) {
     lastResolvedAtMs: nowMs,
     characters: {},
     nextCharacterSequence: 1,
+    tradeListings: {},
+    nextTradeListingSequence: 1,
     requestResults: {},
     requestOrder: [],
     gameEvents: [],
@@ -98,6 +138,7 @@ export function assertWorldState(world) {
   if (!Number.isSafeInteger(world.nextCharacterSequence) || world.nextCharacterSequence < 1) throw new Error('invalid character sequence');
 
   for (const [sessionId, character] of Object.entries(world.characters)) assertCharacterState(sessionId, character);
+  assertTradeState(world);
   assertRequestLedger(world);
   assertGameEventLedger(world);
   return world;

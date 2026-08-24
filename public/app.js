@@ -10,6 +10,13 @@ const locationName = document.querySelector('#location-name');
 const locationDescription = document.querySelector('#location-description');
 const narrativeText = document.querySelector('#narrative-text');
 const characterState = document.querySelector('#character-state');
+const tradePanel = document.querySelector('#trade-panel');
+const tradeForm = document.querySelector('#trade-form');
+const tradeItem = document.querySelector('#trade-item');
+const tradeQuantity = document.querySelector('#trade-quantity');
+const tradePrice = document.querySelector('#trade-price');
+const tradeSubmit = document.querySelector('#trade-submit');
+const tradeListings = document.querySelector('#trade-listings');
 
 let view = null;
 let busy = false;
@@ -70,6 +77,58 @@ function button(label, type, payload, secondary = false) {
   return element;
 }
 
+function renderTrade() {
+  if (!view.trade) {
+    tradePanel.hidden = true;
+    return;
+  }
+
+  tradePanel.hidden = false;
+  const sellables = view.trade.sellables ?? [];
+  tradeItem.replaceChildren(...sellables.map((sellable, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = `${sellable.name}（最多 ${sellable.maxQuantity}）`;
+    return option;
+  }));
+
+  const selected = sellables[Number(tradeItem.value)] ?? sellables[0];
+  const hasSellable = Boolean(selected);
+  tradeItem.disabled = !hasSellable;
+  tradeQuantity.disabled = !hasSellable;
+  tradePrice.disabled = !hasSellable;
+  tradeSubmit.disabled = !hasSellable;
+  if (hasSellable) {
+    tradeQuantity.max = String(selected.maxQuantity);
+    const currentQuantity = Number(tradeQuantity.value);
+    if (!Number.isSafeInteger(currentQuantity) || currentQuantity < 1 || currentQuantity > selected.maxQuantity) {
+      tradeQuantity.value = '1';
+    }
+    if (!Number.isSafeInteger(Number(tradePrice.value)) || Number(tradePrice.value) < 1) tradePrice.value = '1';
+  } else {
+    tradeQuantity.removeAttribute('max');
+    tradeQuantity.value = '';
+    tradePrice.value = '';
+  }
+
+  const listingNodes = (view.trade.listings ?? []).map((listing) => {
+    const row = document.createElement('div');
+    row.className = 'trade-listing';
+    const details = document.createElement('p');
+    const ownerText = listing.own ? '你的寄售' : `賣方：${listing.sellerName}`;
+    details.textContent = `${listing.item.name} × ${listing.item.quantity}｜總價 ${listing.totalPrice}｜${ownerText}`;
+    row.append(details, button(listing.action.label, listing.action.intent.type, listing.action.intent.payload, true));
+    return row;
+  });
+  if (listingNodes.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'subtle';
+    empty.textContent = '目前沒有寄售。';
+    listingNodes.push(empty);
+  }
+  tradeListings.replaceChildren(...listingNodes);
+}
+
 function render() {
   birthPanel.hidden = true;
   gamePanel.hidden = false;
@@ -109,6 +168,7 @@ function render() {
 
   narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
   worldActions.replaceChildren(...view.utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
+  renderTrade();
 }
 
 function showMessage(text) {
@@ -124,6 +184,31 @@ birthForm.addEventListener('submit', async (event) => {
     await refresh();
   } catch (error) {
     showMessage(formatActionResult(error.result ?? { ok: false }, '出生'));
+  }
+});
+
+tradeItem.addEventListener('change', () => {
+  const sellable = view?.trade?.sellables?.[Number(tradeItem.value)];
+  if (!sellable) return;
+  tradeQuantity.max = String(sellable.maxQuantity);
+  if (Number(tradeQuantity.value) > sellable.maxQuantity) tradeQuantity.value = String(sellable.maxQuantity);
+});
+
+tradeForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const sellable = view?.trade?.sellables?.[Number(tradeItem.value)];
+  if (!sellable) return;
+  const payload = {
+    ...sellable.intent.payload,
+    quantity: Number(tradeQuantity.value),
+    totalPrice: Number(tradePrice.value),
+  };
+  try {
+    const result = await act(sellable.intent.type, payload);
+    if (result) showMessage(formatActionResult(result, '上架寄售'));
+    await refresh();
+  } catch (error) {
+    showMessage(formatActionResult(error.result ?? { ok: false }, '上架寄售'));
   }
 });
 

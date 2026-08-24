@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   assertWorldState,
   createInitialWorld,
+  CURRENT_SCHEMA_VERSION,
   MAX_GAME_EVENTS,
   MAX_REQUEST_RESULTS,
+  MAX_TRADE_LISTINGS,
 } from '../src/core/world-state.js';
 import { createDevelopmentGame } from '../src/game.js';
 
@@ -33,6 +35,19 @@ function validWorld(characterOverrides = {}) {
   return world;
 }
 
+function listing(overrides = {}) {
+  return {
+    id: 'listing:1',
+    sellerSessionId: actor.sessionId,
+    sellerCharacterId: 'char:1',
+    itemId: 'food',
+    quantity: 1,
+    totalPrice: 2,
+    createdLogicalTimeSeconds: 0,
+    ...overrides,
+  };
+}
+
 function expectInvalid(mutator, pattern) {
   const world = validWorld();
   mutator(world);
@@ -47,7 +62,7 @@ test('valid authoritative world and normal gameplay output satisfy invariants', 
   await runtime.dispatch({ actor, requestId: 'birth', action: { type: 'character.birth', payload: { name: '正常旅人' } } });
   await runtime.dispatch({ actor, requestId: 'work', action: { type: 'economy.work', payload: { jobId: 'starter-labor' } } });
   await runtime.dispatch({ actor, requestId: 'scene', action: { type: 'narrative.scene', payload: {} } });
-  assert.equal(assertWorldState(store.snapshot()).schemaVersion, 3);
+  assert.equal(assertWorldState(store.snapshot()).schemaVersion, CURRENT_SCHEMA_VERSION);
 });
 
 test('identity, ownership, and world clock corruption fail closed', () => {
@@ -70,6 +85,38 @@ test('survival, money, and inventory corruption fail closed', () => {
 test('behavior counters remain bounded integer aggregates', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].behaviorCounts.bad = -1; }, /invalid behavior counts/);
   expectInvalid((world) => { world.characters[actor.sessionId].behaviorCounts.bad = 1.5; }, /invalid behavior counts/);
+});
+
+test('trade listing collection is bounded and internally consistent', () => {
+  const valid = validWorld();
+  valid.tradeListings['listing:1'] = listing();
+  valid.nextTradeListingSequence = 2;
+  assert.equal(assertWorldState(valid), valid);
+
+  expectInvalid((world) => {
+    world.tradeListings['listing:1'] = listing({ sellerCharacterId: 'char:other' });
+    world.nextTradeListingSequence = 2;
+  }, /invalid trade seller/);
+  expectInvalid((world) => {
+    world.tradeListings['listing:1'] = listing({ quantity: 0 });
+    world.nextTradeListingSequence = 2;
+  }, /invalid trade quantity/);
+  expectInvalid((world) => {
+    world.tradeListings['listing:1'] = listing({ totalPrice: 0 });
+    world.nextTradeListingSequence = 2;
+  }, /invalid trade price/);
+  expectInvalid((world) => {
+    world.tradeListings['listing:1'] = listing();
+    world.nextTradeListingSequence = 1;
+  }, /invalid trade listing sequence/);
+
+  const oversized = validWorld();
+  for (let index = 1; index <= MAX_TRADE_LISTINGS + 1; index += 1) {
+    const listingId = `listing:${index}`;
+    oversized.tradeListings[listingId] = listing({ id: listingId });
+  }
+  oversized.nextTradeListingSequence = MAX_TRADE_LISTINGS + 2;
+  assert.throws(() => assertWorldState(oversized), /trade listing collection exceeds limit/);
 });
 
 test('request result ledger must stay bounded and internally consistent', () => {

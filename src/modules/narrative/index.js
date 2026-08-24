@@ -3,8 +3,9 @@ import { buildCareerViewForActor } from '../career/index.js';
 import { buildPublicInventory } from '../inventory/index.js';
 import { buildLocationView } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 7, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 8, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -17,6 +18,9 @@ function scene({ world, actor, context }) {
   const progression = isActionAvailable('progression.observe')
     ? buildProgressionViewForActor(world, actor, contentPack.progressionTags)
     : null;
+  const trade = isActionAvailable('trade.browse')
+    ? buildTradeViewForActor(world, actor, contentPack.items)
+    : null;
   return {
     ok: true,
     code: 'SCENE_PRESENTED',
@@ -24,6 +28,7 @@ function scene({ world, actor, context }) {
       ...view,
       careers,
       progression,
+      trade,
       inventoryItems: buildPublicInventory(view.character.inventory, contentPack.items),
       narrative: {
         mode: 'deterministic-fallback',

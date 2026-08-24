@@ -45,6 +45,27 @@
         <div id="world-actions" class="actions"></div>
       </article>
 
+      <article id="trade-panel" class="card" hidden>
+        <h2>寄售交易</h2>
+        <p class="subtle">固定總價、非即時寄售。上架物品會先進入交易保管，成交或取消後再由伺服器結算。</p>
+        <form id="trade-form" class="trade-form">
+          <label>
+            物品
+            <select id="trade-item" required></select>
+          </label>
+          <label>
+            數量
+            <input id="trade-quantity" type="number" min="1" step="1" required inputmode="numeric">
+          </label>
+          <label>
+            總價
+            <input id="trade-price" type="number" min="1" step="1" required inputmode="numeric">
+          </label>
+          <button id="trade-submit" type="submit">上架寄售</button>
+        </form>
+        <div id="trade-listings" class="trade-listings"></div>
+      </article>
+
       <article class="card">
         <h2>訊息</h2>
         <p id="message" class="message">正在讀取世界狀態……</p>

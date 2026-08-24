@@ -52,6 +52,8 @@ export class GameRuntime {
       recordGameEvents(committed, result.events);
       const publicResult = { ok: true, code: result.code ?? 'OK', data: result.data ?? null };
       rememberRequest(committed, { requestId, sessionId: actor.sessionId, result: publicResult });
+      assertWorldState(committed);
+      this.validateLoadedWorld(committed);
       await this.store.replace(committed);
       return publicResult;
     });
