@@ -14,10 +14,20 @@ function validateInventoryItems(inventory, items, label) {
   }
 }
 
+function validateKnowledgeIds(knowledgeIds, knowledge, label) {
+  if (!Array.isArray(knowledgeIds)) fail(`${label} has invalid knowledge state`);
+  for (const knowledgeId of knowledgeIds) {
+    if (!Object.hasOwn(knowledge, knowledgeId)) fail(`${label} references unknown knowledge: ${String(knowledgeId)}`);
+  }
+}
+
 export function validateWorldContentCompatibility(world, contentPack) {
   const locations = contentPack?.locations;
   const items = contentPack?.items;
-  if (!locations || typeof locations !== 'object' || !items || typeof items !== 'object') {
+  const knowledge = contentPack?.knowledge;
+  if (!locations || typeof locations !== 'object'
+    || !items || typeof items !== 'object'
+    || !knowledge || typeof knowledge !== 'object') {
     fail('Content Pack catalogs are unavailable');
   }
 
@@ -27,6 +37,7 @@ export function validateWorldContentCompatibility(world, contentPack) {
       fail(`${label} references unknown location: ${String(character.locationId)}`);
     }
     validateInventoryItems(character.inventory, items, `${label} inventory`);
+    validateKnowledgeIds(character.knowledgeIds, knowledge, label);
   }
 
   for (const [listingId, listing] of Object.entries(world.tradeListings ?? {})) {
