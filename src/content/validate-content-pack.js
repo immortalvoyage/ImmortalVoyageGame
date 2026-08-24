@@ -84,6 +84,7 @@ function validateNpcRelationship(npc, path, declaredBehaviorIds) {
     rememberUnique(names, name, `${path}.relationship.level names`);
     const minCount = requireInteger(level.minCount, `${levelPath}.minCount`, { min: 1 });
     if (minCount <= previousMinCount) fail(`${path}.relationship.levels must have strictly increasing minCount`);
+    if (level.responseText !== undefined) requireText(level.responseText, `${levelPath}.responseText`);
     previousMinCount = minCount;
   }
 }
