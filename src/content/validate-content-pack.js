@@ -75,6 +75,7 @@ export function validateContentPack(pack) {
   const survival = requireRecord(pack.survival, 'pack.survival');
   const warningThreshold = requireInteger(survival.warningThreshold, 'pack.survival.warningThreshold', { min: 1, max: 99 });
   const criticalThreshold = requireInteger(survival.criticalThreshold, 'pack.survival.criticalThreshold', { min: 2, max: 100 });
+  requireInteger(survival.restFatigueRelief, 'pack.survival.restFatigueRelief', { min: 1, max: 100 });
   if (warningThreshold >= criticalThreshold) fail('pack.survival.warningThreshold must be lower than criticalThreshold');
 
   const items = requireRecord(pack.items, 'pack.items');
