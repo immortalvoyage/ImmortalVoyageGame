@@ -9,9 +9,14 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
+async function acceptStarterEmployment(runtime, requestId) {
+  return dispatch(runtime, requestId, 'employment.accept', { jobId: 'starter-labor' });
+}
+
 test('progression tags emerge from authoritative behavior without exposing raw counters', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 1000 });
   await dispatch(runtime, 'birth', 'character.birth', { name: '成長旅人' });
+  await acceptStarterEmployment(runtime, 'employment');
 
   let scene = await dispatch(runtime, 'scene-0', 'narrative.scene');
   assert.deepEqual(scene.data.progression, { skills: [], socialTags: [] });
