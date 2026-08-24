@@ -5,7 +5,7 @@ import { addStack, removeStack } from '../inventory/index.js';
 
 const manifest = validateGameModuleManifest({
   name: 'survival',
-  dataVersion: 5,
+  dataVersion: 6,
   actions: ['survival.gather', 'survival.consume', 'survival.rest'],
 });
 
@@ -45,6 +45,8 @@ function consume({ world, actor, action, context }) {
 function rest({ world, actor, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  const location = context.contentPack.locations[character.locationId];
+  if (!location?.rest) return { ok: false, code: 'REST_NOT_AVAILABLE' };
   const relief = context.contentPack.survival.restFatigueRelief;
   character.needs.fatigue = Math.max(0, character.needs.fatigue - relief);
   return {

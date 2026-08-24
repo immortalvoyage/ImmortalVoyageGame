@@ -168,6 +168,10 @@ export function validateContentPack(pack) {
     requireRecord(location, `locations.${locationId}`);
     requireText(location.name, `locations.${locationId}.name`);
     requireText(location.description, `locations.${locationId}.description`);
+    if (location.rest !== undefined) {
+      const rest = requireRecord(location.rest, `locations.${locationId}.rest`);
+      requireText(rest.label, `locations.${locationId}.rest.label`);
+    }
 
     const routes = requireArray(location.routes, `locations.${locationId}.routes`);
     const routeIds = new Set();

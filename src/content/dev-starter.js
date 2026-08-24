@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 15,
+  dataVersion: 16,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -30,6 +30,7 @@ export const devStarterPack = Object.freeze({
     'starter-square': Object.freeze({
       name: '開發聚落廣場',
       description: '供 V2 垂直切片驗證使用的臨時聚落。',
+      rest: Object.freeze({ label: '在廣場棚下休息' }),
       routes: Object.freeze([
         Object.freeze({
           destinationId: 'starter-well',
@@ -74,6 +75,7 @@ export const devStarterPack = Object.freeze({
     'starter-well': Object.freeze({
       name: '公共水井',
       description: '可取得基礎飲水。',
+      rest: Object.freeze({ label: '在井邊短暫休息' }),
       routes: Object.freeze([
         Object.freeze({
           destinationId: 'starter-square',

@@ -19,6 +19,8 @@ function failureMessage(code, fallbackLabel) {
       return '這裡目前無法取得該資源。';
     case 'ITEM_NOT_AVAILABLE':
       return '你目前沒有可使用的該物品。';
+    case 'REST_NOT_AVAILABLE':
+      return '這裡不是可以安心休息的場所。';
     case 'ROUTE_NOT_AVAILABLE':
     case 'PURPOSE_ROUTE_UNAVAILABLE':
       return '目前沒有可行的路線。';
