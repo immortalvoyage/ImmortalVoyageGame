@@ -14,9 +14,10 @@ starter 地點、NPC 名稱、職業身分、配方與數值都只屬可替換�
 
 ## Architecture
 
-- `src/core/`：World Clock、World State、Action Resolver、Schema Migration、Game Module Manifest/Wiring、Permission Boundary。
-- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Narrative 提供零 AI deterministic fallback；Purpose 由 server 解析尋人意圖；Crafting 與 Career 均可獨立關閉。
-- `src/content/`：版本化開發內容與 fail-closed validator；後續可替換為正式 Content Pack。
+- `src/core/`：World Clock、World State、Action Resolver、Schema Migration、Game Module Manifest/Wiring、Permission Boundary。Core 不 import 任何特定 Content Pack。
+- `src/game.js`：server-side composition boundary；驗證選定 Content Pack，並透過 runtime context 注入玩法模組。
+- `src/modules/`：玩法模組；只能透過 server-side Action Resolver 形成正式世界變更。Gameplay Module 不直接 import `devStarterPack`；Narrative 提供零 AI deterministic fallback，Purpose 由 server 解析尋人意圖，Crafting 與 Career 均可獨立關閉。
+- `src/content/`：版本化開發內容與 fail-closed validator；後續可由同一 wiring boundary 換成其他已驗證 Content Pack，不需修改玩法模組。
 - `src/adapters/`：可替換 I/O；Memory Store 用於測試，File Store 用於本機持久化開發。
 - `public/`：純 Browser UI，不載入 Core，不持有世界真相，也不取得 raw behavior counters。
 - `dev/`：本機 Node authoritative server，僅供開發，不是 production hosting。

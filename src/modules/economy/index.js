@@ -1,14 +1,13 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
-import { devStarterPack } from '../../content/dev-starter.js';
 import { addStack } from '../inventory/index.js';
 
 const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 3, actions: ['economy.work', 'economy.buy'] });
 
-function work({ world, actor, action }) {
+function work({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const location = devStarterPack.locations[character.locationId];
+  const location = context.contentPack.locations[character.locationId];
   const jobId = action.payload?.jobId;
   const job = location?.jobs?.find((entry) => entry.id === jobId);
   if (!job) return { ok: false, code: 'WORK_NOT_AVAILABLE' };
@@ -32,10 +31,10 @@ function work({ world, actor, action }) {
   };
 }
 
-function buy({ world, actor, action }) {
+function buy({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
-  const location = devStarterPack.locations[character.locationId];
+  const location = context.contentPack.locations[character.locationId];
   const itemId = action.payload?.itemId;
   const offer = location?.market?.find((entry) => entry.itemId === itemId);
   if (!offer) return { ok: false, code: 'ITEM_NOT_SOLD' };

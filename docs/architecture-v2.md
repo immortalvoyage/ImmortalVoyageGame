@@ -6,15 +6,17 @@ This rewrite keeps the authoritative game runtime on the server side and treats 
 
 - Core: world clock, world state, action resolution, schema migration, module manifest validation, permission boundary, bounded idempotency/event ledgers.
 - Modules: character, inventory, location, NPC, purpose action, survival, economy, crafting, career, narrative.
-- Content: disposable versioned starter content used only to prove the critical path and small post-loop modules. Server startup validates its references and bounded numeric rules before gameplay code consumes it.
+- Content: disposable versioned starter content used only to prove the critical path and small post-loop modules. Game wiring validates one server-owned Content Pack before gameplay consumes it.
 - Browser: submits intents through `/api/action`; it does not import Core modules or own world truth.
 - Local dev server: zero-dependency Node server with local file-backed world persistence for development only.
 
 ## Content Pack boundary
 
-Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, career rules, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, duplicate local rules, free recipes with no inputs, empty career requirements, unknown need keys, invalid thresholds/quantities/prices/rewards, and a missing starting location at module load time. Character birth reads the Content Pack starting location rather than hardcoding a starter-world ID.
+Gameplay content stays server-side and versioned. The current starter pack owns the starting location, locations/routes, NPC placement, items, jobs, market offers, gatherables, crafting recipes, career rules, and their deterministic tuning values. A deterministic validator rejects broken route/NPC/item/recipe/behavior references, duplicate local rules, free recipes with no inputs, empty career requirements, unknown need keys, invalid thresholds/quantities/prices/rewards, and a missing starting location before the pack is accepted by game wiring.
 
-This validation is a fail-closed development/runtime guard, not a second source of world truth and not a remote content service. It adds no database, scheduler, polling, AI, or network dependency.
+`src/game.js` is the composition boundary: it validates the selected Content Pack and injects it into the authoritative runtime context. `GameRuntime` remains content-agnostic and only forwards server-owned runtime context to registered action handlers. Gameplay modules do not import the development starter pack directly; Character, Location, NPC, Purpose, Survival, Economy, Crafting, Career, and Narrative all consume the injected pack. This makes a future validated Content Pack replaceable without editing gameplay modules or creating a second registry.
+
+The default development wiring still selects `devStarterPack`, while tests or future server wiring may supply another validated pack. There is no remote content fetch, hot reload service, database, scheduler, polling loop, AI call, or other runtime dependency associated with this injection boundary.
 
 ## Career and behavior
 
