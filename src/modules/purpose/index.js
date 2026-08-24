@@ -24,8 +24,7 @@ function findNpc({ world, actor, action, context }) {
 
   const npcId = action.payload?.npcId;
   const npc = contentPack.npcs[npcId];
-  const allowRelationshipReveals = context?.isActionAvailable?.('relationship.observe') ?? false;
-  if (!npc?.searchLabel || !isKnownNpcTarget(character, npcId, contentPack, { allowRelationshipReveals })) {
+  if (!npc?.searchLabel || !isKnownNpcTarget(character, npcId, contentPack)) {
     return { ok: false, code: 'PURPOSE_TARGET_UNKNOWN' };
   }
 
