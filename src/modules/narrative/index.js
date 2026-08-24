@@ -6,7 +6,7 @@ import { buildProgressionViewForActor } from '../progression/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 9, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 10, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -22,7 +22,7 @@ function scene({ world, actor, context }) {
   const trade = isActionAvailable('trade.browse')
     ? buildTradeViewForActor(world, actor, contentPack.items)
     : null;
-  const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume');
+  const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
   const survivalCondition = survivalActive
     ? buildPublicSurvivalCondition(view.character, contentPack.survival)
     : null;
@@ -86,6 +86,9 @@ function buildUtilities(view, isActionAvailable, contentPack) {
       const item = contentPack.items[itemId];
       if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
     }
+  }
+  if (isActionAvailable('survival.rest') && view.character.needs.fatigue > 0) {
+    utilities.push(option('休息片刻', 'survival.rest'));
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {
