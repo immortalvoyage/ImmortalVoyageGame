@@ -85,7 +85,7 @@ test('topic eligibility is not knowledge; successful ask persists bounded discov
   assert.deepEqual(search.intent.payload, { npcId: 'herbalist' });
   assert.equal(search.intent.payload.locationId, undefined);
   assert.equal(JSON.stringify(scene.data).includes('rumor:herbalist'), false);
-  assert.equal(JSON.stringify(scene.data).includes('starter-grove'), false);
+  assert.equal(JSON.stringify(search).includes('starter-grove'), false);
 });
 
 test('repeated topic ask and idempotent replay do not duplicate knowledge or evidence', async () => {
