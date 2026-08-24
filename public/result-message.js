@@ -85,6 +85,8 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return `${text(fallbackLabel, '採集')}：已取得資源。`;
     case 'ITEM_CONSUMED':
       return `${text(fallbackLabel, '使用物品')}：完成。`;
+    case 'REST_COMPLETED':
+      return '你休息了一會兒，疲勞有所緩解。';
     case 'WORK_COMPLETED':
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
     case 'PURCHASE_COMPLETED':
