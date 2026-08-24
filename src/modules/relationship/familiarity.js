@@ -12,3 +12,18 @@ export function findHighestFamiliarityLevel(character, npc) {
   }
   return highest;
 }
+
+export function findUnlockedFamiliarityTopics(character, npc) {
+  const behaviorId = npc?.relationship?.behaviorId;
+  const levels = npc?.relationship?.levels;
+  if (!behaviorId || !Array.isArray(levels)) return [];
+  const count = character?.behaviorCounts?.[behaviorId] ?? 0;
+  if (!Number.isSafeInteger(count) || count < 1) return [];
+
+  const topics = [];
+  for (const level of levels) {
+    if (count < level.minCount) break;
+    for (const topic of level.topics ?? []) topics.push(topic);
+  }
+  return topics;
+}

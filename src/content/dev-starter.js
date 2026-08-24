@@ -2,7 +2,7 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 10,
+  dataVersion: 11,
   startingLocationId: 'starter-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -125,11 +125,25 @@ export const devStarterPack = Object.freeze({
             name: '見過幾面',
             minCount: 1,
             responseText: '又來了？這裡的活還是那些，熟門熟路就自己看著辦。',
+            topics: Object.freeze([
+              Object.freeze({
+                id: 'foreman-work-rumors',
+                label: '問問最近的雜役消息',
+                responseText: '最近搬運和整理的活不少，想賺些小錢還是先從眼前能做的事開始。',
+              }),
+            ]),
           }),
           Object.freeze({
             name: '逐漸熟悉',
             minCount: 3,
             responseText: '最近常看到你，這些雜活你也做熟了。',
+            topics: Object.freeze([
+              Object.freeze({
+                id: 'foreman-living-advice',
+                label: '問問在聚落討生活的建議',
+                responseText: '先把吃喝和休息顧好，再談長遠打算；餓著肚子硬撐，活也做不好。',
+              }),
+            ]),
           }),
           Object.freeze({
             name: '熟識',
