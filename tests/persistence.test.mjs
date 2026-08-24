@@ -29,6 +29,7 @@ test('file store survives runtime restart without external database', async (t) 
 
   const stored = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(stored.characters['persist-session'].money, 2);
+  assert.deepEqual(stored.characters['persist-session'].knowledgeIds, []);
 });
 
 test('legacy schema v1 save migrates on the next successful authoritative action', async (t) => {
@@ -67,6 +68,7 @@ test('legacy schema v1 save migrates on the next successful authoritative action
   assert.equal(stored.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.equal(stored.nextCharacterSequence, 8);
   assert.deepEqual(stored.characters['persist-session'].needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
+  assert.deepEqual(stored.characters['persist-session'].knowledgeIds, []);
 });
 
 test('corrupted save fails closed instead of silently resetting world', async (t) => {
