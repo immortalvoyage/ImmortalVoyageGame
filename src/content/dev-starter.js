@@ -142,8 +142,7 @@ export const devStarterPack = Object.freeze({
               Object.freeze({
                 id: 'foreman-living-advice',
                 label: '問問在聚落討生活的建議',
-                responseText: '先把吃喝和休息顧好，再談長遠打算；近郊樹林裡也常有一名採藥人出沒。',
-                revealsNpcIds: Object.freeze(['herbalist']),
+                responseText: '先把吃喝和休息顧好，再談長遠打算；餓著肚子硬撐，活也做不好。',
               }),
             ]),
           }),
