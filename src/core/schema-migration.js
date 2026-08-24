@@ -17,6 +17,10 @@ export function migrateWorldState(input) {
       world = migrateV2ToV3(world);
       continue;
     }
+    if (world.schemaVersion === 3) {
+      world = migrateV3ToV4(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -54,5 +58,22 @@ function migrateV2ToV3(world) {
     character.behaviorCounts ??= {};
   }
   migrated.schemaVersion = 3;
+  return migrated;
+}
+
+function migrateV3ToV4(world) {
+  const migrated = cloneWorld(world);
+  migrated.tradeListings ??= {};
+
+  let inferredNextSequence = 1;
+  for (const listingId of Object.keys(migrated.tradeListings)) {
+    const match = /^listing:(\d+)$/.exec(listingId);
+    if (match) inferredNextSequence = Math.max(inferredNextSequence, Number(match[1]) + 1);
+  }
+  const existingSequence = Number.isSafeInteger(migrated.nextTradeListingSequence) && migrated.nextTradeListingSequence > 0
+    ? migrated.nextTradeListingSequence
+    : 1;
+  migrated.nextTradeListingSequence = Math.max(existingSequence, inferredNextSequence);
+  migrated.schemaVersion = 4;
   return migrated;
 }
