@@ -16,6 +16,7 @@ import { tradeModule } from './modules/trade/index.js';
 import { craftingModule } from './modules/crafting/index.js';
 import { progressionModule } from './modules/progression/index.js';
 import { careerModule } from './modules/career/index.js';
+import { relationshipModule } from './modules/relationship/index.js';
 import { estateModule } from './modules/estate/index.js';
 import { narrativeModule } from './modules/narrative/index.js';
 
@@ -31,6 +32,7 @@ const allModules = [
   craftingModule,
   progressionModule,
   careerModule,
+  relationshipModule,
   estateModule,
   narrativeModule,
 ];
