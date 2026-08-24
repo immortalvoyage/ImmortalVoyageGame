@@ -27,6 +27,22 @@ function failureMessage(code, fallbackLabel) {
       return '這裡目前無法進行這項製作。';
     case 'CRAFT_MATERIALS_MISSING':
       return '製作材料不足。';
+    case 'TRADE_ITEM_NOT_AVAILABLE':
+      return '這個物品目前無法寄售或交付。';
+    case 'INVALID_TRADE_LISTING':
+      return '寄售數量與價格必須是正整數。';
+    case 'TRADE_LISTING_LIMIT_REACHED':
+      return '目前寄售欄位已滿。';
+    case 'TRADE_LISTING_NOT_AVAILABLE':
+      return '這筆寄售已不存在或已成交。';
+    case 'TRADE_OWN_LISTING':
+      return '不能購買自己的寄售。';
+    case 'TRADE_NOT_OWNER':
+      return '你不能取消別人的寄售。';
+    case 'TRADE_SELLER_UNAVAILABLE':
+      return '賣方目前無法完成交易。';
+    case 'TRADE_BALANCE_LIMIT':
+      return '這筆交易目前無法結算。';
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
     case 'INVALID_NAME':
@@ -73,6 +89,22 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       const name = text(result.data?.crafted?.name);
       const quantity = result.data?.crafted?.quantity;
       return name && Number.isSafeInteger(quantity) && quantity > 0 ? `已製作${name} × ${quantity}。` : fallback;
+    }
+    case 'TRADE_LISTED':
+      return '寄售已上架，物品已進入交易保管。';
+    case 'TRADE_PURCHASED': {
+      const name = text(result.data?.purchased?.name);
+      const quantity = result.data?.purchased?.quantity;
+      const totalPrice = result.data?.purchased?.totalPrice;
+      if (name && Number.isSafeInteger(quantity) && quantity > 0 && Number.isSafeInteger(totalPrice) && totalPrice > 0) {
+        return `已用 ${totalPrice} 貨幣購買${name} × ${quantity}。`;
+      }
+      return fallback;
+    }
+    case 'TRADE_CANCELLED': {
+      const name = text(result.data?.returned?.name);
+      const quantity = result.data?.returned?.quantity;
+      return name && Number.isSafeInteger(quantity) && quantity > 0 ? `已取消寄售，取回${name} × ${quantity}。` : fallback;
     }
     default:
       return fallback;
