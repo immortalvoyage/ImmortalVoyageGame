@@ -2,6 +2,15 @@ function text(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+function travelDurationText(value) {
+  if (!Number.isSafeInteger(value) || value < 1) return '';
+  const minutes = Math.max(1, Math.ceil(value / 60));
+  if (minutes < 60) return `${minutes}分鐘`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}小時${remainingMinutes}分鐘` : `${hours}小時`;
+}
+
 function failureMessage(code, fallbackLabel) {
   switch (code) {
     case 'INSUFFICIENT_FUNDS':
@@ -74,11 +83,15 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return text(result.data?.text, fallback);
     case 'TRAVEL_COMPLETED': {
       const location = text(result.data?.location?.name);
+      const duration = travelDurationText(result.data?.travelSeconds);
+      if (location && duration) return `已抵達${location}（旅程約${duration}）。`;
       return location ? `已抵達${location}。` : fallback;
     }
     case 'PURPOSE_SEARCH_PROGRESS': {
       const location = text(result.data?.location?.name);
       const target = text(result.data?.target?.name);
+      const duration = travelDurationText(result.data?.travelSeconds);
+      if (location && target && duration) return `你先前往${location}（約${duration}），繼續尋找${target}。`;
       if (location && target) return `你先前往${location}，繼續尋找${target}。`;
       return fallback;
     }
