@@ -7,6 +7,7 @@ export const devStarterPack = Object.freeze({
   survival: Object.freeze({
     warningThreshold: 60,
     criticalThreshold: 85,
+    restFatigueRelief: 25,
   }),
   items: Object.freeze({
     water: Object.freeze({
