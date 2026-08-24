@@ -31,17 +31,42 @@ function currentWorld(characterOverrides = {}) {
   return world;
 }
 
+function addHistoricalArchive(world, { locationId = 'retired-location', inventory = { food: 1 } } = {}) {
+  world.archivedCharacters['char:old'] = {
+    id: 'char:old',
+    ownerSessionId: 'old-session',
+    name: '故人',
+    status: 'dead',
+    locationId,
+    needs: { hunger: 90, thirst: 80, fatigue: 70 },
+    needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    behaviorCounts: {},
+    estateId: 'estate:char:old',
+    diedLogicalTimeSeconds: 0,
+    deathCauseCode: 'hazard.accident',
+  };
+  world.estates['estate:char:old'] = {
+    id: 'estate:char:old',
+    deceasedCharacterId: 'char:old',
+    status: 'pending',
+    openedLogicalTimeSeconds: 0,
+    money: 0,
+    inventory,
+  };
+}
+
 async function dispatch(runtime, requestId, type = 'location.observe', payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('current authoritative references pass while historical event references may outlive Content Pack entries', () => {
+test('current authoritative references pass while historical event and archive locations may outlive Content Pack entries', () => {
   const world = currentWorld({ inventory: { food: 1, water: 2 } });
   world.gameEvents.push({
     type: 'historical.example',
     logicalTimeSeconds: 0,
     data: { destinationId: 'retired-location', itemId: 'retired-item' },
   });
+  addHistoricalArchive(world, { locationId: 'retired-location', inventory: { food: 1 } });
   assert.equal(validateWorldContentCompatibility(world, devStarterPack), world);
 });
 
@@ -85,6 +110,15 @@ test('orphaned trade escrow item references fail closed', () => {
   );
 });
 
+test('unresolved estate assets remain current authoritative references and fail closed if orphaned', () => {
+  const world = currentWorld();
+  addHistoricalArchive(world, { inventory: { 'retired-item': 1 } });
+  assert.throws(
+    () => validateWorldContentCompatibility(world, devStarterPack),
+    /estate:char:old estate inventory references unknown item: retired-item/,
+  );
+});
+
 test('runtime validates compatibility before idempotent replay and never rewrites incompatible state', async () => {
   const world = currentWorld({ locationId: 'retired-location' });
   world.requestResults.cached = {
@@ -109,6 +143,8 @@ test('supported schema migration runs before Content Pack compatibility validati
   delete world.characters[actor.sessionId].behaviorCounts;
   delete world.tradeListings;
   delete world.nextTradeListingSequence;
+  delete world.archivedCharacters;
+  delete world.estates;
   const store = new MemoryGameStore(world);
   const { runtime } = createGame({ store, contentPack: devStarterPack, now: () => 1000 });
 
@@ -119,4 +155,6 @@ test('supported schema migration runs before Content Pack compatibility validati
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
   assert.deepEqual(stored.tradeListings, {});
   assert.equal(stored.nextTradeListingSequence, 1);
+  assert.deepEqual(stored.archivedCharacters, {});
+  assert.deepEqual(stored.estates, {});
 });
