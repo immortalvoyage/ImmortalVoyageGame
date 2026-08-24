@@ -151,6 +151,12 @@ function render() {
     const socialTagText = (view.progression.socialTags ?? []).map((tag) => tag.name).join('、') || '尚未形成';
     rows.push(['技能', skillText], ['社會標籤', socialTagText]);
   }
+  if (Array.isArray(view.relationships)) {
+    const relationshipText = view.relationships
+      .map((relationship) => `${relationship.npc.name}：${relationship.familiarity.name}`)
+      .join('、') || '尚未形成';
+    rows.push(['關係', relationshipText]);
+  }
   rows.push(
     ['貨幣', String(character.money)],
     ['飢餓', String(character.needs.hunger)],
