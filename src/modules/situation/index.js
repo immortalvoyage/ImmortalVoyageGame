@@ -85,7 +85,7 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
       .filter((job) => visibleNpcIds.has(job.employerNpcId))
       .map((job) => {
         const employer = contentPack.npcs[job.employerNpcId];
-        return option(`接受${employer.name}的${job.title}工作`, 'employment.accept', { jobId: job.id });
+        return option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id });
       })
     : [];
 
