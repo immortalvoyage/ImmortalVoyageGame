@@ -66,6 +66,27 @@ function validateBehaviorRequirements(requirements, path, declaredBehaviorIds) {
   }
 }
 
+function validateNpcRelationship(npc, path, declaredBehaviorIds) {
+  if (npc.relationship === undefined) return;
+  const relationship = requireRecord(npc.relationship, `${path}.relationship`);
+  const behaviorId = requireText(relationship.behaviorId, `${path}.relationship.behaviorId`);
+  declaredBehaviorIds.add(behaviorId);
+
+  const levels = requireArray(relationship.levels, `${path}.relationship.levels`);
+  if (levels.length === 0) fail(`${path}.relationship.levels must not be empty`);
+  let previousMinCount = 0;
+  const names = new Set();
+  for (const [index, level] of levels.entries()) {
+    const levelPath = `${path}.relationship.levels[${index}]`;
+    requireRecord(level, levelPath);
+    const name = requireText(level.name, `${levelPath}.name`);
+    rememberUnique(names, name, `${path}.relationship.level names`);
+    const minCount = requireInteger(level.minCount, `${levelPath}.minCount`, { min: 1 });
+    if (minCount <= previousMinCount) fail(`${path}.relationship.levels must have strictly increasing minCount`);
+    previousMinCount = minCount;
+  }
+}
+
 export function validateContentPack(pack) {
   requireRecord(pack, 'pack');
   requireText(pack.id, 'pack.id');
@@ -171,6 +192,18 @@ export function validateContentPack(pack) {
     }
   }
 
+  for (const [npcId, npc] of Object.entries(npcs)) {
+    requireText(npcId, 'npc id');
+    const path = `npcs.${npcId}`;
+    requireRecord(npc, path);
+    requireText(npc.name, `${path}.name`);
+    requireText(npc.locationId, `${path}.locationId`);
+    if (!Object.hasOwn(locations, npc.locationId)) fail(`${path}.locationId references unknown location: ${npc.locationId}`);
+    requireText(npc.greeting, `${path}.greeting`);
+    if (npc.searchLabel !== undefined) requireText(npc.searchLabel, `${path}.searchLabel`);
+    validateNpcRelationship(npc, path, declaredBehaviorIds);
+  }
+
   for (const [tagId, tag] of Object.entries(progressionTags)) {
     requireText(tagId, 'progression tag id');
     const path = `progressionTags.${tagId}`;
@@ -186,16 +219,6 @@ export function validateContentPack(pack) {
     requireRecord(career, path);
     requireText(career.name, `${path}.name`);
     validateBehaviorRequirements(career.requirements, `${path}.requirements`, declaredBehaviorIds);
-  }
-
-  for (const [npcId, npc] of Object.entries(npcs)) {
-    requireText(npcId, 'npc id');
-    requireRecord(npc, `npcs.${npcId}`);
-    requireText(npc.name, `npcs.${npcId}.name`);
-    requireText(npc.locationId, `npcs.${npcId}.locationId`);
-    if (!Object.hasOwn(locations, npc.locationId)) fail(`npcs.${npcId}.locationId references unknown location: ${npc.locationId}`);
-    requireText(npc.greeting, `npcs.${npcId}.greeting`);
-    if (npc.searchLabel !== undefined) requireText(npc.searchLabel, `npcs.${npcId}.searchLabel`);
   }
 
   return pack;
