@@ -1,7 +1,7 @@
 export const CURRENT_SCHEMA_VERSION = 4;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
-export const MAX_TRADE_LISTINGS = 128;
+export const MAX_TRADE_LISTINGS = 50;
 
 const NEED_KEYS = Object.freeze(['hunger', 'thirst', 'fatigue']);
 
