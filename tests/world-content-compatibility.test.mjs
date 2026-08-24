@@ -19,6 +19,7 @@ function character(overrides = {}) {
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
     knowledgeIds: [],
+    currentEmployment: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -36,6 +37,7 @@ function addHistoricalArchive(world, {
   locationId = 'retired-location',
   inventory = { food: 1 },
   knowledgeIds = [],
+  currentEmployment = null,
 } = {}) {
   world.archivedCharacters['char:old'] = {
     id: 'char:old',
@@ -47,6 +49,7 @@ function addHistoricalArchive(world, {
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
     behaviorCounts: {},
     knowledgeIds,
+    currentEmployment,
     estateId: 'estate:char:old',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',
@@ -65,10 +68,15 @@ async function dispatch(runtime, requestId, type = 'location.observe', payload =
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('current authoritative references pass while historical event, archive locations, and archive knowledge may outlive Content Pack entries', () => {
+test('current authoritative references pass while historical event, archive locations, knowledge, and employment may outlive Content Pack entries', () => {
   const world = currentWorld({
     inventory: { food: 1, water: 2 },
     knowledgeIds: ['starter-living-advice'],
+    currentEmployment: {
+      jobId: 'starter-labor',
+      employerNpcId: 'foreman',
+      workLocationId: 'starter-square',
+    },
   });
   world.gameEvents.push({
     type: 'historical.example',
@@ -79,6 +87,11 @@ test('current authoritative references pass while historical event, archive loca
     locationId: 'retired-location',
     inventory: { food: 1 },
     knowledgeIds: ['retired-historical-fact'],
+    currentEmployment: {
+      jobId: 'retired-job',
+      employerNpcId: 'retired-employer',
+      workLocationId: 'retired-location',
+    },
   });
   assert.equal(validateWorldContentCompatibility(world, devStarterPack), world);
 });
@@ -100,6 +113,40 @@ test('orphaned active character knowledge fails closed while historical archive 
 
   const historical = currentWorld();
   addHistoricalArchive(historical, { knowledgeIds: ['retired-knowledge'] });
+  assert.equal(validateWorldContentCompatibility(historical, devStarterPack), historical);
+});
+
+test('active employment references must remain compatible while archived employment is historical evidence', () => {
+  const employment = {
+    jobId: 'starter-labor',
+    employerNpcId: 'foreman',
+    workLocationId: 'starter-square',
+  };
+  const active = currentWorld({ currentEmployment: employment });
+  assert.equal(validateWorldContentCompatibility(active, devStarterPack), active);
+
+  const missingJobPack = structuredClone(devStarterPack);
+  missingJobPack.locations['starter-square'].jobs = [];
+  assert.throws(
+    () => validateWorldContentCompatibility(active, missingJobPack),
+    /employment references unknown job: starter-labor/,
+  );
+
+  const missingEmployerPack = structuredClone(devStarterPack);
+  delete missingEmployerPack.npcs.foreman;
+  assert.throws(
+    () => validateWorldContentCompatibility(active, missingEmployerPack),
+    /employment references unknown employer: foreman/,
+  );
+
+  const historical = currentWorld();
+  addHistoricalArchive(historical, {
+    currentEmployment: {
+      jobId: 'retired-job',
+      employerNpcId: 'retired-employer',
+      workLocationId: 'retired-location',
+    },
+  });
   assert.equal(validateWorldContentCompatibility(historical, devStarterPack), historical);
 });
 
@@ -167,6 +214,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   world.schemaVersion = 2;
   delete world.characters[actor.sessionId].behaviorCounts;
   delete world.characters[actor.sessionId].knowledgeIds;
+  delete world.characters[actor.sessionId].currentEmployment;
   delete world.tradeListings;
   delete world.nextTradeListingSequence;
   delete world.archivedCharacters;
@@ -180,6 +228,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   assert.equal(stored.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
   assert.deepEqual(stored.characters[actor.sessionId].knowledgeIds, []);
+  assert.equal(stored.characters[actor.sessionId].currentEmployment, null);
   assert.deepEqual(stored.tradeListings, {});
   assert.equal(stored.nextTradeListingSequence, 1);
   assert.deepEqual(stored.archivedCharacters, {});
