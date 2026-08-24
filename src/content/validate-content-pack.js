@@ -1,4 +1,5 @@
 const NEED_KEYS = new Set(['hunger', 'thirst', 'fatigue']);
+const PROGRESSION_KINDS = new Set(['skill', 'social']);
 
 function fail(message) {
   throw new Error(`invalid content pack: ${message}`);
@@ -49,6 +50,22 @@ function validateItemQuantity(entry, path, items) {
   requireInteger(entry.quantity, `${path}.quantity`, { min: 1 });
 }
 
+function validateBehaviorRequirements(requirements, path, declaredBehaviorIds) {
+  requireArray(requirements, path);
+  if (requirements.length === 0) fail(`${path} must not be empty`);
+  const requirementBehaviorIds = new Set();
+  for (const [index, requirement] of requirements.entries()) {
+    const requirementPath = `${path}[${index}]`;
+    requireRecord(requirement, requirementPath);
+    requireText(requirement.behaviorId, `${requirementPath}.behaviorId`);
+    rememberUnique(requirementBehaviorIds, requirement.behaviorId, `${path} behavior ids`);
+    if (!declaredBehaviorIds.has(requirement.behaviorId)) {
+      fail(`${requirementPath}.behaviorId references unknown behavior: ${requirement.behaviorId}`);
+    }
+    requireInteger(requirement.minCount, `${requirementPath}.minCount`, { min: 1 });
+  }
+}
+
 export function validateContentPack(pack) {
   requireRecord(pack, 'pack');
   requireText(pack.id, 'pack.id');
@@ -57,6 +74,7 @@ export function validateContentPack(pack) {
 
   const items = requireRecord(pack.items, 'pack.items');
   const locations = requireRecord(pack.locations, 'pack.locations');
+  const progressionTags = requireRecord(pack.progressionTags, 'pack.progressionTags');
   const careers = requireRecord(pack.careers, 'pack.careers');
   const npcs = requireRecord(pack.npcs, 'pack.npcs');
 
@@ -120,6 +138,8 @@ export function validateContentPack(pack) {
       validateItemQuantity(gatherable, path, items);
       rememberUnique(gatherableItemIds, gatherable.itemId, `locations.${locationId}.gatherables item ids`);
       requireText(gatherable.label, `${path}.label`);
+      requireText(gatherable.behaviorId, `${path}.behaviorId`);
+      declaredBehaviorIds.add(gatherable.behaviorId);
     }
 
     const recipes = requireArray(location.recipes, `locations.${locationId}.recipes`);
@@ -130,6 +150,8 @@ export function validateContentPack(pack) {
       requireText(recipe.id, `${path}.id`);
       rememberUnique(recipeIds, recipe.id, `locations.${locationId}.recipes ids`);
       requireText(recipe.label, `${path}.label`);
+      requireText(recipe.behaviorId, `${path}.behaviorId`);
+      declaredBehaviorIds.add(recipe.behaviorId);
 
       const inputs = requireArray(recipe.inputs, `${path}.inputs`);
       if (inputs.length === 0) fail(`${path}.inputs must not be empty`);
@@ -143,24 +165,21 @@ export function validateContentPack(pack) {
     }
   }
 
+  for (const [tagId, tag] of Object.entries(progressionTags)) {
+    requireText(tagId, 'progression tag id');
+    const path = `progressionTags.${tagId}`;
+    requireRecord(tag, path);
+    requireText(tag.name, `${path}.name`);
+    if (!PROGRESSION_KINDS.has(tag.kind)) fail(`${path}.kind must be skill or social`);
+    validateBehaviorRequirements(tag.requirements, `${path}.requirements`, declaredBehaviorIds);
+  }
+
   for (const [careerId, career] of Object.entries(careers)) {
     requireText(careerId, 'career id');
     const path = `careers.${careerId}`;
     requireRecord(career, path);
     requireText(career.name, `${path}.name`);
-    const requirements = requireArray(career.requirements, `${path}.requirements`);
-    if (requirements.length === 0) fail(`${path}.requirements must not be empty`);
-    const requirementBehaviorIds = new Set();
-    for (const [index, requirement] of requirements.entries()) {
-      const requirementPath = `${path}.requirements[${index}]`;
-      requireRecord(requirement, requirementPath);
-      requireText(requirement.behaviorId, `${requirementPath}.behaviorId`);
-      rememberUnique(requirementBehaviorIds, requirement.behaviorId, `${path}.requirements behavior ids`);
-      if (!declaredBehaviorIds.has(requirement.behaviorId)) {
-        fail(`${requirementPath}.behaviorId references unknown behavior: ${requirement.behaviorId}`);
-      }
-      requireInteger(requirement.minCount, `${requirementPath}.minCount`, { min: 1 });
-    }
+    validateBehaviorRequirements(career.requirements, `${path}.requirements`, declaredBehaviorIds);
   }
 
   for (const [npcId, npc] of Object.entries(npcs)) {
