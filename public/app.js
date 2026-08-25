@@ -1,3 +1,4 @@
+import { postActionWithRecovery } from './action-client.js';
 import { formatActionResult } from './result-message.js';
 
 const birthPanel = document.querySelector('#birth-panel');
@@ -20,24 +21,40 @@ const tradeListings = document.querySelector('#trade-listings');
 
 let view = null;
 let busy = false;
+let pendingAction = null;
 
 function requestId() {
   return crypto.randomUUID();
 }
 
+function actionKey(action) {
+  return JSON.stringify(action);
+}
+
 async function act(type, payload = {}) {
   if (busy) return null;
+  const action = { type, payload };
+  const key = actionKey(action);
+  if (pendingAction && pendingAction.key !== key) {
+    const result = { ok: false, code: 'ACTION_CONFIRMATION_REQUIRED' };
+    throw Object.assign(new Error(result.code), { result });
+  }
+
+  const currentRequestId = pendingAction?.requestId ?? requestId();
   busy = true;
   document.querySelectorAll('button').forEach((button) => { button.disabled = true; });
   try {
-    const response = await fetch('/api/action', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ requestId: requestId(), action: { type, payload } }),
+    const outcome = await postActionWithRecovery({
+      requestId: currentRequestId,
+      action,
     });
-    const result = await response.json();
-    if (!result.ok) throw Object.assign(new Error(result.code), { result });
-    return result;
+    if (outcome.confirmed) {
+      pendingAction = null;
+    } else {
+      pendingAction = { requestId: currentRequestId, key };
+    }
+    if (!outcome.result.ok) throw Object.assign(new Error(outcome.result.code), { result: outcome.result });
+    return outcome.result;
   } finally {
     busy = false;
     document.querySelectorAll('button').forEach((button) => { button.disabled = false; });
