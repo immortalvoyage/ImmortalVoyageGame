@@ -169,6 +169,7 @@ export function validateContentPack(pack) {
     requireRecord(location, `locations.${locationId}`);
     requireText(location.name, `locations.${locationId}.name`);
     requireText(location.description, `locations.${locationId}.description`);
+    requireText(location.calendarZoneId, `locations.${locationId}.calendarZoneId`);
     if (location.rest !== undefined) {
       const rest = requireRecord(location.rest, `locations.${locationId}.rest`);
       requireText(rest.label, `locations.${locationId}.rest.label`);

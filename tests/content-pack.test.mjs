@@ -169,3 +169,13 @@ test('new characters use the Content Pack starting location', async () => {
   assert.equal(result.ok, true);
   assert.equal(result.data.character.locationId, devStarterPack.startingLocationId);
 });
+
+test('locations require an explicit calendar zone contract', () => {
+  const missingZone = clonePack();
+  delete missingZone.locations['starter-square'].calendarZoneId;
+  assert.throws(() => validateContentPack(missingZone), /calendarZoneId must be non-empty text/);
+
+  const blankZone = clonePack();
+  blankZone.locations['starter-well'].calendarZoneId = '   ';
+  assert.throws(() => validateContentPack(blankZone), /calendarZoneId must be non-empty text/);
+});
