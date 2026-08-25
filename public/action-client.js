@@ -58,7 +58,7 @@ export async function postActionWithRecovery({
       if (response.status < 400 && structured) return { confirmed: true, result };
       lastResult = structured && result.ok === false
         ? result
-        : fallbackResult(parsed ? 'INVALID_SERVER_RESPONSE' : 'INVALID_SERVER_RESPONSE');
+        : fallbackResult('INVALID_SERVER_RESPONSE');
     } catch {
       lastResult = fallbackResult('NETWORK_UNAVAILABLE');
     }
