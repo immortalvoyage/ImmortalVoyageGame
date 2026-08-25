@@ -12,16 +12,25 @@ The correction moves runtime Survival accounting to server-only per-character lo
 
 The connected container still cannot obtain a complete repository checkout, so full `npm run verify` and the repository integration tests are not claimed as executed end-to-end here.
 
-Executed exact-source evidence for the corrected `src/modules/survival/elapsed.js` and `tests/survival-absence.test.mjs`:
+Executed exact-source / exact-production-logic evidence:
 
-- `node --check` for both exact candidate files: **passed**.
-- standalone Survival absence tests: **6/6 passed**
+- corrected `src/modules/survival/elapsed.js` + `tests/survival-absence.test.mjs`: **6/6 passed**
   - one 72-hour sheltered gap is capped to six hours of Survival exposure;
   - the same unsheltered gap receives full Survival exposure;
   - the lower-level gap helper preserves ordinary short elapsed behavior;
   - fractional `needProgressSeconds` remains exact across an interval boundary;
   - 72 separate hourly shared-world resolutions charge one offline sheltered character exactly six cumulative hours, not 72;
   - after that character's own activity resets the absence episode, the next hour is charged normally.
+- exact candidate `world-state.js` + `schema-migration.js` targeted migration/invariant harness: **3/3 passed**
+  - v1 reaches current schema with both activity clocks initialized;
+  - v7→v8 backfills both clocks at current logical world time and preserves valid existing values;
+  - invalid current activity time fails closed.
+- exact candidate `GameRuntime` with current Core dependencies targeted activity harness: **1/1 passed**
+  - a successful authoritative request advances private actor activity;
+  - same-request idempotent replay does not advance world/activity;
+  - a failed action does not persist the lazily resolved draft or activity time.
+- `node --check` passed for the reconstructed exact candidate sources used above: `world-state.js`, `schema-migration.js`, `game-runtime.js`, `character/index.js`, `survival/elapsed.js`, and `survival/index.js`.
+- `node --check` passed for new repository integration sources `character-activity-time.test.mjs` and `offline-shelter-multiplayer.test.mjs`.
 
 Existing #89 first-settlement arithmetic remains applicable:
 
@@ -65,7 +74,7 @@ No Browser input can set either timestamp. `GameRuntime` records generic actor a
 
 ## Verification limitation
 
-Canonical repository-wide completion evidence remains `npm run verify` from a real checkout. The connected environment targeted harnesses above are not represented as a full repository suite pass. No GitHub Actions workflow was added or invoked to bypass this limitation.
+Canonical repository-wide completion evidence remains `npm run verify` from a real checkout. The connected-environment targeted harnesses above are not represented as a full repository suite pass. No GitHub Actions workflow was added or invoked to bypass this limitation.
 
 ## Free Resource Impact
 
