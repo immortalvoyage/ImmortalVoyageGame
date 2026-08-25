@@ -28,6 +28,8 @@ test('file store survives runtime restart without external database', async (t) 
   assert.equal(observed.data.character.money, 2);
   assert.equal(observed.data.character.ownerSessionId, undefined);
   assert.equal(observed.data.character.currentEmployment, undefined);
+  assert.equal(observed.data.character.lastActiveLogicalTimeSeconds, undefined);
+  assert.equal(observed.data.character.lastSurvivalResolvedLogicalTimeSeconds, undefined);
   const employment = await dispatch(second.runtime, 'employment-observe', 'employment.observe');
   assert.equal(employment.data.current.job.title, '聚落雜役');
 
@@ -39,6 +41,8 @@ test('file store survives runtime restart without external database', async (t) 
     employerNpcId: 'foreman',
     workLocationId: 'starter-square',
   });
+  assert.equal(stored.characters['persist-session'].lastActiveLogicalTimeSeconds, 1);
+  assert.equal(stored.characters['persist-session'].lastSurvivalResolvedLogicalTimeSeconds, 1);
 });
 
 test('legacy schema v1 save migrates on the next successful authoritative action', async (t) => {
@@ -79,6 +83,8 @@ test('legacy schema v1 save migrates on the next successful authoritative action
   assert.deepEqual(stored.characters['persist-session'].needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
   assert.deepEqual(stored.characters['persist-session'].knowledgeIds, []);
   assert.equal(stored.characters['persist-session'].currentEmployment, null);
+  assert.equal(stored.characters['persist-session'].lastActiveLogicalTimeSeconds, 0);
+  assert.equal(stored.characters['persist-session'].lastSurvivalResolvedLogicalTimeSeconds, 0);
 });
 
 test('corrupted save fails closed instead of silently resetting world', async (t) => {

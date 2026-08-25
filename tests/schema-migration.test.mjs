@@ -34,6 +34,8 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.equal(migrated.nextCharacterSequence, 8);
   assert.deepEqual(migrated.characters.s1.needs, { hunger: 3, thirst: 4, fatigue: 5 });
   assert.deepEqual(migrated.characters.s1.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
+  assert.equal(migrated.characters.s1.lastActiveLogicalTimeSeconds, 0);
+  assert.equal(migrated.characters.s1.lastSurvivalResolvedLogicalTimeSeconds, 0);
   assert.deepEqual(migrated.characters.s1.behaviorCounts, {});
   assert.deepEqual(migrated.characters.s1.knowledgeIds, []);
   assert.equal(migrated.characters.s1.currentEmployment, null);
@@ -117,6 +119,8 @@ test('schema v5 backfills active and archived knowledge without inventing inheri
   v5.schemaVersion = 5;
   delete v5.characters.s1.knowledgeIds;
   delete v5.characters.s1.currentEmployment;
+  delete v5.characters.s1.lastActiveLogicalTimeSeconds;
+  delete v5.characters.s1.lastSurvivalResolvedLogicalTimeSeconds;
   v5.archivedCharacters['char:old'] = {
     id: 'char:old',
     ownerSessionId: 'old-session',
@@ -144,6 +148,10 @@ test('schema v5 backfills active and archived knowledge without inventing inheri
   assert.deepEqual(migrated.archivedCharacters['char:old'].knowledgeIds, []);
   assert.equal(migrated.characters.s1.currentEmployment, null);
   assert.equal(migrated.archivedCharacters['char:old'].currentEmployment, null);
+  assert.equal(migrated.characters.s1.lastActiveLogicalTimeSeconds, 0);
+  assert.equal(migrated.characters.s1.lastSurvivalResolvedLogicalTimeSeconds, 0);
+  assert.equal(Object.hasOwn(migrated.archivedCharacters['char:old'], 'lastActiveLogicalTimeSeconds'), false);
+  assert.equal(Object.hasOwn(migrated.archivedCharacters['char:old'], 'lastSurvivalResolvedLogicalTimeSeconds'), false);
   assert.equal(assertWorldState(migrated), migrated);
 
   const withKnowledge = structuredClone(v5);
@@ -158,6 +166,8 @@ test('schema v6 backfills current employment and preserves an existing valid con
   const v6 = migrateWorldState(legacyWorld());
   v6.schemaVersion = 6;
   delete v6.characters.s1.currentEmployment;
+  delete v6.characters.s1.lastActiveLogicalTimeSeconds;
+  delete v6.characters.s1.lastSurvivalResolvedLogicalTimeSeconds;
   v6.archivedCharacters['char:old'] = {
     id: 'char:old',
     ownerSessionId: 'old-session',
@@ -184,6 +194,8 @@ test('schema v6 backfills current employment and preserves an existing valid con
   const backfilled = migrateWorldState(v6);
   assert.equal(backfilled.characters.s1.currentEmployment, null);
   assert.equal(backfilled.archivedCharacters['char:old'].currentEmployment, null);
+  assert.equal(backfilled.characters.s1.lastActiveLogicalTimeSeconds, 0);
+  assert.equal(backfilled.characters.s1.lastSurvivalResolvedLogicalTimeSeconds, 0);
   assert.equal(assertWorldState(backfilled), backfilled);
 
   const withEmployment = structuredClone(v6);
@@ -200,6 +212,28 @@ test('schema v6 backfills current employment and preserves an existing valid con
   const preserved = migrateWorldState(withEmployment);
   assert.deepEqual(preserved.characters.s1.currentEmployment, withEmployment.characters.s1.currentEmployment);
   assert.deepEqual(preserved.archivedCharacters['char:old'].currentEmployment, withEmployment.archivedCharacters['char:old'].currentEmployment);
+  assert.equal(assertWorldState(preserved), preserved);
+});
+
+test('schema v7 backfills per-character activity clocks at current logical time and preserves valid values', () => {
+  const v7 = migrateWorldState(legacyWorld());
+  v7.schemaVersion = 7;
+  v7.logicalTimeSeconds = 7200;
+  delete v7.characters.s1.lastActiveLogicalTimeSeconds;
+  delete v7.characters.s1.lastSurvivalResolvedLogicalTimeSeconds;
+
+  const backfilled = migrateWorldState(v7);
+  assert.equal(backfilled.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(backfilled.characters.s1.lastActiveLogicalTimeSeconds, 7200);
+  assert.equal(backfilled.characters.s1.lastSurvivalResolvedLogicalTimeSeconds, 7200);
+  assert.equal(assertWorldState(backfilled), backfilled);
+
+  const existing = structuredClone(v7);
+  existing.characters.s1.lastActiveLogicalTimeSeconds = 1200;
+  existing.characters.s1.lastSurvivalResolvedLogicalTimeSeconds = 3600;
+  const preserved = migrateWorldState(existing);
+  assert.equal(preserved.characters.s1.lastActiveLogicalTimeSeconds, 1200);
+  assert.equal(preserved.characters.s1.lastSurvivalResolvedLogicalTimeSeconds, 3600);
   assert.equal(assertWorldState(preserved), preserved);
 });
 
@@ -221,4 +255,10 @@ test('invalid behavior counts fail closed', () => {
   const migrated = migrateWorldState(legacyWorld());
   migrated.characters.s1.behaviorCounts = { 'work:starter-labor': -1 };
   assert.throws(() => assertWorldState(migrated), /invalid behavior counts/);
+});
+
+test('invalid current activity clocks fail closed after migration', () => {
+  const migrated = migrateWorldState(legacyWorld());
+  migrated.characters.s1.lastActiveLogicalTimeSeconds = -1;
+  assert.throws(() => assertWorldState(migrated), /invalid character activity time/);
 });
