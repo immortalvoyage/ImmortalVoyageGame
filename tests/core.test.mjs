@@ -162,10 +162,12 @@ test('starter gameplay rules are driven by content pack data instead of location
   assert.ok(scene.data.narrative.options.some(
     (choice) => choice.intent.type === 'employment.accept' && choice.intent.payload?.jobId === 'starter-labor',
   ));
-  assert.ok(scene.data.utilities.some((choice) => choice.intent.type === 'economy.buy' && choice.intent.payload.itemId === 'food'));
+  assert.equal(scene.data.utilities.some((choice) => choice.intent.type === 'economy.buy'), false);
 
   await acceptStarterEmployment(runtime, 'ce');
   await dispatch(runtime, 'cw', 'economy.work', { jobId: 'starter-labor' });
+  const fundedScene = await dispatch(runtime, 'c-funded', 'narrative.scene');
+  assert.ok(fundedScene.data.utilities.some((choice) => choice.intent.type === 'economy.buy' && choice.intent.payload.itemId === 'food'));
   await dispatch(runtime, 'ct', 'location.travel', { destinationId: 'starter-well' });
   const wellScene = await dispatch(runtime, 'cws', 'narrative.scene');
   assert.ok(wellScene.data.narrative.options.some((choice) => choice.intent.type === 'survival.gather' && choice.intent.payload.itemId === 'water'));
