@@ -45,6 +45,10 @@ export class GameRuntime {
       if (!result.ok) return result;
 
       const committed = result.world;
+      const activeCharacter = committed.characters?.[actor.sessionId];
+      if (activeCharacter?.ownerSessionId === actor.sessionId) {
+        activeCharacter.lastActiveLogicalTimeSeconds = committed.logicalTimeSeconds;
+      }
       recordGameEvents(committed, result.events);
       const publicResult = { ok: true, code: result.code ?? 'OK', data: result.data ?? null };
       rememberRequest(committed, { requestId, sessionId: actor.sessionId, result: publicResult });
