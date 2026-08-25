@@ -51,12 +51,10 @@ function assertCurrentEmployment(character) {
   }
 }
 
-function assertActiveTimeState(character, worldLogicalTimeSeconds) {
-  for (const key of ['lastActiveLogicalTimeSeconds', 'lastSurvivalResolvedLogicalTimeSeconds']) {
-    const value = character[key];
-    if (!Number.isSafeInteger(value) || value < 0 || value > worldLogicalTimeSeconds) {
-      throw new Error('invalid character activity time');
-    }
+function assertSurvivalResolutionTime(character, worldLogicalTimeSeconds) {
+  const value = character.lastSurvivalResolvedLogicalTimeSeconds;
+  if (!Number.isSafeInteger(value) || value < 0 || value > worldLogicalTimeSeconds) {
+    throw new Error('invalid character survival resolution time');
   }
 }
 
@@ -76,7 +74,7 @@ function assertCharacterState(sessionId, character, worldLogicalTimeSeconds) {
   assertNeedsAndBehavior(character);
   assertKnowledgeIds(character);
   assertCurrentEmployment(character);
-  assertActiveTimeState(character, worldLogicalTimeSeconds);
+  assertSurvivalResolutionTime(character, worldLogicalTimeSeconds);
   assertInventory(character.inventory);
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
 }
