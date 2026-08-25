@@ -1,21 +1,22 @@
 # V2 Early Retention / First-Session Verification
 
-Status: candidate evidence for `feat/v2-early-retention-progressive-disclosure`.
+Status: PR #92 merged baseline plus `fix/v2-first-session-actionability` candidate evidence.
 
 ## Goal
 
 Verify the first-settlement candidate against the current Early Retention product gate without expanding World Core or inventing a new tutorial system.
 
-This slice checks two things that can be verified deterministically now:
+This slice checks three things that can be verified deterministically now:
 
 1. a new Life receives several understandable world choices immediately after birth and one ordinary choice can create a visible consequence on the next scene;
-2. the mobile-first character card does not front-load empty future-system fields before the player has formed those parts of the Life.
+2. the mobile-first character card does not front-load empty future-system fields before the player has formed those parts of the Life;
+3. the trade surface does not occupy the first-session screen when there is nothing the player can sell and no listing to inspect.
 
 Human timing targets such as First Meaningful Choice <= 90 seconds, Visible Consequence <= 3 minutes, and a 10–15 minute micro-loop still require an actual play session. Automated tests are treated only as structural proxies and do not claim those human timing thresholds have been met.
 
-## Source-review finding
+## Source-review findings
 
-Before this change, a brand-new character card rendered six future-state placeholders even when nothing had formed yet:
+Before PR #92, a brand-new character card rendered six future-state placeholders even when nothing had formed yet:
 
 - 身分：尚未形成
 - 現職：尚無
@@ -26,7 +27,9 @@ Before this change, a brand-new character card rendered six future-state placeho
 
 Together with the six immediately useful rows (姓名、貨幣、飢餓、口渴、疲勞、背包), this made the first mobile screen explain systems the player had not touched yet.
 
-The Browser now uses progressive disclosure. New players see only the six core rows. Career, employment, skills, social tags, relationships, and knowledge appear only after authoritative server state says they have actually formed. This is a presentation-only change: Browser authority is unchanged and no client-derived world truth is introduced.
+PR #92 changed the Browser to progressive disclosure. New players see only the six core rows. Career, employment, skills, social tags, relationships, and knowledge appear only after authoritative server state says they have actually formed. This is a presentation-only change: Browser authority is unchanged and no client-derived world truth is introduced.
+
+Follow-up source review found the empty Trade panel had the same problem: the Trade module returns a valid public view even when both `sellables` and `listings` are empty, so a new player saw an irrelevant disabled marketplace form before owning anything. The actionability follow-up keeps that panel hidden until at least one sellable item or public listing exists. Trade authority and server validation are unchanged.
 
 ## First-session structural proxy
 
@@ -52,9 +55,17 @@ Executed reconstructed exact-source evidence:
 - pure `buildCharacterSummaryRows` semantic harness: **2/2 passed**;
   - a brand-new character renders exactly the six core rows and no empty future-system placeholders;
   - already formed career/employment/progression/relationship/knowledge state appears progressively with the expected public text.
+- `public/trade-visibility.js` syntax check: passed;
+- pure `shouldShowTradePanel` semantic harness: **2/2 passed**;
+  - null or empty Trade state stays hidden;
+  - Trade appears when either a sellable item or a public listing exists.
 - `tests/early-retention-first-session.test.mjs` source syntax check: passed.
 
 The repository integration test itself is committed for execution by the canonical `npm run verify` suite when a complete checkout is available; it is not represented here as executed end-to-end.
+
+## Remaining source-review risk
+
+The secondary `可執行行動` area can still expose deterministic controls that will currently fail, especially crafting without required materials and market purchase with insufficient funds. That is the next candidate Early Retention/actionability issue, but it is not changed in this Browser-only follow-up because feasibility should be shaped server-side rather than guessed by the Browser.
 
 ## Boundaries
 
@@ -67,4 +78,4 @@ The repository integration test itself is committed for execution by the canonic
 
 ## Free Resource Impact
 
-No new persistent cost. The progressive disclosure helper is static Browser code and the new verification is repository test/documentation only.
+No new persistent cost. These progressive-disclosure helpers are static Browser code and verification is repository test/documentation only.
