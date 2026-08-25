@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { FileGameStore } from '../src/adapters/file-game-store.js';
@@ -33,7 +33,7 @@ async function birth(runtime, requestId = 'birth-once') {
 }
 
 test('write failure before rename leaves disk unchanged and same request retry commits once', async (t) => {
-  const dir = await import('node:fs/promises').then(({ mkdtemp }) => mkdtemp(join(tmpdir(), 'iv-recovery-before-')));
+  const dir = await mkdtemp(join(tmpdir(), 'iv-recovery-before-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'world.json');
   await seedWorld(filePath);
@@ -64,7 +64,7 @@ test('write failure before rename leaves disk unchanged and same request retry c
 });
 
 test('error observed after rename reloads committed disk and same request retry does not mutate twice', async (t) => {
-  const dir = await import('node:fs/promises').then(({ mkdtemp }) => mkdtemp(join(tmpdir(), 'iv-recovery-after-')));
+  const dir = await mkdtemp(join(tmpdir(), 'iv-recovery-after-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'world.json');
   await seedWorld(filePath);
