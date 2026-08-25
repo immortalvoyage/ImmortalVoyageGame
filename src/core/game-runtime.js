@@ -30,22 +30,18 @@ export class GameRuntime {
 
       const resolvedTime = resolveWorldTime(world, this.now());
       world = resolvedTime.world;
+      const context = {
+        ...this.runtimeContext,
+        nowMs: world.lastResolvedAtMs,
+        isActionAvailable: (actionType) => this.resolver.hasAction(actionType),
+      };
       for (const module of this.modules) {
         if (typeof module.resolveElapsed === 'function' && resolvedTime.elapsedSeconds > 0) {
-          module.resolveElapsed({ world, elapsedSeconds: resolvedTime.elapsedSeconds });
+          module.resolveElapsed({ world, elapsedSeconds: resolvedTime.elapsedSeconds, context });
         }
       }
 
-      const result = this.resolver.resolve({
-        world,
-        actor,
-        action,
-        context: {
-          ...this.runtimeContext,
-          nowMs: world.lastResolvedAtMs,
-          isActionAvailable: (actionType) => this.resolver.hasAction(actionType),
-        },
-      });
+      const result = this.resolver.resolve({ world, actor, action, context });
       if (!result.ok) return result;
 
       const committed = result.world;
