@@ -21,6 +21,7 @@ async function giveSellerFood(runtime, suffix = '') {
 }
 
 async function giveBuyerMoney(runtime) {
+  await dispatch(runtime, buyer, 'buyer-employment', 'employment.accept', { jobId: 'starter-labor' });
   await dispatch(runtime, buyer, 'buyer-work-1', 'economy.work', { jobId: 'starter-labor' });
   await dispatch(runtime, buyer, 'buyer-work-2', 'economy.work', { jobId: 'starter-labor' });
 }

@@ -47,7 +47,7 @@ test('validated injected Content Pack drives gameplay and public narrative data'
   assert.equal(scene.data.location.name, '注入測試廣場');
   assert.equal(scene.data.narrative.text, '這段描述只存在於注入測試內容。');
   assert.ok(scene.data.visibleNpcs.some((npc) => npc.name === '注入測試領班'));
-  assert.ok(scene.data.utilities.some((entry) => entry.label.includes('注入測試食物')));
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.buy'), false);
   assert.ok(scene.data.narrative.options.some(
     (entry) => entry.intent.type === 'employment.accept' && entry.label.includes('注入測試雜役'),
   ));
@@ -60,7 +60,12 @@ test('validated injected Content Pack drives gameplay and public narrative data'
   assert.equal(employment.data.employment.job.title, '注入測試雜役');
   assert.equal(employment.data.employment.employer.name, '注入測試領班');
 
-  for (let i = 1; i <= 3; i += 1) {
+  const firstWork = await dispatch(runtime, 'work-1', 'economy.work', { jobId: 'starter-labor' });
+  assert.equal(firstWork.data.money, 7);
+  scene = await dispatch(runtime, 'scene-after-work', 'narrative.scene');
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.buy' && entry.intent.payload.itemId === 'food'));
+
+  for (let i = 2; i <= 3; i += 1) {
     const work = await dispatch(runtime, `work-${i}`, 'economy.work', { jobId: 'starter-labor' });
     assert.equal(work.data.money, i * 7);
   }
