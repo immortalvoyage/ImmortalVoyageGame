@@ -31,7 +31,7 @@ function actionKey(action) {
   return JSON.stringify(action);
 }
 
-async function act(type, payload = {}) {
+async function act(type, payload = {}, { trackUncertainty = true } = {}) {
   if (busy) return null;
   const action = { type, payload };
   const key = actionKey(action);
@@ -49,8 +49,8 @@ async function act(type, payload = {}) {
       action,
     });
     if (outcome.confirmed) {
-      pendingAction = null;
-    } else {
+      if (pendingAction?.key === key) pendingAction = null;
+    } else if (trackUncertainty) {
       pendingAction = { requestId: currentRequestId, key };
     }
     if (!outcome.result.ok) throw Object.assign(new Error(outcome.result.code), { result: outcome.result });
@@ -63,7 +63,9 @@ async function act(type, payload = {}) {
 
 async function refresh() {
   try {
-    const result = await act('narrative.scene');
+    // Scene observation has no player-authored world mutation. A lost scene response
+    // must not create a pending action that the UI has no button to reconcile.
+    const result = await act('narrative.scene', {}, { trackUncertainty: false });
     if (!result) return;
     view = result.data;
     render();
