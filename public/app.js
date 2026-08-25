@@ -1,9 +1,14 @@
+import { postActionWithRecovery } from './action-client.js';
+import { forgetPendingAction, readPendingAction, rememberPendingAction } from './action-recovery-state.js';
 import { formatActionResult } from './result-message.js';
 
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
 const birthForm = document.querySelector('#birth-form');
 const message = document.querySelector('#message');
+const recoveryPanel = document.querySelector('#recovery-panel');
+const recoveryText = document.querySelector('#recovery-text');
+const recoveryButton = document.querySelector('#recovery-button');
 const narrativeActions = document.querySelector('#narrative-actions');
 const worldActions = document.querySelector('#world-actions');
 const locationName = document.querySelector('#location-name');
@@ -20,24 +25,57 @@ const tradeListings = document.querySelector('#trade-listings');
 
 let view = null;
 let busy = false;
+let pendingAction = readPendingAction(globalThis.sessionStorage);
 
 function requestId() {
   return crypto.randomUUID();
 }
 
-async function act(type, payload = {}) {
+function actionKey(action) {
+  return JSON.stringify(action);
+}
+
+function renderRecovery(text = '') {
+  recoveryPanel.hidden = !pendingAction;
+  if (pendingAction) {
+    recoveryText.textContent = text || '上一個動作的伺服器結果尚未確認。系統會沿用原本的請求編號重新確認，不會建立第二個動作。';
+  }
+}
+
+function setPendingAction(next) {
+  if (next) {
+    pendingAction = rememberPendingAction(globalThis.sessionStorage, next);
+  } else {
+    pendingAction = null;
+    forgetPendingAction(globalThis.sessionStorage);
+  }
+  renderRecovery();
+}
+
+async function act(type, payload = {}, { trackUncertainty = true } = {}) {
   if (busy) return null;
+  const action = { type, payload };
+  const key = actionKey(action);
+  if (pendingAction && pendingAction.key !== key) {
+    const result = { ok: false, code: 'ACTION_CONFIRMATION_REQUIRED' };
+    throw Object.assign(new Error(result.code), { result });
+  }
+
+  const currentRequestId = pendingAction?.requestId ?? requestId();
   busy = true;
   document.querySelectorAll('button').forEach((button) => { button.disabled = true; });
   try {
-    const response = await fetch('/api/action', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ requestId: requestId(), action: { type, payload } }),
+    const outcome = await postActionWithRecovery({
+      requestId: currentRequestId,
+      action,
     });
-    const result = await response.json();
-    if (!result.ok) throw Object.assign(new Error(result.code), { result });
-    return result;
+    if (outcome.confirmed) {
+      if (pendingAction?.key === key) setPendingAction(null);
+    } else if (trackUncertainty) {
+      setPendingAction({ requestId: currentRequestId, action });
+    }
+    if (!outcome.result.ok) throw Object.assign(new Error(outcome.result.code), { result: outcome.result });
+    return outcome.result;
   } finally {
     busy = false;
     document.querySelectorAll('button').forEach((button) => { button.disabled = false; });
@@ -46,7 +84,9 @@ async function act(type, payload = {}) {
 
 async function refresh() {
   try {
-    const result = await act('narrative.scene');
+    // Scene observation has no player-authored world mutation. A lost scene response
+    // must not create a pending action that the UI has no button to reconcile.
+    const result = await act('narrative.scene', {}, { trackUncertainty: false });
     if (!result) return;
     view = result.data;
     render();
@@ -60,6 +100,24 @@ async function refresh() {
   }
 }
 
+async function recoverPendingAction() {
+  if (!pendingAction) return true;
+  const action = pendingAction.action;
+  try {
+    const result = await act(action.type, action.payload);
+    if (result) showMessage(formatActionResult(result, '上一個動作'));
+  } catch (error) {
+    const text = formatActionResult(error.result ?? { ok: false }, '上一個動作');
+    showMessage(text);
+    if (pendingAction) {
+      renderRecovery(text);
+      return false;
+    }
+  }
+  renderRecovery();
+  return pendingAction === null;
+}
+
 function button(label, type, payload, secondary = false) {
   const element = document.createElement('button');
   element.type = 'button';
@@ -71,7 +129,9 @@ function button(label, type, payload, secondary = false) {
       if (result) showMessage(formatActionResult(result, label));
       await refresh();
     } catch (error) {
-      showMessage(formatActionResult(error.result ?? { ok: false }, label));
+      const text = formatActionResult(error.result ?? { ok: false }, label);
+      showMessage(text);
+      if (pendingAction) renderRecovery(text);
     }
   });
   return element;
@@ -200,7 +260,9 @@ birthForm.addEventListener('submit', async (event) => {
     showMessage('角色已出生。');
     await refresh();
   } catch (error) {
-    showMessage(formatActionResult(error.result ?? { ok: false }, '出生'));
+    const text = formatActionResult(error.result ?? { ok: false }, '出生');
+    showMessage(text);
+    if (pendingAction) renderRecovery(text);
   }
 });
 
@@ -225,8 +287,24 @@ tradeForm.addEventListener('submit', async (event) => {
     if (result) showMessage(formatActionResult(result, '上架寄售'));
     await refresh();
   } catch (error) {
-    showMessage(formatActionResult(error.result ?? { ok: false }, '上架寄售'));
+    const text = formatActionResult(error.result ?? { ok: false }, '上架寄售');
+    showMessage(text);
+    if (pendingAction) renderRecovery(text);
   }
 });
 
-refresh();
+recoveryButton.addEventListener('click', async () => {
+  const resolved = await recoverPendingAction();
+  if (resolved) await refresh();
+});
+
+async function start() {
+  renderRecovery();
+  if (pendingAction) {
+    const resolved = await recoverPendingAction();
+    if (!resolved) return;
+  }
+  await refresh();
+}
+
+start();

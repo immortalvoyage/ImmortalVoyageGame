@@ -22,6 +22,12 @@ test('dev server can run the first settlement on a separate file-backed world', 
   assert.equal(page.status, 200);
   const cookie = page.headers.get('set-cookie').split(';')[0];
 
+  for (const path of ['/action-client.js', '/action-recovery-state.js']) {
+    const helper = await fetch(base + path, { headers: { cookie } });
+    assert.equal(helper.status, 200);
+    assert.match(helper.headers.get('content-type'), /text\/javascript/);
+  }
+
   const born = await fetch(base + '/api/action', {
     method: 'POST',
     headers: { 'content-type': 'application/json', cookie },

@@ -78,6 +78,14 @@ function failureMessage(code, fallbackLabel) {
       return '這個行動目前不可用。';
     case 'UNAUTHENTICATED':
       return '工作階段已失效，請重新載入頁面。';
+    case 'ACTION_CONFIRMATION_REQUIRED':
+      return '上一個動作的結果尚未確認；請再次執行剛才相同的動作完成確認。';
+    case 'NETWORK_UNAVAILABLE':
+      return '連線暫時中斷；再次執行剛才相同的動作時，系統會沿用同一請求確認結果。';
+    case 'SERVER_UNAVAILABLE':
+    case 'INVALID_SERVER_RESPONSE':
+    case 'INTERNAL_ERROR':
+      return '伺服器暫時無法確認這次動作的結果；請再次執行剛才相同的動作完成確認。';
     default:
       return `${text(fallbackLabel, '行動')}：無法完成。`;
   }

@@ -14,6 +14,12 @@
       <p class="subtle">本頁只驗證新的 deterministic 世界核心與最小生存閉環。</p>
     </header>
 
+    <section id="recovery-panel" class="card" hidden>
+      <h2>確認上一個動作</h2>
+      <p id="recovery-text" class="message">上一個動作的結果尚未確認。</p>
+      <button id="recovery-button" type="button">重新確認上一個動作</button>
+    </section>
+
     <section id="birth-panel" class="card" hidden>
       <h2>出生</h2>
       <form id="birth-form">
@@ -65,12 +71,12 @@
         </form>
         <div id="trade-listings" class="trade-listings"></div>
       </article>
-
-      <article class="card">
-        <h2>訊息</h2>
-        <p id="message" class="message">正在讀取世界狀態……</p>
-      </article>
     </section>
+
+    <article class="card">
+      <h2>訊息</h2>
+      <p id="message" class="message">正在讀取世界狀態……</p>
+    </article>
   </main>
   <script type="module" src="/app.js"></script>
 </body>
