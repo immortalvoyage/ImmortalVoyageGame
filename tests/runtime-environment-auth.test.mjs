@@ -65,8 +65,8 @@ test('developer session keeps account identity distinct from runtime session ide
     accountId: 'dev-account:alice',
     authProvider: 'developer-test',
   });
-  assert.deepEqual(auth.actor, { sessionId: 'dev-session:browser-a' });
-  assert.equal(Object.hasOwn(auth.actor, 'accountId'), false);
+  assert.deepEqual(auth.actor, { sessionId: 'dev-session:browser-a', accountId: 'dev-account:alice' });
+  assert.equal(Object.hasOwn(auth.actor, 'accountId'), true);
 });
 
 test('authoritative world namespace must match the runtime environment', async () => {

@@ -284,3 +284,32 @@ test('game event ledger must stay bounded and cannot contain future or malformed
   }));
   assert.throws(() => assertWorldState(oversized), /game event ledger exceeds limit/);
 });
+
+test('pending lives are account-owned and birth time cannot point into the future', () => {
+  const valid = validWorld();
+  valid.pendingLives['account:alice'] = {
+    ownerAccountId: 'account:alice',
+    status: 'pending',
+    birthWorldInstant: { epochId: 'GAME_EPOCH_001', offsetSeconds: 0 },
+    createdLogicalTimeSeconds: 0,
+  };
+  assert.equal(assertWorldState(valid), valid);
+
+  expectInvalid((world) => {
+    world.pendingLives['account:alice'] = {
+      ownerAccountId: 'account:bob',
+      status: 'pending',
+      birthWorldInstant: { epochId: 'GAME_EPOCH_001', offsetSeconds: 0 },
+      createdLogicalTimeSeconds: 0,
+    };
+  }, /invalid pending life/);
+
+  expectInvalid((world) => {
+    world.pendingLives['account:alice'] = {
+      ownerAccountId: 'account:alice',
+      status: 'pending',
+      birthWorldInstant: { epochId: 'GAME_EPOCH_001', offsetSeconds: 1 },
+      createdLogicalTimeSeconds: 0,
+    };
+  }, /invalid pending life birth time/);
+});

@@ -7,6 +7,7 @@ import { devStarterPack } from './content/dev-starter.js';
 import { validateContentPack } from './content/validate-content-pack.js';
 import { validateWorldContentCompatibility } from './content/validate-world-content-compatibility.js';
 import { characterModule } from './modules/character/index.js';
+import { lifeModule } from './modules/life/index.js';
 import { inventoryModule } from './modules/inventory/index.js';
 import { locationModule } from './modules/location/index.js';
 import { npcModule } from './modules/npc/index.js';
@@ -25,6 +26,7 @@ import { situationModule } from './modules/situation/index.js';
 import { narrativeModule } from './modules/narrative/index.js';
 
 const allModules = [
+  lifeModule,
   characterModule,
   inventoryModule,
   locationModule,

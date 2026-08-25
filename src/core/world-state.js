@@ -1,4 +1,6 @@
-export const CURRENT_SCHEMA_VERSION = 8;
+import { assertWorldInstant } from './world-calendar.js';
+
+export const CURRENT_SCHEMA_VERSION = 9;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -56,6 +58,23 @@ function assertActiveTimeState(character, worldLogicalTimeSeconds) {
     const value = character[key];
     if (!Number.isSafeInteger(value) || value < 0 || value > worldLogicalTimeSeconds) {
       throw new Error('invalid character activity time');
+    }
+  }
+}
+
+function assertPendingLifeState(world) {
+  if (!isRecord(world.pendingLives)) throw new Error('invalid pending life collection');
+  for (const [accountId, pendingLife] of Object.entries(world.pendingLives)) {
+    if (!isNonEmptyText(accountId) || accountId.length > 128 || accountId.trim() !== accountId) throw new Error('invalid pending life owner');
+    if (!isRecord(pendingLife) || pendingLife.ownerAccountId !== accountId || pendingLife.status !== 'pending') {
+      throw new Error('invalid pending life');
+    }
+    assertWorldInstant(pendingLife.birthWorldInstant);
+    if (pendingLife.birthWorldInstant.offsetSeconds > world.logicalTimeSeconds) throw new Error('invalid pending life birth time');
+    if (!Number.isSafeInteger(pendingLife.createdLogicalTimeSeconds)
+      || pendingLife.createdLogicalTimeSeconds < 0
+      || pendingLife.createdLogicalTimeSeconds > world.logicalTimeSeconds) {
+      throw new Error('invalid pending life creation time');
     }
   }
 }
@@ -198,6 +217,7 @@ export function createInitialWorld({ nowMs = Date.now(), worldId = 'v2-dev-world
     logicalTimeSeconds: 0,
     lastResolvedAtMs: nowMs,
     characters: {},
+    pendingLives: {},
     archivedCharacters: {},
     estates: {},
     nextCharacterSequence: 1,
@@ -227,6 +247,7 @@ export function assertWorldState(world) {
     if (activeIds.has(character.id)) throw new Error('duplicate active character id');
     activeIds.add(character.id);
   }
+  assertPendingLifeState(world);
   assertArchiveAndEstateState(world);
   assertTradeState(world);
   assertRequestLedger(world);

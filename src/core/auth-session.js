@@ -20,7 +20,7 @@ export function createDeveloperTestSession({ environment, accountId, sessionId }
     accountId,
     authProvider: identity.authProvider,
   });
-  const actor = Object.freeze({ sessionId });
+  const actor = Object.freeze({ sessionId, accountId });
 
   return Object.freeze({ identity, session, actor });
 }
