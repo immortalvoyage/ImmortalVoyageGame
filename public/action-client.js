@@ -4,6 +4,15 @@ function fallbackResult(code) {
   return { ok: false, code };
 }
 
+function isStructuredActionResult(value) {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && typeof value.ok === 'boolean'
+    && typeof value.code === 'string'
+    && value.code.length > 0;
+}
+
 export async function postActionWithRecovery({
   fetchImpl = globalThis.fetch,
   url = '/api/action',
@@ -37,15 +46,19 @@ export async function postActionWithRecovery({
         parsed = false;
         result = fallbackResult('INVALID_SERVER_RESPONSE');
       }
+      const structured = parsed && isStructuredActionResult(result);
 
-      // A 4xx response is a definitive rejection under the /api/action contract.
-      // A 2xx response with an unreadable body is still ambiguous because the world
-      // mutation may have committed even though the Browser cannot identify it.
-      if (response.status >= 400 && response.status < 500) return { confirmed: true, result };
-      if (response.status < 400 && parsed) return { confirmed: true, result };
-      lastResult = parsed && result?.ok === false
+      // A 4xx response is a definitive rejection under the /api/action contract,
+      // even if its explanatory body is malformed. A 2xx response is only confirmed
+      // when the public result shape is readable; otherwise the mutation may already
+      // have committed, so retry with the exact same requestId.
+      if (response.status >= 400 && response.status < 500) {
+        return { confirmed: true, result: structured ? result : fallbackResult('INVALID_SERVER_RESPONSE') };
+      }
+      if (response.status < 400 && structured) return { confirmed: true, result };
+      lastResult = structured && result.ok === false
         ? result
-        : fallbackResult(parsed ? 'SERVER_UNAVAILABLE' : 'INVALID_SERVER_RESPONSE');
+        : fallbackResult(parsed ? 'INVALID_SERVER_RESPONSE' : 'INVALID_SERVER_RESPONSE');
     } catch {
       lastResult = fallbackResult('NETWORK_UNAVAILABLE');
     }
