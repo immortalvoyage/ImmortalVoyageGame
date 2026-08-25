@@ -1,5 +1,6 @@
 import { postActionWithRecovery } from './action-client.js';
 import { forgetPendingAction, readPendingAction, rememberPendingAction } from './action-recovery-state.js';
+import { buildCharacterSummaryRows } from './character-summary.js';
 import { formatActionResult } from './result-message.js';
 
 const birthPanel = document.querySelector('#birth-panel');
@@ -196,45 +197,8 @@ function render() {
   locationDescription.textContent = view.location.description;
   narrativeText.textContent = view.narrative.text;
 
-  const character = view.character;
-  const inventoryText = (view.inventoryItems ?? [])
-    .map((item) => `${item.name} × ${item.quantity}`)
-    .join('、') || '空';
-  const careerText = (view.careers ?? []).map((career) => career.name).join('、') || '尚未形成';
   characterState.replaceChildren();
-  const rows = [
-    ['姓名', character.name],
-    ['身分', careerText],
-  ];
-  if (view.employment) {
-    const current = view.employment.current;
-    const employmentText = current
-      ? `${current.job.title}｜雇主：${current.employer.name}｜工作地：${current.workplace.name}｜每次報酬：${current.wagePerWork}`
-      : '尚無';
-    rows.push(['現職', employmentText]);
-  }
-  if (view.progression) {
-    const skillText = (view.progression.skills ?? []).map((skill) => skill.name).join('、') || '尚未形成';
-    const socialTagText = (view.progression.socialTags ?? []).map((tag) => tag.name).join('、') || '尚未形成';
-    rows.push(['技能', skillText], ['社會標籤', socialTagText]);
-  }
-  if (Array.isArray(view.relationships)) {
-    const relationshipText = view.relationships
-      .map((relationship) => `${relationship.npc.name}：${relationship.familiarity.name}`)
-      .join('、') || '尚未形成';
-    rows.push(['關係', relationshipText]);
-  }
-  if (Array.isArray(view.knowledge)) {
-    const knowledgeText = view.knowledge.map((fact) => fact.name).join('、') || '尚無';
-    rows.push(['已知情報', knowledgeText]);
-  }
-  rows.push(
-    ['貨幣', String(character.money)],
-    ['飢餓', String(character.needs.hunger)],
-    ['口渴', String(character.needs.thirst)],
-    ['疲勞', String(character.needs.fatigue)],
-    ['背包', inventoryText],
-  );
+  const rows = buildCharacterSummaryRows(view);
   for (const [key, value] of rows) {
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
