@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -51,6 +51,13 @@ function assertCurrentEmployment(character) {
   }
 }
 
+function assertLastActiveLogicalTime(character, worldLogicalTimeSeconds) {
+  const value = character.lastActiveLogicalTimeSeconds;
+  if (!Number.isSafeInteger(value) || value < 0 || value > worldLogicalTimeSeconds) {
+    throw new Error('invalid character activity time');
+  }
+}
+
 function assertInventory(inventory, label = 'inventory') {
   if (!isRecord(inventory)) throw new Error(`invalid ${label} state`);
   for (const [itemId, quantity] of Object.entries(inventory)) {
@@ -58,7 +65,7 @@ function assertInventory(inventory, label = 'inventory') {
   }
 }
 
-function assertCharacterState(sessionId, character) {
+function assertCharacterState(sessionId, character, worldLogicalTimeSeconds) {
   if (!isNonEmptyText(sessionId) || !isRecord(character)) throw new Error('invalid character state');
   if (!isNonEmptyText(character.id) || character.ownerSessionId !== sessionId) throw new Error('invalid character ownership');
   if (!isNonEmptyText(character.name) || character.name.length > 24) throw new Error('invalid character identity');
@@ -67,6 +74,7 @@ function assertCharacterState(sessionId, character) {
   assertNeedsAndBehavior(character);
   assertKnowledgeIds(character);
   assertCurrentEmployment(character);
+  assertLastActiveLogicalTime(character, worldLogicalTimeSeconds);
   assertInventory(character.inventory);
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
 }
@@ -213,7 +221,7 @@ export function assertWorldState(world) {
 
   const activeIds = new Set();
   for (const [sessionId, character] of Object.entries(world.characters)) {
-    assertCharacterState(sessionId, character);
+    assertCharacterState(sessionId, character, world.logicalTimeSeconds);
     if (activeIds.has(character.id)) throw new Error('duplicate active character id');
     activeIds.add(character.id);
   }
