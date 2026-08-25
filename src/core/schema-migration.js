@@ -33,6 +33,10 @@ export function migrateWorldState(input) {
       world = migrateV6ToV7(world);
       continue;
     }
+    if (world.schemaVersion === 7) {
+      world = migrateV7ToV8(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -121,5 +125,20 @@ function migrateV6ToV7(world) {
     }
   }
   migrated.schemaVersion = 7;
+  return migrated;
+}
+
+function migrateV7ToV8(world) {
+  const migrated = cloneWorld(world);
+  const characters = migrated.characters && typeof migrated.characters === 'object' && !Array.isArray(migrated.characters)
+    ? migrated.characters
+    : {};
+  for (const character of Object.values(characters)) {
+    if (!character || typeof character !== 'object' || Array.isArray(character)) continue;
+    if (character.lastActiveLogicalTimeSeconds === undefined) {
+      character.lastActiveLogicalTimeSeconds = migrated.logicalTimeSeconds;
+    }
+  }
+  migrated.schemaVersion = 8;
   return migrated;
 }
