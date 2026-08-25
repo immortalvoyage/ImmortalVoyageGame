@@ -1,9 +1,10 @@
 import { GameRuntime } from './core/game-runtime.js';
 import { createInitialWorld } from './core/world-state.js';
-import { assertWorldNamespace, LOCAL_DEVELOPMENT_ENVIRONMENT } from './core/runtime-environment.js';
+import { assertWorldNamespace, LOCAL_DEVELOPMENT_ENVIRONMENT, LOCAL_TUTORIAL_ENVIRONMENT } from './core/runtime-environment.js';
 import { MemoryGameStore } from './adapters/memory-game-store.js';
 import { FileGameStore } from './adapters/file-game-store.js';
 import { devStarterPack } from './content/dev-starter.js';
+import { tutorialVillagePack } from './content/tutorial-village.js';
 import { validateContentPack } from './content/validate-content-pack.js';
 import { validateWorldContentCompatibility } from './content/validate-world-content-compatibility.js';
 import { characterModule } from './modules/character/index.js';
@@ -46,6 +47,19 @@ const allModules = [
   narrativeModule,
 ];
 
+const tutorialModuleNames = Object.freeze([
+  'character',
+  'inventory',
+  'location',
+  'npc',
+  'survival',
+  'employment',
+  'economy',
+  'relationship',
+  'situation',
+  'narrative',
+]);
+
 export function createGame({
   store,
   contentPack = devStarterPack,
@@ -86,4 +100,19 @@ export function createFileBackedDevelopmentGame({ filePath, now = () => Date.now
     createInitialWorld: () => createInitialWorld({ nowMs: now(), worldId: runtimeEnvironment.worldNamespace }),
   });
   return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment });
+}
+
+export function createTutorialDevelopmentGame({ now = () => Date.now() } = {}) {
+  const runtimeEnvironment = LOCAL_TUTORIAL_ENVIRONMENT;
+  const store = new MemoryGameStore(createInitialWorld({
+    nowMs: now(),
+    worldId: runtimeEnvironment.worldNamespace,
+  }));
+  return createGame({
+    store,
+    contentPack: tutorialVillagePack,
+    now,
+    enabledModules: tutorialModuleNames,
+    runtimeEnvironment,
+  });
 }

@@ -70,3 +70,8 @@ export const LOCAL_DEVELOPMENT_ENVIRONMENT = createRuntimeEnvironment({
   stage: RUNTIME_STAGE.DEVELOPMENT_TEST,
   worldNamespace: 'v2-dev-world',
 });
+
+export const LOCAL_TUTORIAL_ENVIRONMENT = createRuntimeEnvironment({
+  stage: RUNTIME_STAGE.DEVELOPMENT_TEST,
+  worldNamespace: 'v2-tutorial-world',
+});
