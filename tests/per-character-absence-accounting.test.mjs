@@ -43,6 +43,7 @@ test('other-player requests cannot split a sheltered character personal absence 
   const returned = await dispatch(game.runtime, sheltered, 'sheltered-return', 'narrative.scene');
   assert.equal(returned.ok, true);
   assert.deepEqual(returned.data.character.needs, { hunger: 12, thirst: 18, fatigue: 7 });
+  assert.equal(JSON.stringify(returned.data).includes('lastActiveLogicalTimeSeconds'), false);
 
   const afterReturn = game.store.snapshot();
   assert.equal(afterReturn.characters[sheltered.sessionId].lastActiveLogicalTimeSeconds, THREE_DAYS_SECONDS);
@@ -83,6 +84,7 @@ test('successful requests advance the generic activity clock even when Survival 
   nowMs += 5 * HOUR_MS;
   const observed = await dispatch(game.runtime, actor, 'observe', 'location.observe');
   assert.equal(observed.ok, true);
+  assert.equal(JSON.stringify(observed.data).includes('lastActiveLogicalTimeSeconds'), false);
 
   const character = game.store.snapshot().characters[actor.sessionId];
   assert.deepEqual(character.needs, { hunger: 0, thirst: 0, fatigue: 0 });
