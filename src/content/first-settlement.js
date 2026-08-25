@@ -4,7 +4,7 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 2,
+  dataVersion: 3,
   startingLocationId: 'first-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -37,6 +37,7 @@ export const firstSettlementPack = Object.freeze({
     'first-square': Object.freeze({
       name: '初始聚落街口',
       description: '人流與小買賣集中在這裡，想找活、補充基本食物或打聽方向都不算困難。',
+      calendarZoneId: 'world-zone:origin',
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-well', travelSeconds: 5 * 60, needCosts: Object.freeze({ thirst: 1 }) }),
         Object.freeze({ destinationId: 'first-outskirts', travelSeconds: 12 * 60, needCosts: Object.freeze({ hunger: 1, thirst: 1 }) }),
@@ -74,6 +75,7 @@ export const firstSettlementPack = Object.freeze({
     'first-well': Object.freeze({
       name: '公共水井',
       description: '有人維護的公共水井提供安全的日常飲水，是沒有錢時仍能取得水的基本去處。',
+      calendarZoneId: 'world-zone:origin',
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 5 * 60, needCosts: Object.freeze({ thirst: 1 }) }),
       ]),
@@ -87,6 +89,7 @@ export const firstSettlementPack = Object.freeze({
     'first-outskirts': Object.freeze({
       name: '近郊採集地',
       description: '聚落外緣仍找得到少量可食野果；產量不高，但足以作為最基本的求生退路。',
+      calendarZoneId: 'world-zone:origin',
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 12 * 60, needCosts: Object.freeze({ hunger: 1, thirst: 1 }) }),
       ]),
@@ -100,6 +103,7 @@ export const firstSettlementPack = Object.freeze({
     'first-lodging': Object.freeze({
       name: '公共通鋪',
       description: '一處規矩簡單的公共通鋪。有人維持基本秩序並提供最低限度的留宿照料，也會找人做打掃整理的短工。',
+      calendarZoneId: 'world-zone:origin',
       rest: Object.freeze({ label: '在公共通鋪休息' }),
       shelter: Object.freeze({ absenceSurvivalCapSeconds: 6 * 60 * 60 }),
       routes: Object.freeze([
