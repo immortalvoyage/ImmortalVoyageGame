@@ -4,7 +4,7 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 1,
+  dataVersion: 2,
   startingLocationId: 'first-square',
   survival: Object.freeze({
     warningThreshold: 60,
@@ -99,8 +99,9 @@ export const firstSettlementPack = Object.freeze({
     }),
     'first-lodging': Object.freeze({
       name: '公共通鋪',
-      description: '一處規矩簡單的公共通鋪。有人維持基本秩序，也會找人做打掃整理的短工。',
+      description: '一處規矩簡單的公共通鋪。有人維持基本秩序並提供最低限度的留宿照料，也會找人做打掃整理的短工。',
       rest: Object.freeze({ label: '在公共通鋪休息' }),
+      shelter: Object.freeze({ absenceSurvivalCapSeconds: 6 * 60 * 60 }),
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 4 * 60, needCosts: Object.freeze({ fatigue: 1 }) }),
       ]),
