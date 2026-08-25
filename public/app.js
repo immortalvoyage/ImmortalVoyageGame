@@ -2,6 +2,7 @@ import { postActionWithRecovery } from './action-client.js';
 import { forgetPendingAction, readPendingAction, rememberPendingAction } from './action-recovery-state.js';
 import { buildCharacterSummaryRows } from './character-summary.js';
 import { formatActionResult } from './result-message.js';
+import { shouldShowTradePanel } from './trade-visibility.js';
 
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
@@ -139,13 +140,14 @@ function button(label, type, payload, secondary = false) {
 }
 
 function renderTrade() {
-  if (!view.trade) {
+  if (!shouldShowTradePanel(view.trade)) {
     tradePanel.hidden = true;
     return;
   }
 
   tradePanel.hidden = false;
   const sellables = view.trade.sellables ?? [];
+  const listings = view.trade.listings ?? [];
   tradeItem.replaceChildren(...sellables.map((sellable, index) => {
     const option = document.createElement('option');
     option.value = String(index);
@@ -172,7 +174,7 @@ function renderTrade() {
     tradePrice.value = '';
   }
 
-  const listingNodes = (view.trade.listings ?? []).map((listing) => {
+  const listingNodes = listings.map((listing) => {
     const row = document.createElement('div');
     row.className = 'trade-listing';
     const details = document.createElement('p');
