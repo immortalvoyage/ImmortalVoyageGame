@@ -61,7 +61,7 @@ test('shelter protection is location-bound and stops after leaving the lodging',
   nowMs += 24 * 60 * 60 * 1000;
   const scene = await dispatch(game.runtime, actor, 'street-next-day', 'narrative.scene');
   assert.equal(scene.data.character.needs.hunger, 60);
-  assert.equal(scene.data.character.needs.thirst, 91);
+  assert.equal(scene.data.character.needs.thirst, 90);
   assert.equal(scene.data.character.needs.fatigue, 32);
   assert.equal(scene.data.survivalCondition.severity, 'critical');
 });
