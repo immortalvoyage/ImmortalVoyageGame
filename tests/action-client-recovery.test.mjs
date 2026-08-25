@@ -77,6 +77,29 @@ test('malformed 2xx response is retried because the world may already have commi
   assert.equal(calls[0], calls[1]);
 });
 
+test('valid JSON with an invalid 2xx result shape is also retried as ambiguous', async () => {
+  const calls = [];
+  const responses = [
+    jsonResponse(200, { code: 'WORK_COMPLETED' }),
+    jsonResponse(200, { ok: true, code: 'WORK_COMPLETED', data: {} }),
+  ];
+  const fetchImpl = async (_url, options) => {
+    calls.push(options.body);
+    return responses.shift();
+  };
+
+  const outcome = await postActionWithRecovery({
+    fetchImpl,
+    requestId: 'invalid-shape-success',
+    action: { type: 'economy.work', payload: { jobId: 'job:1' } },
+  });
+
+  assert.equal(outcome.confirmed, true);
+  assert.equal(outcome.result.code, 'WORK_COMPLETED');
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0], calls[1]);
+});
+
 test('repeated malformed 2xx response remains unconfirmed', async () => {
   let calls = 0;
   const outcome = await postActionWithRecovery({
@@ -132,7 +155,7 @@ test('bounded transport failure remains explicitly unconfirmed after two attempt
 test('retry attempts are hard bounded', async () => {
   await assert.rejects(
     () => postActionWithRecovery({
-      fetchImpl: async () => jsonResponse(200, { ok: true }),
+      fetchImpl: async () => jsonResponse(200, { ok: true, code: 'OK' }),
       requestId: 'too-many',
       action: { type: 'location.observe' },
       attempts: 4,
