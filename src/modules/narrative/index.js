@@ -12,8 +12,9 @@ import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 import { buildSituationOpportunities } from '../situation/index.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
+import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 18, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 19, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -144,6 +145,7 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {
+      if (!canCraftRecipe(character, recipe)) continue;
       const ingredients = recipe.inputs
         .map((input) => `${contentPack.items[input.itemId].name}×${input.quantity}`)
         .join('＋');
@@ -152,6 +154,7 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('economy.buy')) {
     for (const offer of location.market ?? []) {
+      if (!canBuyOffer(character, offer)) continue;
       const item = contentPack.items[offer.itemId];
       if (item) utilities.push(option(`購買${item.name}（${offer.price}）`, 'economy.buy', { itemId: offer.itemId }));
     }
