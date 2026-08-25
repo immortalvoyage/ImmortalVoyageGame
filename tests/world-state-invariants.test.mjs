@@ -22,6 +22,8 @@ function character(overrides = {}) {
     locationId: 'starter-square',
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    lastActiveLogicalTimeSeconds: 0,
+    lastSurvivalResolvedLogicalTimeSeconds: 0,
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
@@ -119,6 +121,22 @@ test('identity, ownership, and world clock corruption fail closed', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].status = 'dead'; }, /invalid character state/);
 });
 
+test('active character activity clocks are bounded by logical world time', () => {
+  expectInvalid((world) => { world.characters[actor.sessionId].lastActiveLogicalTimeSeconds = -1; }, /invalid character activity time/);
+  expectInvalid((world) => { world.characters[actor.sessionId].lastActiveLogicalTimeSeconds = 0.5; }, /invalid character activity time/);
+  expectInvalid((world) => { world.characters[actor.sessionId].lastSurvivalResolvedLogicalTimeSeconds = -1; }, /invalid character activity time/);
+
+  const future = validWorld();
+  future.logicalTimeSeconds = 10;
+  future.characters[actor.sessionId].lastActiveLogicalTimeSeconds = 11;
+  assert.throws(() => assertWorldState(future), /invalid character activity time/);
+
+  const futureSurvival = validWorld();
+  futureSurvival.logicalTimeSeconds = 10;
+  futureSurvival.characters[actor.sessionId].lastSurvivalResolvedLogicalTimeSeconds = 11;
+  assert.throws(() => assertWorldState(futureSurvival), /invalid character activity time/);
+});
+
 test('survival, money, and inventory corruption fail closed', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].needs.hunger = 101; }, /invalid survival needs/);
   expectInvalid((world) => { world.characters[actor.sessionId].needs.thirst = 0.5; }, /invalid survival needs/);
@@ -174,6 +192,8 @@ test('archived characters and pending estates are paired without duplicating spe
     employerNpcId: 'retired-employer',
     workLocationId: 'retired-place',
   };
+  assert.equal(Object.hasOwn(valid.archivedCharacters['char:1'], 'lastActiveLogicalTimeSeconds'), false);
+  assert.equal(Object.hasOwn(valid.archivedCharacters['char:1'], 'lastSurvivalResolvedLogicalTimeSeconds'), false);
   assert.equal(assertWorldState(valid), valid);
 
   const missingEstate = archivedWorld();
