@@ -37,6 +37,10 @@ export function migrateWorldState(input) {
       world = migrateV7ToV8(world);
       continue;
     }
+    if (world.schemaVersion === 8) {
+      world = migrateV8ToV9(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -146,5 +150,12 @@ function migrateV7ToV8(world) {
     }
   }
   migrated.schemaVersion = 8;
+  return migrated;
+}
+
+function migrateV8ToV9(world) {
+  const migrated = cloneWorld(world);
+  migrated.pendingLives ??= {};
+  migrated.schemaVersion = 9;
   return migrated;
 }

@@ -41,6 +41,7 @@ test('schema v1 migrates to current schema without losing character state', () =
   assert.equal(migrated.characters.s1.currentEmployment, null);
   assert.deepEqual(migrated.tradeListings, {});
   assert.equal(migrated.nextTradeListingSequence, 1);
+  assert.deepEqual(migrated.pendingLives, {});
   assert.deepEqual(migrated.archivedCharacters, {});
   assert.deepEqual(migrated.estates, {});
   assert.equal(assertWorldState(migrated), migrated);
@@ -261,4 +262,28 @@ test('invalid current activity clocks fail closed after migration', () => {
   const migrated = migrateWorldState(legacyWorld());
   migrated.characters.s1.lastActiveLogicalTimeSeconds = -1;
   assert.throws(() => assertWorldState(migrated), /invalid character activity time/);
+});
+
+test('schema v8 backfills pending life collection and preserves valid preexisting data', () => {
+  const v8 = migrateWorldState(legacyWorld());
+  v8.schemaVersion = 8;
+  delete v8.pendingLives;
+  const backfilled = migrateWorldState(v8);
+  assert.deepEqual(backfilled.pendingLives, {});
+  assert.equal(backfilled.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(assertWorldState(backfilled), backfilled);
+
+  const withPending = structuredClone(v8);
+  withPending.logicalTimeSeconds = 30;
+  withPending.pendingLives = {
+    'account:legacy': {
+      ownerAccountId: 'account:legacy',
+      status: 'pending',
+      birthWorldInstant: { epochId: 'GAME_EPOCH_001', offsetSeconds: 10 },
+      createdLogicalTimeSeconds: 10,
+    },
+  };
+  const preserved = migrateWorldState(withPending);
+  assert.deepEqual(preserved.pendingLives, withPending.pendingLives);
+  assert.equal(assertWorldState(preserved), preserved);
 });
