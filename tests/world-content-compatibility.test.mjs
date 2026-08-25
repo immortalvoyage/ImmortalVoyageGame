@@ -17,6 +17,8 @@ function character(overrides = {}) {
     locationId: 'starter-square',
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    lastActiveLogicalTimeSeconds: 0,
+    lastSurvivalResolvedLogicalTimeSeconds: 0,
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
@@ -215,6 +217,8 @@ test('supported schema migration runs before Content Pack compatibility validati
   delete world.characters[actor.sessionId].behaviorCounts;
   delete world.characters[actor.sessionId].knowledgeIds;
   delete world.characters[actor.sessionId].currentEmployment;
+  delete world.characters[actor.sessionId].lastActiveLogicalTimeSeconds;
+  delete world.characters[actor.sessionId].lastSurvivalResolvedLogicalTimeSeconds;
   delete world.tradeListings;
   delete world.nextTradeListingSequence;
   delete world.archivedCharacters;
@@ -229,6 +233,8 @@ test('supported schema migration runs before Content Pack compatibility validati
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
   assert.deepEqual(stored.characters[actor.sessionId].knowledgeIds, []);
   assert.equal(stored.characters[actor.sessionId].currentEmployment, null);
+  assert.equal(stored.characters[actor.sessionId].lastActiveLogicalTimeSeconds, 0);
+  assert.equal(stored.characters[actor.sessionId].lastSurvivalResolvedLogicalTimeSeconds, 0);
   assert.deepEqual(stored.tradeListings, {});
   assert.equal(stored.nextTradeListingSequence, 1);
   assert.deepEqual(stored.archivedCharacters, {});
