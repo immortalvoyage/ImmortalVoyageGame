@@ -15,6 +15,8 @@ function validCharacter() {
     locationId: 'starter-square',
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    lastActiveLogicalTimeSeconds: 0,
+    lastSurvivalResolvedLogicalTimeSeconds: 0,
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
