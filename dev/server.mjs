@@ -4,16 +4,15 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { firstSettlementPack } from '../src/content/first-settlement.js';
-import { createFileBackedDevelopmentGame } from '../src/game.js';
+import { createFileBackedDevelopmentGame, createTutorialDevelopmentGame } from '../src/game.js';
 import { createDeveloperTestSession } from '../src/core/auth-session.js';
-import { LOCAL_DEVELOPMENT_ENVIRONMENT } from '../src/core/runtime-environment.js';
+import { LOCAL_DEVELOPMENT_ENVIRONMENT, LOCAL_TUTORIAL_ENVIRONMENT } from '../src/core/runtime-environment.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(here, '..', 'public');
 const MAX_BODY_BYTES = 16 * 1024;
 
 const STATIC_FILES = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/action-client.js', ['action-client.js', 'text/javascript; charset=utf-8']],
   ['/action-recovery-state.js', ['action-recovery-state.js', 'text/javascript; charset=utf-8']],
@@ -66,7 +65,7 @@ function sendJson(res, statusCode, body) {
   res.end(JSON.stringify(body));
 }
 
-export function createDevServer({ runtime, contentPack, filePath } = {}) {
+export function createDevServer({ runtime, contentPack, filePath, entryFile = 'index.html', runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT } = {}) {
   const authoritativeRuntime = runtime ?? createFileBackedDevelopmentGame({
     filePath: filePath ?? join(here, '..', '.data', 'world.json'),
     ...(contentPack ? { contentPack } : {}),
@@ -77,7 +76,7 @@ export function createDevServer({ runtime, contentPack, filePath } = {}) {
       if (req.method === 'POST' && url.pathname === '/api/action') {
         const sessionId = sessionFor(req, res);
         const { actor } = createDeveloperTestSession({
-          environment: LOCAL_DEVELOPMENT_ENVIRONMENT,
+          environment: runtimeEnvironment,
           accountId: `local-dev:${sessionId}`,
           sessionId,
         });
@@ -91,7 +90,9 @@ export function createDevServer({ runtime, contentPack, filePath } = {}) {
         return;
       }
 
-      const staticFile = STATIC_FILES.get(url.pathname);
+      const staticFile = url.pathname === '/'
+        ? [entryFile, 'text/html; charset=utf-8']
+        : STATIC_FILES.get(url.pathname);
       if (req.method === 'GET' && staticFile) {
         sessionFor(req, res);
         const [name, contentType] = staticFile;
@@ -113,17 +114,30 @@ export function createDevServer({ runtime, contentPack, filePath } = {}) {
   });
 }
 
+export function createTutorialDevServer() {
+  const { runtime } = createTutorialDevelopmentGame();
+  return createDevServer({
+    runtime,
+    entryFile: 'tutorial.html',
+    runtimeEnvironment: LOCAL_TUTORIAL_ENVIRONMENT,
+  });
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const useFirstSettlement = process.argv.includes('--first-settlement');
-  const server = useFirstSettlement
-    ? createDevServer({
-      contentPack: firstSettlementPack,
-      filePath: join(here, '..', '.data', 'first-settlement-world.json'),
-    })
-    : createDevServer();
+  const useTutorial = process.argv.includes('--tutorial');
+  if (useFirstSettlement && useTutorial) throw new Error('choose one dev server mode');
+  const server = useTutorial
+    ? createTutorialDevServer()
+    : useFirstSettlement
+      ? createDevServer({
+        contentPack: firstSettlementPack,
+        filePath: join(here, '..', '.data', 'first-settlement-world.json'),
+      })
+      : createDevServer();
   const port = Number(process.env.PORT ?? 8787);
   server.listen(port, '127.0.0.1', () => {
-    const mode = useFirstSettlement ? ' first-settlement' : '';
+    const mode = useTutorial ? ' tutorial' : useFirstSettlement ? ' first-settlement' : '';
     console.log(`ImmortalVoyage V2${mode} local dev server: http://127.0.0.1:${port}`);
   });
 }

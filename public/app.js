@@ -5,6 +5,8 @@ import { formatActionResult } from './result-message.js';
 import { shouldShowTradePanel } from './trade-visibility.js';
 import { shouldShowNarrativeText, shouldShowUtilityPanel } from './scene-visibility.js';
 
+const tutorialMode = document.body.dataset.mode === 'tutorial';
+
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
 const birthForm = document.querySelector('#birth-form');
@@ -228,10 +230,10 @@ birthForm.addEventListener('submit', async (event) => {
   const name = document.querySelector('#character-name').value;
   try {
     await act('character.birth', { name });
-    showMessage('角色已出生。');
+    showMessage(tutorialMode ? '教學 Avatar 已建立。' : '角色已出生。');
     await refresh();
   } catch (error) {
-    const text = formatActionResult(error.result ?? { ok: false }, '出生');
+    const text = formatActionResult(error.result ?? { ok: false }, tutorialMode ? '開始教學' : '出生');
     showMessage(text);
     if (pendingAction) renderRecovery(text);
   }
