@@ -30,16 +30,22 @@ export async function postActionWithRecovery({
       });
 
       let result;
+      let parsed = true;
       try {
         result = await response.json();
       } catch {
+        parsed = false;
         result = fallbackResult('INVALID_SERVER_RESPONSE');
       }
 
-      // 2xx/4xx responses are definitive for this request. 5xx and transport
-      // failures are ambiguous, so retry only those with the exact same requestId.
-      if (response.status < 500) return { confirmed: true, result };
-      lastResult = result?.ok === false ? result : fallbackResult('SERVER_UNAVAILABLE');
+      // A 4xx response is a definitive rejection under the /api/action contract.
+      // A 2xx response with an unreadable body is still ambiguous because the world
+      // mutation may have committed even though the Browser cannot identify it.
+      if (response.status >= 400 && response.status < 500) return { confirmed: true, result };
+      if (response.status < 400 && parsed) return { confirmed: true, result };
+      lastResult = parsed && result?.ok === false
+        ? result
+        : fallbackResult(parsed ? 'SERVER_UNAVAILABLE' : 'INVALID_SERVER_RESPONSE');
     } catch {
       lastResult = fallbackResult('NETWORK_UNAVAILABLE');
     }
