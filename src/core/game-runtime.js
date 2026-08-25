@@ -36,8 +36,13 @@ export class GameRuntime {
         isActionAvailable: (actionType) => this.resolver.hasAction(actionType),
       };
       for (const module of this.modules) {
-        if (typeof module.resolveElapsed === 'function' && resolvedTime.elapsedSeconds > 0) {
-          module.resolveElapsed({ world, elapsedSeconds: resolvedTime.elapsedSeconds, context });
+        if (typeof module.resolveElapsed === 'function') {
+          module.resolveElapsed({
+            world,
+            actor,
+            elapsedSeconds: resolvedTime.elapsedSeconds,
+            context,
+          });
         }
       }
 
@@ -45,6 +50,10 @@ export class GameRuntime {
       if (!result.ok) return result;
 
       const committed = result.world;
+      const activeCharacter = committed.characters?.[actor.sessionId];
+      if (activeCharacter?.ownerSessionId === actor.sessionId && activeCharacter.status === 'alive') {
+        activeCharacter.lastActiveLogicalTimeSeconds = committed.logicalTimeSeconds;
+      }
       recordGameEvents(committed, result.events);
       const publicResult = { ok: true, code: result.code ?? 'OK', data: result.data ?? null };
       rememberRequest(committed, { requestId, sessionId: actor.sessionId, result: publicResult });
