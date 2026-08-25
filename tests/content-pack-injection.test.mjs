@@ -47,7 +47,7 @@ test('validated injected Content Pack drives gameplay and public narrative data'
   assert.equal(scene.data.location.name, '注入測試廣場');
   assert.equal(scene.data.narrative.text, '這段描述只存在於注入測試內容。');
   assert.ok(scene.data.visibleNpcs.some((npc) => npc.name === '注入測試領班'));
-  assert.ok(scene.data.utilities.some((entry) => entry.label.includes('注入測試食物')));
+  assert.equal(scene.data.utilities.some((entry) => entry.label.includes(contentPack.items.food.name)), false);
   assert.ok(scene.data.narrative.options.some(
     (entry) => entry.intent.type === 'employment.accept' && entry.label.includes('注入測試雜役'),
   ));

@@ -154,7 +154,9 @@ test('Content Pack rejects broken career behavior rules', () => {
 
 test('Content Pack rejects NPC locations that do not exist', () => {
   const pack = clonePack();
-  pack.npcs.foreman.locationId = 'missing-place';
+  pack.npcs.wanderer = structuredClone(pack.npcs.foreman);
+  pack.npcs.wanderer.locationId = 'missing-place';
+  pack.npcs.wanderer.relationship.behaviorId = 'interact:npc:wanderer';
   assert.throws(() => validateContentPack(pack), /references unknown location/);
 });
 
