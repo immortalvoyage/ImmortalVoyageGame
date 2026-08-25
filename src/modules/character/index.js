@@ -1,6 +1,6 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 
-const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 6, actions: ['character.birth'] });
+const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 7, actions: ['character.birth'] });
 
 function birth({ world, actor, action, context }) {
   if (world.characters[actor.sessionId]) return { ok: false, code: 'CHARACTER_EXISTS' };
@@ -15,6 +15,8 @@ function birth({ world, actor, action, context }) {
     locationId: context.contentPack.startingLocationId,
     needs: { hunger: 0, thirst: 0, fatigue: 0 },
     needProgressSeconds: { hunger: 0, thirst: 0, fatigue: 0 },
+    lastActiveLogicalTimeSeconds: world.logicalTimeSeconds,
+    lastSurvivalResolvedLogicalTimeSeconds: world.logicalTimeSeconds,
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
@@ -34,6 +36,8 @@ export function publicCharacter(character) {
   const {
     ownerSessionId: _ownerSessionId,
     needProgressSeconds: _needProgressSeconds,
+    lastActiveLogicalTimeSeconds: _lastActiveLogicalTimeSeconds,
+    lastSurvivalResolvedLogicalTimeSeconds: _lastSurvivalResolvedLogicalTimeSeconds,
     behaviorCounts: _behaviorCounts,
     knowledgeIds: _knowledgeIds,
     currentEmployment: _currentEmployment,
