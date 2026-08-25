@@ -6,6 +6,10 @@ function jsonResponse(status, value) {
   return { status, json: async () => structuredClone(value) };
 }
 
+function invalidJsonResponse(status) {
+  return { status, json: async () => { throw new SyntaxError('invalid json'); } };
+}
+
 test('transport retry reuses the exact same request body and request id', async () => {
   const calls = [];
   const fetchImpl = async (_url, options) => {
@@ -48,6 +52,45 @@ test('server 5xx is retried with the same request id because commit status may b
   assert.equal(outcome.result.code, 'PURCHASE_COMPLETED');
   assert.equal(calls.length, 2);
   assert.equal(calls[0], calls[1]);
+});
+
+test('malformed 2xx response is retried because the world may already have committed', async () => {
+  const calls = [];
+  const responses = [
+    invalidJsonResponse(200),
+    jsonResponse(200, { ok: true, code: 'RESOURCE_GATHERED', data: {} }),
+  ];
+  const fetchImpl = async (_url, options) => {
+    calls.push(options.body);
+    return responses.shift();
+  };
+
+  const outcome = await postActionWithRecovery({
+    fetchImpl,
+    requestId: 'malformed-success',
+    action: { type: 'survival.gather', payload: { itemId: 'water' } },
+  });
+
+  assert.equal(outcome.confirmed, true);
+  assert.equal(outcome.result.code, 'RESOURCE_GATHERED');
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0], calls[1]);
+});
+
+test('repeated malformed 2xx response remains unconfirmed', async () => {
+  let calls = 0;
+  const outcome = await postActionWithRecovery({
+    fetchImpl: async () => {
+      calls += 1;
+      return invalidJsonResponse(200);
+    },
+    requestId: 'malformed-uncertain',
+    action: { type: 'economy.work', payload: { jobId: 'job:1' } },
+  });
+
+  assert.equal(outcome.confirmed, false);
+  assert.deepEqual(outcome.result, { ok: false, code: 'INVALID_SERVER_RESPONSE' });
+  assert.equal(calls, 2);
 });
 
 test('definitive 4xx rejection is not retried', async () => {
