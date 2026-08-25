@@ -2,11 +2,11 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { addStack, removeStack } from '../inventory/index.js';
-import { applyElapsedSurvival } from './elapsed.js';
+import { resolveCharacterSurvival } from './elapsed.js';
 
 const manifest = validateGameModuleManifest({
   name: 'survival',
-  dataVersion: 7,
+  dataVersion: 8,
   actions: ['survival.gather', 'survival.consume', 'survival.rest'],
 });
 
@@ -61,7 +61,7 @@ function resolveElapsed({ world, elapsedSeconds, context }) {
   if (!Number.isSafeInteger(elapsedSeconds) || elapsedSeconds <= 0) return;
   for (const character of Object.values(world.characters)) {
     if (character.status !== 'alive') continue;
-    applyElapsedSurvival(character, elapsedSeconds, context?.contentPack);
+    resolveCharacterSurvival(character, world.logicalTimeSeconds, context?.contentPack);
   }
 }
 
