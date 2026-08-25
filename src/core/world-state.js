@@ -191,10 +191,10 @@ function assertGameEventLedger(world) {
   }
 }
 
-export function createInitialWorld({ nowMs = Date.now() } = {}) {
+export function createInitialWorld({ nowMs = Date.now(), worldId = 'v2-dev-world' } = {}) {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    worldId: 'v2-dev-world',
+    worldId,
     logicalTimeSeconds: 0,
     lastResolvedAtMs: nowMs,
     characters: {},

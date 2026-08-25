@@ -51,7 +51,7 @@ test('legacy schema v1 save migrates on the next successful authoritative action
   const filePath = join(dir, 'world.json');
   const legacy = {
     schemaVersion: 1,
-    worldId: 'legacy-v1',
+    worldId: 'v2-dev-world',
     logicalTimeSeconds: 0,
     lastResolvedAtMs: 1000,
     characters: {

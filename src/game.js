@@ -1,5 +1,6 @@
 import { GameRuntime } from './core/game-runtime.js';
 import { createInitialWorld } from './core/world-state.js';
+import { assertWorldNamespace, LOCAL_DEVELOPMENT_ENVIRONMENT } from './core/runtime-environment.js';
 import { MemoryGameStore } from './adapters/memory-game-store.js';
 import { FileGameStore } from './adapters/file-game-store.js';
 import { devStarterPack } from './content/dev-starter.js';
@@ -48,6 +49,7 @@ export function createGame({
   contentPack = devStarterPack,
   now = () => Date.now(),
   enabledModules = allModules.map((module) => module.manifest.name),
+  runtimeEnvironment = null,
 }) {
   if (!store) throw new TypeError('store is required');
   validateContentPack(contentPack);
@@ -56,22 +58,30 @@ export function createGame({
   const runtime = new GameRuntime({
     store,
     modules,
-    runtimeContext: { contentPack },
-    validateLoadedWorld: (world) => validateWorldContentCompatibility(world, contentPack),
+    runtimeContext: { contentPack, runtimeEnvironment },
+    validateLoadedWorld: (world) => {
+      if (runtimeEnvironment) assertWorldNamespace(world, runtimeEnvironment);
+      validateWorldContentCompatibility(world, contentPack);
+    },
     now,
   });
   return { runtime, store };
 }
 
 export function createDevelopmentGame({ now = () => Date.now(), enabledModules, contentPack = devStarterPack } = {}) {
-  const store = new MemoryGameStore(createInitialWorld({ nowMs: now() }));
-  return createGame({ store, contentPack, now, enabledModules });
+  const runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT;
+  const store = new MemoryGameStore(createInitialWorld({
+    nowMs: now(),
+    worldId: runtimeEnvironment.worldNamespace,
+  }));
+  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment });
 }
 
 export function createFileBackedDevelopmentGame({ filePath, now = () => Date.now(), enabledModules, contentPack = devStarterPack } = {}) {
+  const runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT;
   const store = new FileGameStore({
     filePath,
-    createInitialWorld: () => createInitialWorld({ nowMs: now() }),
+    createInitialWorld: () => createInitialWorld({ nowMs: now(), worldId: runtimeEnvironment.worldNamespace }),
   });
-  return createGame({ store, contentPack, now, enabledModules });
+  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment });
 }

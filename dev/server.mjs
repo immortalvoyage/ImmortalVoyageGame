@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { firstSettlementPack } from '../src/content/first-settlement.js';
 import { createFileBackedDevelopmentGame } from '../src/game.js';
+import { createDeveloperTestSession } from '../src/core/auth-session.js';
+import { LOCAL_DEVELOPMENT_ENVIRONMENT } from '../src/core/runtime-environment.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(here, '..', 'public');
@@ -74,9 +76,14 @@ export function createDevServer({ runtime, contentPack, filePath } = {}) {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'POST' && url.pathname === '/api/action') {
         const sessionId = sessionFor(req, res);
+        const { actor } = createDeveloperTestSession({
+          environment: LOCAL_DEVELOPMENT_ENVIRONMENT,
+          accountId: `local-dev:${sessionId}`,
+          sessionId,
+        });
         const body = await readJson(req);
         const result = await authoritativeRuntime.dispatch({
-          actor: { sessionId },
+          actor,
           requestId: body.requestId,
           action: body.action,
         });
