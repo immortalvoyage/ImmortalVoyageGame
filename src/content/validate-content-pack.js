@@ -1,6 +1,7 @@
 const NEED_KEYS = new Set(['hunger', 'thirst', 'fatigue']);
 const PROGRESSION_KINDS = new Set(['skill', 'social']);
 const MAX_ROUTE_TRAVEL_SECONDS = 30 * 24 * 60 * 60;
+const MAX_ABSENCE_SURVIVAL_CAP_SECONDS = 30 * 24 * 60 * 60;
 
 function fail(message) {
   throw new Error(`invalid content pack: ${message}`);
@@ -171,6 +172,15 @@ export function validateContentPack(pack) {
     if (location.rest !== undefined) {
       const rest = requireRecord(location.rest, `locations.${locationId}.rest`);
       requireText(rest.label, `locations.${locationId}.rest.label`);
+    }
+    if (location.shelter !== undefined) {
+      if (location.rest === undefined) fail(`locations.${locationId}.shelter requires a legal rest location`);
+      const shelter = requireRecord(location.shelter, `locations.${locationId}.shelter`);
+      requireInteger(
+        shelter.absenceSurvivalCapSeconds,
+        `locations.${locationId}.shelter.absenceSurvivalCapSeconds`,
+        { min: 1, max: MAX_ABSENCE_SURVIVAL_CAP_SECONDS },
+      );
     }
 
     const routes = requireArray(location.routes, `locations.${locationId}.routes`);

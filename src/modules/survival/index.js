@@ -2,10 +2,11 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { addStack, removeStack } from '../inventory/index.js';
+import { applyElapsedSurvival } from './elapsed.js';
 
 const manifest = validateGameModuleManifest({
   name: 'survival',
-  dataVersion: 6,
+  dataVersion: 7,
   actions: ['survival.gather', 'survival.consume', 'survival.rest'],
 });
 
@@ -56,23 +57,11 @@ function rest({ world, actor, context }) {
   };
 }
 
-const NEED_INTERVAL_SECONDS = Object.freeze({
-  hunger: 30 * 60,
-  thirst: 20 * 60,
-  fatigue: 60 * 60,
-});
-
-function resolveElapsed({ world, elapsedSeconds }) {
-  if (!Number.isInteger(elapsedSeconds) || elapsedSeconds <= 0) return;
+function resolveElapsed({ world, elapsedSeconds, context }) {
+  if (!Number.isSafeInteger(elapsedSeconds) || elapsedSeconds <= 0) return;
   for (const character of Object.values(world.characters)) {
     if (character.status !== 'alive') continue;
-    character.needProgressSeconds ??= { hunger: 0, thirst: 0, fatigue: 0 };
-    for (const [need, intervalSeconds] of Object.entries(NEED_INTERVAL_SECONDS)) {
-      const accumulated = (character.needProgressSeconds[need] ?? 0) + elapsedSeconds;
-      const increments = Math.floor(accumulated / intervalSeconds);
-      character.needProgressSeconds[need] = accumulated % intervalSeconds;
-      if (increments > 0) character.needs[need] = Math.min(100, character.needs[need] + increments);
-    }
+    applyElapsedSurvival(character, elapsedSeconds, context?.contentPack);
   }
 }
 
