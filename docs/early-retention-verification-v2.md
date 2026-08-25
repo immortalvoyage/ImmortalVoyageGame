@@ -1,17 +1,18 @@
 # V2 Early Retention / First-Session Verification
 
-Status: PR #92 and PR #93 merged baseline plus `fix/v2-server-shaped-utility-actionability` candidate evidence.
+Status: PR #92–#94 merged baseline plus `fix/v2-dev-static-imports` candidate evidence.
 
 ## Goal
 
 Verify the first-settlement candidate against the current Early Retention product gate without expanding World Core or inventing a new tutorial system.
 
-This slice checks four things that can be verified deterministically now:
+This slice checks five things that can be verified deterministically now:
 
 1. a new Life receives several understandable world choices immediately after birth and one ordinary choice can create a visible consequence on the next scene;
 2. the mobile-first character card does not front-load empty future-system fields before the player has formed those parts of the Life;
 3. the trade surface does not occupy the first-session screen when there is nothing the player can sell and no listing to inspect;
-4. the secondary `可執行行動` area only projects crafting and market-buy controls that authoritative current state can actually perform.
+4. the secondary `可執行行動` area only projects crafting and market-buy controls that authoritative current state can actually perform;
+5. the local first-settlement dev server actually serves every direct Browser module imported by `public/app.js`, so the human playtest entrypoint is runnable rather than failing on missing static modules.
 
 Human timing targets such as First Meaningful Choice <= 90 seconds, Visible Consequence <= 3 minutes, and a 10–15 minute micro-loop still require an actual play session. Automated tests are treated only as structural proxies and do not claim those human timing thresholds have been met.
 
@@ -34,7 +35,9 @@ PR #93 followed the same rule for Trade. The Trade module still returns its comp
 
 A further source review found two inconsistencies inside server-shaped `utilities`: crafting recipes were projected even without all required inputs, and market purchase buttons were projected even when the character could not afford them. Both direct actions already failed closed authoritatively, but showing those controls under `可執行行動` made the first-session UI invite guaranteed failures.
 
-The actionability correction keeps feasibility on the server. Narrative utility projection now checks authoritative inventory before publishing a crafting control and authoritative money before publishing a market-buy control. Browser logic does not infer feasibility, and forged direct actions are still revalidated by Crafting / Economy modules.
+PR #94 kept feasibility on the server. Narrative utility projection checks authoritative inventory before publishing a crafting control and authoritative money before publishing a market-buy control. Browser logic does not infer feasibility, and forged direct actions are still revalidated by Crafting / Economy modules.
+
+The next Critical Path review found a separate runnable-entrypoint blocker: `public/app.js` imports `character-summary.js` and `trade-visibility.js`, but `dev/server.mjs` did not expose either path in its static-file map. The Browser therefore received 404 responses for modules introduced by PR #92/#93 when launched through the documented local dev server. `fix/v2-dev-static-imports` adds both modules and a contract test that fetches `/app.js`, discovers every direct relative module import, and verifies each is served as JavaScript. This is a dev/runtime delivery fix only; world rules and Browser authority are unchanged.
 
 ## First-session structural proxy
 
@@ -53,6 +56,12 @@ The actionability correction keeps feasibility on the server. Narrative utility 
 - a zero-money / zero-inventory new Life sees neither buy nor craft utilities;
 - after one legal work action earns 2 money, both market purchase controls appear while crafting remains hidden;
 - after buying bread and water, money returns to 0, buy controls disappear, and the now-feasible ration recipe appears.
+
+`tests/dev-server-static-assets.test.mjs` adds a runnable-entrypoint contract:
+
+- fetch the actual `/app.js` from `createDevServer`;
+- discover its direct `./*.js` imports;
+- require every imported Browser module to return HTTP 200 with a JavaScript content type.
 
 These are machine-verifiable Critical Path proxies, not claims that a human completes the flow within a specific wall-clock duration.
 
@@ -76,18 +85,21 @@ Executed reconstructed exact-source evidence:
   - buying requires authoritative money >= offer price.
 - `tests/early-retention-first-session.test.mjs` source syntax check: passed.
 - `tests/narrative-utility-actionability.test.mjs` source syntax check: passed.
+- `dev/server.mjs` candidate source syntax check: passed.
+- `tests/dev-server-static-assets.test.mjs` candidate source syntax check: passed.
+- reconstructed HTTP static-serving fixture using the candidate dev-server source and direct `app.js` imports: **1/1 passed**.
 
 The repository integration tests are committed for execution by the canonical `npm run verify` suite when a complete checkout is available; they are not represented here as executed end-to-end.
 
 ## Remaining validation gap
 
-The deterministic source review no longer shows an obvious first-screen guaranteed-failure control in the core first-settlement loop. The remaining Early Retention gate is primarily a real human/mobile playtest question: whether the wording, visual hierarchy, decision density, and perceived pace actually achieve the intended first-choice / visible-consequence / 10–15 minute experience. That cannot be proven by server tests alone.
+The deterministic source review no longer shows an obvious first-screen guaranteed-failure control or local dev-server module-delivery blocker in the core first-settlement loop. The remaining Early Retention gate is primarily a real human/mobile playtest question: whether the wording, visual hierarchy, decision density, perceived pace, and NPC/place emotional hook actually achieve the intended first-choice / visible-consequence / 10–15 minute experience. That cannot be proven by server tests alone.
 
 ## Boundaries
 
 - no schema or migration change;
-- Narrative module dataVersion increments for the public utility-projection behavior change only;
 - no Content Pack tuning change;
+- no new gameplay Module or World Engine rule;
 - no new AI call, analytics provider, timer, scheduler, heartbeat, polling, background worker, or external service;
 - no FOMO, daily-login reward, forced tutorial, or login punishment;
 - no change to Action Resolver, World Engine authority, Knowledge boundaries, or hidden information policy;
@@ -95,4 +107,4 @@ The deterministic source review no longer shows an obvious first-screen guarante
 
 ## Free Resource Impact
 
-No new persistent cost. Utility feasibility is deterministic request-time projection over already-loaded authoritative character state and validated Content Pack data.
+No new persistent cost. The dev-server change only serves two existing local static Browser modules and adds repository verification.
