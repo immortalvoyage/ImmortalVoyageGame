@@ -3,6 +3,7 @@ import { forgetPendingAction, readPendingAction, rememberPendingAction } from '.
 import { buildCharacterSummaryRows } from './character-summary.js';
 import { formatActionResult } from './result-message.js';
 import { shouldShowTradePanel } from './trade-visibility.js';
+import { shouldShowNarrativeText, shouldShowUtilityPanel } from './scene-visibility.js';
 
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
@@ -13,6 +14,7 @@ const recoveryText = document.querySelector('#recovery-text');
 const recoveryButton = document.querySelector('#recovery-button');
 const narrativeActions = document.querySelector('#narrative-actions');
 const worldActions = document.querySelector('#world-actions');
+const utilityPanel = document.querySelector('#utility-panel');
 const locationName = document.querySelector('#location-name');
 const locationDescription = document.querySelector('#location-description');
 const narrativeText = document.querySelector('#narrative-text');
@@ -198,6 +200,7 @@ function render() {
   locationName.textContent = view.location.name;
   locationDescription.textContent = view.location.description;
   narrativeText.textContent = view.narrative.text;
+  narrativeText.hidden = !shouldShowNarrativeText(view.location.description, view.narrative.text);
 
   characterState.replaceChildren();
   const rows = buildCharacterSummaryRows(view);
@@ -210,7 +213,9 @@ function render() {
   }
 
   narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
-  worldActions.replaceChildren(...view.utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
+  const utilities = Array.isArray(view.utilities) ? view.utilities : [];
+  utilityPanel.hidden = !shouldShowUtilityPanel(utilities);
+  worldActions.replaceChildren(...utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
   renderTrade();
 }
 
