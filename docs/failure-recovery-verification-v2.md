@@ -6,10 +6,11 @@ Status: PR candidate evidence for `feat/v2-failure-recovery`.
 
 The execution container still cannot clone GitHub directly, so the complete repository checkout suite was not rerun here. The following isolated semantic harnesses were executed against the branch logic:
 
-- Browser action retry helper: **7/7 passed**
+- Browser action retry helper: **8/8 passed**
   - transport error then success reuses the exact request body/request ID;
   - HTTP 5xx then success reuses the exact request body/request ID;
   - malformed HTTP 2xx is treated as ambiguous and retried with the same request ID;
+  - valid JSON with an invalid successful result shape is also treated as ambiguous and retried with the same request ID;
   - repeated malformed HTTP 2xx remains explicitly unconfirmed;
   - HTTP 4xx is definitive and is not retried;
   - repeated transport failure stops after two attempts;
