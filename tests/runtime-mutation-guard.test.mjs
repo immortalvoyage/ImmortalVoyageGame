@@ -18,6 +18,7 @@ function validCharacter() {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    lastActiveLogicalTimeSeconds: 0,
     inventory: {},
     money: 0,
   };

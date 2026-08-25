@@ -25,6 +25,7 @@ function character(overrides = {}) {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    lastActiveLogicalTimeSeconds: 0,
     inventory: {},
     money: 0,
     ...overrides,
@@ -119,6 +120,17 @@ test('identity, ownership, and world clock corruption fail closed', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].status = 'dead'; }, /invalid character state/);
 });
 
+test('active character activity time is bounded by authoritative logical world time', () => {
+  assert.equal(assertWorldState(validWorld()).characters[actor.sessionId].lastActiveLogicalTimeSeconds, 0);
+  expectInvalid((world) => { world.characters[actor.sessionId].lastActiveLogicalTimeSeconds = -1; }, /invalid character activity time/);
+  expectInvalid((world) => { world.characters[actor.sessionId].lastActiveLogicalTimeSeconds = 0.5; }, /invalid character activity time/);
+  expectInvalid((world) => { world.characters[actor.sessionId].lastActiveLogicalTimeSeconds = 1; }, /invalid character activity time/);
+
+  const advanced = validWorld({ lastActiveLogicalTimeSeconds: 4 });
+  advanced.logicalTimeSeconds = 5;
+  assert.equal(assertWorldState(advanced), advanced);
+});
+
 test('survival, money, and inventory corruption fail closed', () => {
   expectInvalid((world) => { world.characters[actor.sessionId].needs.hunger = 101; }, /invalid survival needs/);
   expectInvalid((world) => { world.characters[actor.sessionId].needs.thirst = 0.5; }, /invalid survival needs/);
@@ -174,6 +186,7 @@ test('archived characters and pending estates are paired without duplicating spe
     employerNpcId: 'retired-employer',
     workLocationId: 'retired-place',
   };
+  assert.equal(Object.hasOwn(valid.archivedCharacters['char:1'], 'lastActiveLogicalTimeSeconds'), false);
   assert.equal(assertWorldState(valid), valid);
 
   const missingEstate = archivedWorld();

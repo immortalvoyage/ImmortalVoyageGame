@@ -6,12 +6,13 @@ import { createInitialWorld } from '../src/core/world-state.js';
 
 const actor = { sessionId: 'elapsed-context-session' };
 
-test('elapsed resolvers receive the same server-owned runtime context as action handlers', async () => {
+test('elapsed resolvers receive actor plus server-owned context and run even when current global gap is zero', async () => {
   const observed = [];
   const probeModule = {
     manifest: { name: 'elapsed-probe', actions: ['elapsed-probe.observe'] },
-    resolveElapsed({ elapsedSeconds, context }) {
+    resolveElapsed({ actor: elapsedActor, elapsedSeconds, context }) {
       observed.push({
+        sessionId: elapsedActor.sessionId,
         elapsedSeconds,
         marker: context.marker,
         actionAvailable: context.isActionAvailable('elapsed-probe.observe'),
@@ -35,18 +36,34 @@ test('elapsed resolvers receive the same server-owned runtime context as action 
     now: () => 6000,
   });
 
-  const result = await runtime.dispatch({
+  const first = await runtime.dispatch({
     actor,
-    requestId: 'elapsed-context',
+    requestId: 'elapsed-context-1',
+    action: { type: 'elapsed-probe.observe', payload: {} },
+  });
+  const second = await runtime.dispatch({
+    actor,
+    requestId: 'elapsed-context-2',
     action: { type: 'elapsed-probe.observe', payload: {} },
   });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.data, { marker: 'server-owned' });
-  assert.deepEqual(observed, [{
-    elapsedSeconds: 5,
-    marker: 'server-owned',
-    actionAvailable: true,
-    nowMs: 6000,
-  }]);
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.deepEqual(first.data, { marker: 'server-owned' });
+  assert.deepEqual(observed, [
+    {
+      sessionId: actor.sessionId,
+      elapsedSeconds: 5,
+      marker: 'server-owned',
+      actionAvailable: true,
+      nowMs: 6000,
+    },
+    {
+      sessionId: actor.sessionId,
+      elapsedSeconds: 0,
+      marker: 'server-owned',
+      actionAvailable: true,
+      nowMs: 6000,
+    },
+  ]);
 });

@@ -20,6 +20,7 @@ function character(overrides = {}) {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    lastActiveLogicalTimeSeconds: 0,
     inventory: {},
     money: 0,
     ...overrides,
@@ -215,6 +216,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   delete world.characters[actor.sessionId].behaviorCounts;
   delete world.characters[actor.sessionId].knowledgeIds;
   delete world.characters[actor.sessionId].currentEmployment;
+  delete world.characters[actor.sessionId].lastActiveLogicalTimeSeconds;
   delete world.tradeListings;
   delete world.nextTradeListingSequence;
   delete world.archivedCharacters;
@@ -229,6 +231,7 @@ test('supported schema migration runs before Content Pack compatibility validati
   assert.deepEqual(stored.characters[actor.sessionId].behaviorCounts, {});
   assert.deepEqual(stored.characters[actor.sessionId].knowledgeIds, []);
   assert.equal(stored.characters[actor.sessionId].currentEmployment, null);
+  assert.equal(stored.characters[actor.sessionId].lastActiveLogicalTimeSeconds, stored.logicalTimeSeconds);
   assert.deepEqual(stored.tradeListings, {});
   assert.equal(stored.nextTradeListingSequence, 1);
   assert.deepEqual(stored.archivedCharacters, {});

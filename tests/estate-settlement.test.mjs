@@ -17,6 +17,7 @@ function character(sessionId, id, overrides = {}) {
     behaviorCounts: { 'work:starter-labor': 2 },
     knowledgeIds: [],
     currentEmployment: null,
+    lastActiveLogicalTimeSeconds: 0,
     inventory: {},
     money: 0,
     ...overrides,
@@ -92,6 +93,7 @@ test('death settlement archives character knowledge, behavior, and employment wh
     employerNpcId: 'foreman',
     workLocationId: 'starter-square',
   });
+  assert.equal(Object.hasOwn(archived, 'lastActiveLogicalTimeSeconds'), false);
   assert.equal(Object.hasOwn(archived, 'inventory'), false);
   assert.equal(Object.hasOwn(archived, 'money'), false);
 
@@ -104,7 +106,7 @@ test('death settlement archives character knowledge, behavior, and employment wh
   assert.equal(assertWorldState(world), world);
 });
 
-test('same account may start a new life only after the old character is archived, without asset, knowledge, or employment inheritance', async () => {
+test('same account may start a new life only after the old character is archived, without asset, knowledge, employment, or activity-clock inheritance', async () => {
   const world = baseWorld();
   const settled = settleCharacterDeath({
     world,
@@ -128,11 +130,14 @@ test('same account may start a new life only after the old character is archived
   assert.deepEqual(born.data.character.inventory, {});
   assert.equal(born.data.character.knowledgeIds, undefined);
   assert.equal(born.data.character.currentEmployment, undefined);
+  assert.equal(born.data.character.lastActiveLogicalTimeSeconds, undefined);
   const stored = store.snapshot();
   assert.deepEqual(stored.characters.seller.knowledgeIds, []);
   assert.equal(stored.characters.seller.currentEmployment, null);
+  assert.equal(stored.characters.seller.lastActiveLogicalTimeSeconds, 42);
   assert.deepEqual(stored.archivedCharacters['char:1'].knowledgeIds, ['starter-living-advice']);
   assert.equal(stored.archivedCharacters['char:1'].currentEmployment.jobId, 'starter-labor');
+  assert.equal(Object.hasOwn(stored.archivedCharacters['char:1'], 'lastActiveLogicalTimeSeconds'), false);
   assert.equal(stored.estates['estate:char:1'].money, 7);
   assert.deepEqual(stored.estates['estate:char:1'].inventory, { food: 5, water: 1 });
 });
