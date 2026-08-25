@@ -6,7 +6,7 @@ import { applyElapsedSurvival } from './elapsed.js';
 
 const manifest = validateGameModuleManifest({
   name: 'survival',
-  dataVersion: 7,
+  dataVersion: 8,
   actions: ['survival.gather', 'survival.consume', 'survival.rest'],
 });
 
@@ -57,12 +57,10 @@ function rest({ world, actor, context }) {
   };
 }
 
-function resolveElapsed({ world, elapsedSeconds, context }) {
-  if (!Number.isSafeInteger(elapsedSeconds) || elapsedSeconds <= 0) return;
-  for (const character of Object.values(world.characters)) {
-    if (character.status !== 'alive') continue;
-    applyElapsedSurvival(character, elapsedSeconds, context?.contentPack);
-  }
+function resolveElapsed({ world, actor, context }) {
+  const character = getOwnedActiveCharacter(world, actor);
+  if (!character) return;
+  applyElapsedSurvival(character, world.logicalTimeSeconds, context?.contentPack);
 }
 
 export const survivalModule = {
