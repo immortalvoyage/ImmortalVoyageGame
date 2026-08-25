@@ -14,6 +14,7 @@ const STATIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/action-client.js', ['action-client.js', 'text/javascript; charset=utf-8']],
+  ['/action-recovery-state.js', ['action-recovery-state.js', 'text/javascript; charset=utf-8']],
   ['/result-message.js', ['result-message.js', 'text/javascript; charset=utf-8']],
   ['/app.css', ['app.css', 'text/css; charset=utf-8']],
 ]);
