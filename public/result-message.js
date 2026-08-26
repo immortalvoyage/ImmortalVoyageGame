@@ -73,7 +73,7 @@ function failureMessage(code, fallbackLabel) {
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
     case 'INVALID_NAME':
-      return '請輸入 1～24 個字的角色姓名。';
+      return '姓名不符合規則；請使用 1～24 個可辨識文字，避免保留身份或特殊控制字元。';
     case 'UNKNOWN_ACTION':
       return '這個行動目前不可用。';
     case 'UNAUTHENTICATED':

@@ -81,3 +81,15 @@ test('invalid tutorial action fails without mutating the disposable sandbox', as
   assert.equal(bad.code, 'ROUTE_NOT_AVAILABLE');
   assert.deepEqual(tutorial.store.snapshot(), before);
 });
+
+test('tutorial naming uses the same server-side player-name guard as formal character creation', async () => {
+  const tutorial = createTutorialDevelopmentGame({ now: () => 1000 });
+  const before = tutorial.store.snapshot();
+  const rejected = await dispatch(tutorial.runtime, 'reserved-name', 'character.birth', { name: '知微' });
+  assert.equal(rejected.code, 'INVALID_NAME');
+  assert.deepEqual(tutorial.store.snapshot(), before);
+
+  const accepted = await dispatch(tutorial.runtime, 'normal-name', 'character.birth', { name: '  Ａlice　Lin  ' });
+  assert.equal(accepted.ok, true);
+  assert.equal(accepted.data.character.name, 'Alice Lin');
+});
