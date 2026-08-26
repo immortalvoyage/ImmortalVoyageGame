@@ -5,7 +5,9 @@ import { formatActionResult } from './result-message.js';
 import { shouldShowTradePanel } from './trade-visibility.js';
 import { shouldShowNarrativeText, shouldShowUtilityPanel } from './scene-visibility.js';
 
-const tutorialMode = document.body.dataset.mode === 'tutorial';
+const pageMode = document.body.dataset.mode ?? '';
+const onboardingMode = pageMode === 'onboarding';
+const tutorialMode = pageMode === 'tutorial' || onboardingMode;
 
 const birthPanel = document.querySelector('#birth-panel');
 const gamePanel = document.querySelector('#game-panel');
@@ -28,10 +30,20 @@ const tradeQuantity = document.querySelector('#trade-quantity');
 const tradePrice = document.querySelector('#trade-price');
 const tradeSubmit = document.querySelector('#trade-submit');
 const tradeListings = document.querySelector('#trade-listings');
+const leaveTutorialPanel = document.querySelector('#leave-tutorial-panel');
+const leaveTutorialButton = document.querySelector('#leave-tutorial-button');
+const formalBirthPanel = document.querySelector('#formal-birth-panel');
+const formalBirthForm = document.querySelector('#formal-birth-form');
+const formalCharacterName = document.querySelector('#formal-character-name');
+const birthLocation = document.querySelector('#birth-location');
+const birthLocationDescription = document.querySelector('#birth-location-description');
+const characterHeading = document.querySelector('#character-heading');
 
 let view = null;
 let busy = false;
 let pendingAction = readPendingAction(globalThis.sessionStorage);
+let formalBirthOptions = [];
+let tutorialNameForFormalBirth = '';
 
 function requestId() {
   return crypto.randomUUID();
@@ -56,6 +68,36 @@ function setPendingAction(next) {
     forgetPendingAction(globalThis.sessionStorage);
   }
   renderRecovery();
+}
+
+function renderBirthLocationDescription() {
+  if (!birthLocationDescription || !birthLocation) return;
+  const selected = formalBirthOptions.find((option) => option.id === birthLocation.value);
+  birthLocationDescription.textContent = selected?.description ?? '';
+}
+
+async function showFormalBirth() {
+  if (!onboardingMode) return;
+  birthPanel.hidden = true;
+  gamePanel.hidden = true;
+  leaveTutorialPanel.hidden = true;
+  formalBirthPanel.hidden = false;
+  try {
+    const result = await act('life.observe-birth-options', {}, { trackUncertainty: false });
+    if (!result) return;
+    formalBirthOptions = Array.isArray(result.data?.options) ? result.data.options : [];
+    birthLocation.replaceChildren(...formalBirthOptions.map((option) => {
+      const element = document.createElement('option');
+      element.value = option.id;
+      element.textContent = option.name;
+      return element;
+    }));
+    if (tutorialNameForFormalBirth && !formalCharacterName.value) formalCharacterName.value = tutorialNameForFormalBirth;
+    renderBirthLocationDescription();
+    showMessage(formalBirthOptions.length > 0 ? '新手村教學資料已丟棄。請確認正式姓名與出生地。' : '目前沒有可用的出生地。');
+  } catch (error) {
+    showMessage(formatActionResult(error.result ?? { ok: false }, '讀取出生地'));
+  }
 }
 
 async function act(type, payload = {}, { trackUncertainty = true } = {}) {
@@ -97,7 +139,13 @@ async function refresh() {
     view = result.data;
     render();
   } catch (error) {
+    if (onboardingMode && error.result?.code === 'FORMAL_BIRTH_PENDING') {
+      await showFormalBirth();
+      return;
+    }
     if (error.result?.code === 'NO_ACTIVE_CHARACTER') {
+      if (formalBirthPanel) formalBirthPanel.hidden = true;
+      if (leaveTutorialPanel) leaveTutorialPanel.hidden = true;
       birthPanel.hidden = false;
       gamePanel.hidden = true;
       return;
@@ -198,6 +246,9 @@ function renderTrade() {
 
 function render() {
   birthPanel.hidden = true;
+  if (formalBirthPanel) formalBirthPanel.hidden = true;
+  if (leaveTutorialPanel) leaveTutorialPanel.hidden = !(onboardingMode && view.onboarding?.phase === 'tutorial');
+  if (characterHeading) characterHeading.textContent = view.onboarding?.phase === 'tutorial' ? '教學 Avatar' : '角色';
   gamePanel.hidden = false;
   locationName.textContent = view.location.name;
   locationDescription.textContent = view.location.description;
@@ -230,6 +281,7 @@ birthForm.addEventListener('submit', async (event) => {
   const name = document.querySelector('#character-name').value;
   try {
     await act('character.birth', { name });
+    if (onboardingMode) tutorialNameForFormalBirth = name;
     showMessage(tutorialMode ? '教學 Avatar 已建立。' : '角色已出生。');
     await refresh();
   } catch (error) {
@@ -238,6 +290,51 @@ birthForm.addEventListener('submit', async (event) => {
     if (pendingAction) renderRecovery(text);
   }
 });
+
+if (leaveTutorialButton) {
+  leaveTutorialButton.addEventListener('click', async () => {
+    tutorialNameForFormalBirth = view?.character?.name ?? tutorialNameForFormalBirth;
+    try {
+      const result = await act('onboarding.leave-tutorial', { confirmDiscard: true });
+      if (!result) return;
+      view = null;
+      showMessage('已離開新手村；教學資料不會帶入正式人生。');
+      await showFormalBirth();
+    } catch (error) {
+      const text = formatActionResult(error.result ?? { ok: false }, '離開新手村');
+      showMessage(text);
+      if (pendingAction) renderRecovery(text);
+    }
+  });
+}
+
+if (birthLocation) birthLocation.addEventListener('change', renderBirthLocationDescription);
+
+if (formalBirthForm) {
+  formalBirthForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const selected = formalBirthOptions.find((option) => option.id === birthLocation.value);
+    if (!selected) {
+      showMessage('目前沒有可用的出生地。');
+      return;
+    }
+    try {
+      const result = await act('life.formal-birth', {
+        name: formalCharacterName.value,
+        birthLocationId: selected.id,
+      });
+      if (!result) return;
+      tutorialNameForFormalBirth = '';
+      formalBirthPanel.hidden = true;
+      showMessage('正式人生已開始。');
+      await refresh();
+    } catch (error) {
+      const text = formatActionResult(error.result ?? { ok: false }, '正式出生');
+      showMessage(text);
+      if (pendingAction) renderRecovery(text);
+    }
+  });
+}
 
 tradeItem.addEventListener('change', () => {
   const sellable = view?.trade?.sellables?.[Number(tradeItem.value)];
