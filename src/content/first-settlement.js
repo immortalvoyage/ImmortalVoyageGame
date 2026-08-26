@@ -4,8 +4,9 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 3,
+  dataVersion: 4,
   startingLocationId: 'first-square',
+  birthLocations: Object.freeze(['first-square']),
   survival: Object.freeze({
     warningThreshold: 60,
     criticalThreshold: 85,

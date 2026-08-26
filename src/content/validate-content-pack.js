@@ -137,6 +137,17 @@ export function validateContentPack(pack) {
   if (Object.keys(locations).length === 0) fail('pack.locations must not be empty');
   if (!Object.hasOwn(locations, pack.startingLocationId)) fail(`starting location does not exist: ${pack.startingLocationId}`);
 
+  if (pack.birthLocations !== undefined) {
+    const birthLocations = requireArray(pack.birthLocations, 'pack.birthLocations');
+    if (birthLocations.length === 0) fail('pack.birthLocations must not be empty');
+    const seenBirthLocations = new Set();
+    for (const [index, locationId] of birthLocations.entries()) {
+      requireText(locationId, `pack.birthLocations[${index}]`);
+      rememberUnique(seenBirthLocations, locationId, 'pack.birthLocations');
+      if (!Object.hasOwn(locations, locationId)) fail(`pack.birthLocations[${index}] references unknown location: ${locationId}`);
+    }
+  }
+
   for (const [itemId, item] of Object.entries(items)) {
     requireText(itemId, 'item id');
     requireRecord(item, `items.${itemId}`);

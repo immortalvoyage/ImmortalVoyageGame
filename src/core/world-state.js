@@ -1,6 +1,6 @@
 import { assertWorldInstant } from './world-calendar.js';
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -86,11 +86,24 @@ function assertInventory(inventory, label = 'inventory') {
   }
 }
 
+function assertLifeIdentity(character) {
+  const hasAccount = character.ownerAccountId !== null;
+  const hasBirthInstant = character.birthWorldInstant !== null;
+  if (hasAccount !== hasBirthInstant) throw new Error('invalid character life identity');
+  if (!hasAccount) return;
+  if (!isNonEmptyText(character.ownerAccountId) || character.ownerAccountId.length > 128 || character.ownerAccountId.trim() !== character.ownerAccountId) {
+    throw new Error('invalid character account ownership');
+  }
+  assertWorldInstant(character.birthWorldInstant);
+}
+
 function assertCharacterState(sessionId, character, worldLogicalTimeSeconds) {
   if (!isNonEmptyText(sessionId) || !isRecord(character)) throw new Error('invalid character state');
   if (!isNonEmptyText(character.id) || character.ownerSessionId !== sessionId) throw new Error('invalid character ownership');
   if (!isNonEmptyText(character.name) || character.name.length > 24) throw new Error('invalid character identity');
   if (character.status !== 'alive' || !isNonEmptyText(character.locationId)) throw new Error('invalid character state');
+  assertLifeIdentity(character);
+  if (character.birthWorldInstant?.offsetSeconds > worldLogicalTimeSeconds) throw new Error('invalid character birth time');
 
   assertNeedsAndBehavior(character);
   assertKnowledgeIds(character);
@@ -111,6 +124,7 @@ function assertArchiveAndEstateState(world) {
     if (!isNonEmptyText(archived.ownerSessionId)) throw new Error('invalid archived character owner');
     if (!isNonEmptyText(archived.name) || archived.name.length > 24) throw new Error('invalid archived character identity');
     if (archived.status !== 'dead' || !isNonEmptyText(archived.locationId)) throw new Error('invalid archived character state');
+    assertLifeIdentity(archived);
     assertNeedsAndBehavior(archived);
     assertKnowledgeIds(archived);
     assertCurrentEmployment(archived);
@@ -120,6 +134,9 @@ function assertArchiveAndEstateState(world) {
       || archived.diedLogicalTimeSeconds < 0
       || archived.diedLogicalTimeSeconds > world.logicalTimeSeconds) {
       throw new Error('invalid archived character death time');
+    }
+    if (archived.birthWorldInstant?.offsetSeconds > archived.diedLogicalTimeSeconds) {
+      throw new Error('invalid archived character birth time');
     }
 
     const estate = world.estates[archived.estateId];
@@ -242,12 +259,20 @@ export function assertWorldState(world) {
   if (!Number.isSafeInteger(world.nextCharacterSequence) || world.nextCharacterSequence < 1) throw new Error('invalid character sequence');
 
   const activeIds = new Set();
+  const activeAccountIds = new Set();
   for (const [sessionId, character] of Object.entries(world.characters)) {
     assertCharacterState(sessionId, character, world.logicalTimeSeconds);
     if (activeIds.has(character.id)) throw new Error('duplicate active character id');
     activeIds.add(character.id);
+    if (character.ownerAccountId !== null) {
+      if (activeAccountIds.has(character.ownerAccountId)) throw new Error('duplicate active account life');
+      activeAccountIds.add(character.ownerAccountId);
+    }
   }
   assertPendingLifeState(world);
+  for (const accountId of Object.keys(world.pendingLives)) {
+    if (activeAccountIds.has(accountId)) throw new Error('account cannot have pending and active life');
+  }
   assertArchiveAndEstateState(world);
   assertTradeState(world);
   assertRequestLedger(world);

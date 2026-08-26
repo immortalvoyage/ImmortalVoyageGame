@@ -10,6 +10,8 @@ function validCharacter() {
   return {
     id: 'char:1',
     ownerSessionId: actor.sessionId,
+    ownerAccountId: null,
+    birthWorldInstant: null,
     name: '守門旅人',
     status: 'alive',
     locationId: 'starter-square',
