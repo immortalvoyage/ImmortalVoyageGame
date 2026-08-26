@@ -82,3 +82,87 @@ test('tutorial dev server restart discards browser tutorial state even with the 
   assert.equal(scene.response.status, 400);
   assert.equal(scene.body.code, 'NO_ACTIVE_CHARACTER');
 });
+
+
+test('tutorial browser API completes the visible T0 living loop and keeps sessions isolated', async (t) => {
+  const server = createTutorialDevServer();
+  const base = await listen(server);
+  t.after(() => close(server));
+
+  const page = await fetch(base + '/');
+  const cookie = page.headers.get('set-cookie').split(';')[0];
+  let requestSequence = 0;
+  const act = async (type, payload = {}) => {
+    const result = await postAction(base, cookie, `t0-${++requestSequence}`, type, payload);
+    assert.equal(result.response.status, 200, `${type} should succeed`);
+    assert.equal(result.body.ok, true, `${type} should be authoritative success`);
+    return result.body;
+  };
+  const scene = async () => act('narrative.scene');
+  const visibleIntent = (current, type, predicate = () => true) => {
+    const entries = [...current.data.narrative.options, ...(current.data.utilities ?? [])];
+    const match = entries.find(({ intent }) => intent.type === type && predicate(intent.payload ?? {}));
+    assert.ok(match, `${type} must be visible in the current scene`);
+    return match.intent;
+  };
+
+  await act('character.birth', { name: 'Lin Xiaozhou' });
+  let current = await scene();
+  let intent = visibleIntent(current, 'npc.interact');
+  await act(intent.type, intent.payload);
+  current = await scene();
+
+  intent = visibleIntent(current, 'npc.ask');
+  await act(intent.type, intent.payload);
+  intent = visibleIntent(current, 'employment.accept');
+  await act(intent.type, intent.payload);
+  current = await scene();
+
+  intent = visibleIntent(current, 'economy.work');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'economy.buy', ({ itemId }) => itemId === 'tutorial-bread');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'survival.consume', ({ itemId }) => itemId === 'tutorial-bread');
+  await act(intent.type, intent.payload);
+
+  current = await scene();
+  intent = visibleIntent(current, 'location.travel', ({ destinationId }) => destinationId === 'tutorial-well');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'survival.gather', ({ itemId }) => itemId === 'tutorial-water');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'survival.consume', ({ itemId }) => itemId === 'tutorial-water');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'location.travel', ({ destinationId }) => destinationId === 'tutorial-square');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'location.travel', ({ destinationId }) => destinationId === 'tutorial-lodging');
+  await act(intent.type, intent.payload);
+  current = await scene();
+  intent = visibleIntent(current, 'survival.rest');
+  await act(intent.type, intent.payload);
+
+  current = await scene();
+  assert.equal(current.data.location.id, 'tutorial-lodging');
+  assert.equal(current.data.character.money, 1);
+  assert.deepEqual(current.data.character.needs, { hunger: 0, thirst: 1, fatigue: 0 });
+  assert.deepEqual(current.data.inventoryItems, []);
+  assert.equal(current.data.relationships[0].npc.id, 'tutorial-guide');
+  assert.equal(current.data.employment.current.job.title, '教學雜役');
+
+  const refreshedPage = await fetch(base + '/', { headers: { cookie } });
+  assert.equal(refreshedPage.status, 200);
+  const afterRefresh = await scene();
+  assert.equal(afterRefresh.data.location.id, 'tutorial-lodging');
+
+  const otherPage = await fetch(base + '/');
+  const otherCookie = otherPage.headers.get('set-cookie').split(';')[0];
+  assert.notEqual(otherCookie, cookie);
+  const otherScene = await postAction(base, otherCookie, 'other-session-scene', 'narrative.scene');
+  assert.equal(otherScene.response.status, 400);
+  assert.equal(otherScene.body.code, 'NO_ACTIVE_CHARACTER');
+});
