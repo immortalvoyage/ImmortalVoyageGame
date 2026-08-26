@@ -45,6 +45,8 @@ export function settleCharacterDeath({ world, sessionId, characterId, causeCode 
   const archivedCharacter = {
     id: character.id,
     ownerSessionId: character.ownerSessionId,
+    ownerAccountId: character.ownerAccountId,
+    birthWorldInstant: structuredClone(character.birthWorldInstant),
     name: character.name,
     status: 'dead',
     locationId: character.locationId,

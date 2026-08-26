@@ -12,6 +12,8 @@ function character(overrides = {}) {
   return {
     id: 'char:1',
     ownerSessionId: actor.sessionId,
+    ownerAccountId: null,
+    birthWorldInstant: null,
     name: '相容性旅人',
     status: 'alive',
     locationId: 'starter-square',
@@ -44,6 +46,8 @@ function addHistoricalArchive(world, {
   world.archivedCharacters['char:old'] = {
     id: 'char:old',
     ownerSessionId: 'old-session',
+    ownerAccountId: null,
+    birthWorldInstant: null,
     name: '故人',
     status: 'dead',
     locationId,

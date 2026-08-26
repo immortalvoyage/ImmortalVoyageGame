@@ -9,6 +9,8 @@ function character(sessionId, id, overrides = {}) {
   return {
     id,
     ownerSessionId: sessionId,
+    ownerAccountId: null,
+    birthWorldInstant: null,
     name: overrides.name ?? `旅人${id}`,
     status: 'alive',
     locationId: 'starter-square',

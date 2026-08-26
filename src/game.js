@@ -66,15 +66,17 @@ export function createGame({
   now = () => Date.now(),
   enabledModules = allModules.map((module) => module.manifest.name),
   runtimeEnvironment = null,
+  lifeBirthPolicy = 'direct',
 }) {
   if (!store) throw new TypeError('store is required');
+  if (!['direct', 'pending-required'].includes(lifeBirthPolicy)) throw new TypeError('invalid life birth policy');
   validateContentPack(contentPack);
   const enabled = new Set(enabledModules);
   const modules = allModules.filter((module) => enabled.has(module.manifest.name));
   const runtime = new GameRuntime({
     store,
     modules,
-    runtimeContext: { contentPack, runtimeEnvironment },
+    runtimeContext: { contentPack, runtimeEnvironment, lifeBirthPolicy },
     validateLoadedWorld: (world) => {
       if (runtimeEnvironment) assertWorldNamespace(world, runtimeEnvironment);
       validateWorldContentCompatibility(world, contentPack);
@@ -84,22 +86,33 @@ export function createGame({
   return { runtime, store };
 }
 
-export function createDevelopmentGame({ now = () => Date.now(), enabledModules, contentPack = devStarterPack } = {}) {
+export function createDevelopmentGame({
+  now = () => Date.now(),
+  enabledModules,
+  contentPack = devStarterPack,
+  lifeBirthPolicy = 'direct',
+} = {}) {
   const runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT;
   const store = new MemoryGameStore(createInitialWorld({
     nowMs: now(),
     worldId: runtimeEnvironment.worldNamespace,
   }));
-  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment });
+  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment, lifeBirthPolicy });
 }
 
-export function createFileBackedDevelopmentGame({ filePath, now = () => Date.now(), enabledModules, contentPack = devStarterPack } = {}) {
+export function createFileBackedDevelopmentGame({
+  filePath,
+  now = () => Date.now(),
+  enabledModules,
+  contentPack = devStarterPack,
+  lifeBirthPolicy = 'direct',
+} = {}) {
   const runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT;
   const store = new FileGameStore({
     filePath,
     createInitialWorld: () => createInitialWorld({ nowMs: now(), worldId: runtimeEnvironment.worldNamespace }),
   });
-  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment });
+  return createGame({ store, contentPack, now, enabledModules, runtimeEnvironment, lifeBirthPolicy });
 }
 
 export function createTutorialDevelopmentGame({ now = () => Date.now() } = {}) {

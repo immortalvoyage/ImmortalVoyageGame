@@ -41,6 +41,10 @@ export function migrateWorldState(input) {
       world = migrateV8ToV9(world);
       continue;
     }
+    if (world.schemaVersion === 9) {
+      world = migrateV9ToV10(world);
+      continue;
+    }
     throw new Error(`no world migration path from schema ${world.schemaVersion}`);
   }
   return world;
@@ -157,5 +161,19 @@ function migrateV8ToV9(world) {
   const migrated = cloneWorld(world);
   migrated.pendingLives ??= {};
   migrated.schemaVersion = 9;
+  return migrated;
+}
+
+function migrateV9ToV10(world) {
+  const migrated = cloneWorld(world);
+  for (const collection of [migrated.characters, migrated.archivedCharacters]) {
+    if (!collection || typeof collection !== 'object' || Array.isArray(collection)) continue;
+    for (const character of Object.values(collection)) {
+      if (!character || typeof character !== 'object' || Array.isArray(character)) continue;
+      if (character.ownerAccountId === undefined) character.ownerAccountId = null;
+      if (character.birthWorldInstant === undefined) character.birthWorldInstant = null;
+    }
+  }
+  migrated.schemaVersion = 10;
   return migrated;
 }

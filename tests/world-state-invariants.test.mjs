@@ -17,6 +17,8 @@ function character(overrides = {}) {
   return {
     id: 'char:1',
     ownerSessionId: actor.sessionId,
+    ownerAccountId: null,
+    birthWorldInstant: null,
     name: '完整性旅人',
     status: 'alive',
     locationId: 'starter-square',
@@ -47,6 +49,8 @@ function archivedWorld() {
   world.archivedCharacters['char:1'] = {
     id: active.id,
     ownerSessionId: active.ownerSessionId,
+    ownerAccountId: active.ownerAccountId,
+    birthWorldInstant: structuredClone(active.birthWorldInstant),
     name: active.name,
     status: 'dead',
     locationId: active.locationId,
