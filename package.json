@@ -8,7 +8,8 @@
     "verify": "node scripts/verify.mjs",
     "dev": "node dev/server.mjs",
     "dev:first-settlement": "node dev/server.mjs --first-settlement",
-    "dev:tutorial": "node dev/server.mjs --tutorial"
+    "dev:tutorial": "node dev/server.mjs --tutorial",
+    "dev:onboarding": "node dev/server.mjs --onboarding"
   },
   "engines": {
     "node": ">=22"

@@ -72,6 +72,22 @@ function failureMessage(code, fallbackLabel) {
       return '物品數量已達目前可安全保存的上限。';
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
+    case 'TUTORIAL_EXIT_CONFIRMATION_REQUIRED':
+      return '離開新手村前需要明確確認：教學 Avatar 的物品、金錢、關係與進度都會丟棄。';
+    case 'TUTORIAL_AVATAR_REQUIRED':
+      return '請先建立教學 Avatar，再決定是否離開新手村。';
+    case 'FORMAL_BIRTH_PENDING':
+      return '新手村已結束；請先完成正式出生。';
+    case 'PENDING_LIFE_REQUIRED':
+      return '正式出生資料尚未建立。';
+    case 'BIRTH_LOCATIONS_UNAVAILABLE':
+      return '目前沒有可用的出生地。';
+    case 'BIRTH_LOCATION_NOT_AVAILABLE':
+      return '這個出生地目前不可用，請重新選擇。';
+    case 'ACTIVE_LIFE_EXISTS':
+      return '這個帳號目前已有進行中的人生。';
+    case 'FORMAL_BIRTH_REQUIRED':
+      return '正式人生必須經由正式出生流程建立。';
     case 'INVALID_NAME':
       return '姓名不符合規則；請使用 1～24 個可辨識文字，避免保留身份或特殊控制字元。';
     case 'UNKNOWN_ACTION':
@@ -96,6 +112,10 @@ export function formatActionResult(result, fallbackLabel = '行動') {
   const fallback = `${text(fallbackLabel, '行動')}：完成`;
 
   switch (result.code) {
+    case 'TUTORIAL_LEFT':
+      return '已離開新手村；教學資料不會帶入正式人生。';
+    case 'FORMAL_LIFE_BORN':
+      return '正式人生已開始。';
     case 'NPC_INTERACTION':
     case 'NPC_TOPIC_RESPONSE':
       return text(result.data?.text, fallback);

@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { firstSettlementPack } from '../src/content/first-settlement.js';
 import { createFileBackedDevelopmentGame, createTutorialDevelopmentGame } from '../src/game.js';
 import { createDeveloperTestSession } from '../src/core/auth-session.js';
-import { LOCAL_DEVELOPMENT_ENVIRONMENT, LOCAL_TUTORIAL_ENVIRONMENT } from '../src/core/runtime-environment.js';
+import { LOCAL_DEVELOPMENT_ENVIRONMENT, LOCAL_ONBOARDING_ENVIRONMENT, LOCAL_TUTORIAL_ENVIRONMENT } from '../src/core/runtime-environment.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(here, '..', 'public');
@@ -65,27 +65,29 @@ function sendJson(res, statusCode, body) {
   res.end(JSON.stringify(body));
 }
 
-export function createDevServer({ runtime, contentPack, filePath, entryFile = 'index.html', runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT } = {}) {
-  const authoritativeRuntime = runtime ?? createFileBackedDevelopmentGame({
+export function createDevServer({ runtime, contentPack, filePath, entryFile = 'index.html', runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT, actionHandler = null } = {}) {
+  if (actionHandler !== null && typeof actionHandler !== 'function') throw new TypeError('actionHandler must be a function');
+  const authoritativeRuntime = runtime ?? (actionHandler ? null : createFileBackedDevelopmentGame({
     filePath: filePath ?? join(here, '..', '.data', 'world.json'),
     ...(contentPack ? { contentPack } : {}),
-  }).runtime;
+  }).runtime);
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'POST' && url.pathname === '/api/action') {
         const sessionId = sessionFor(req, res);
-        const { actor } = createDeveloperTestSession({
-          environment: runtimeEnvironment,
-          accountId: `local-dev:${sessionId}`,
-          sessionId,
-        });
         const body = await readJson(req);
-        const result = await authoritativeRuntime.dispatch({
-          actor,
-          requestId: body.requestId,
-          action: body.action,
-        });
+        const result = actionHandler
+          ? await actionHandler({ sessionId, body })
+          : await authoritativeRuntime.dispatch({
+            actor: createDeveloperTestSession({
+              environment: runtimeEnvironment,
+              accountId: `local-dev:${sessionId}`,
+              sessionId,
+            }).actor,
+            requestId: body.requestId,
+            action: body.action,
+          });
         sendJson(res, result.ok ? 200 : 400, result);
         return;
       }
@@ -123,21 +125,121 @@ export function createTutorialDevServer() {
   });
 }
 
+function onboardingAccountId(sessionId) {
+  return `local-onboarding:${sessionId}`;
+}
+
+export function createOnboardingDevServer({ filePath = join(here, '..', '.data', 'onboarding-formal-world.json'), now = () => Date.now() } = {}) {
+  const formalGame = createFileBackedDevelopmentGame({
+    filePath,
+    now,
+    contentPack: firstSettlementPack,
+    lifeBirthPolicy: 'pending-required',
+    runtimeEnvironment: LOCAL_ONBOARDING_ENVIRONMENT,
+  });
+  const tutorialGames = new Map();
+
+  function tutorialGameFor(sessionId) {
+    let game = tutorialGames.get(sessionId);
+    if (!game) {
+      game = createTutorialDevelopmentGame({ now });
+      tutorialGames.set(sessionId, game);
+    }
+    return game;
+  }
+
+  async function formalPhase(accountId) {
+    return formalGame.store.transact((world) => {
+      if (Object.values(world.characters).some((character) => character.ownerAccountId === accountId)) return 'active';
+      if (world.pendingLives?.[accountId]) return 'pending';
+      return 'none';
+    });
+  }
+
+  async function handleAction({ sessionId, body }) {
+    if (!body.action || typeof body.action.type !== 'string') {
+      throw Object.assign(new Error('invalid action'), { statusCode: 400 });
+    }
+    const accountId = onboardingAccountId(sessionId);
+    const phase = await formalPhase(accountId);
+
+    if (body.action.type === 'onboarding.leave-tutorial') {
+      if (body.action.payload?.confirmDiscard !== true) return { ok: false, code: 'TUTORIAL_EXIT_CONFIRMATION_REQUIRED' };
+      if (phase === 'active') return { ok: false, code: 'ACTIVE_LIFE_EXISTS' };
+      if (phase === 'none') {
+        const tutorialGame = tutorialGameFor(sessionId);
+        if (!tutorialGame.store.snapshot().characters[sessionId]) return { ok: false, code: 'TUTORIAL_AVATAR_REQUIRED' };
+      }
+      const actor = createDeveloperTestSession({
+        environment: LOCAL_ONBOARDING_ENVIRONMENT,
+        accountId,
+        sessionId,
+      }).actor;
+      const pending = await formalGame.runtime.dispatch({
+        actor,
+        requestId: body.requestId,
+        action: { type: 'life.create-pending', payload: {} },
+      });
+      if (!pending.ok) return pending;
+      tutorialGames.delete(sessionId);
+      return { ok: true, code: 'TUTORIAL_LEFT', data: { pendingLife: pending.data?.pendingLife } };
+    }
+
+    if (phase === 'pending' && body.action.type === 'narrative.scene') {
+      return { ok: false, code: 'FORMAL_BIRTH_PENDING' };
+    }
+
+    if (phase === 'none') {
+      const tutorialGame = tutorialGameFor(sessionId);
+      const actor = createDeveloperTestSession({
+        environment: LOCAL_TUTORIAL_ENVIRONMENT,
+        accountId,
+        sessionId,
+      }).actor;
+      const result = await tutorialGame.runtime.dispatch({ actor, requestId: body.requestId, action: body.action });
+      if (result.ok && body.action.type === 'narrative.scene') {
+        return { ...result, data: { ...result.data, onboarding: { phase: 'tutorial' } } };
+      }
+      return result;
+    }
+
+    const actor = createDeveloperTestSession({
+      environment: LOCAL_ONBOARDING_ENVIRONMENT,
+      accountId,
+      sessionId,
+    }).actor;
+    const result = await formalGame.runtime.dispatch({ actor, requestId: body.requestId, action: body.action });
+    if (result.ok && body.action.type === 'narrative.scene') {
+      return { ...result, data: { ...result.data, onboarding: { phase: 'formal' } } };
+    }
+    return result;
+  }
+
+  return createDevServer({
+    entryFile: 'onboarding.html',
+    runtimeEnvironment: LOCAL_ONBOARDING_ENVIRONMENT,
+    actionHandler: handleAction,
+  });
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const useFirstSettlement = process.argv.includes('--first-settlement');
   const useTutorial = process.argv.includes('--tutorial');
-  if (useFirstSettlement && useTutorial) throw new Error('choose one dev server mode');
-  const server = useTutorial
-    ? createTutorialDevServer()
-    : useFirstSettlement
-      ? createDevServer({
-        contentPack: firstSettlementPack,
-        filePath: join(here, '..', '.data', 'first-settlement-world.json'),
-      })
-      : createDevServer();
+  const useOnboarding = process.argv.includes('--onboarding');
+  if ([useFirstSettlement, useTutorial, useOnboarding].filter(Boolean).length > 1) throw new Error('choose one dev server mode');
+  const server = useOnboarding
+    ? createOnboardingDevServer()
+    : useTutorial
+      ? createTutorialDevServer()
+      : useFirstSettlement
+        ? createDevServer({
+          contentPack: firstSettlementPack,
+          filePath: join(here, '..', '.data', 'first-settlement-world.json'),
+        })
+        : createDevServer();
   const port = Number(process.env.PORT ?? 8787);
   server.listen(port, '127.0.0.1', () => {
-    const mode = useTutorial ? ' tutorial' : useFirstSettlement ? ' first-settlement' : '';
+    const mode = useOnboarding ? ' onboarding' : useTutorial ? ' tutorial' : useFirstSettlement ? ' first-settlement' : '';
     console.log(`ImmortalVoyage V2${mode} local dev server: http://127.0.0.1:${port}`);
   });
 }

@@ -75,3 +75,8 @@ export const LOCAL_TUTORIAL_ENVIRONMENT = createRuntimeEnvironment({
   stage: RUNTIME_STAGE.DEVELOPMENT_TEST,
   worldNamespace: 'v2-tutorial-world',
 });
+
+export const LOCAL_ONBOARDING_ENVIRONMENT = createRuntimeEnvironment({
+  stage: RUNTIME_STAGE.DEVELOPMENT_TEST,
+  worldNamespace: 'v2-onboarding-world',
+});

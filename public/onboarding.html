@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>不朽之旅｜新手村與正式出生</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body data-mode="onboarding">
+  <main class="shell">
+    <header>
+      <p class="eyebrow">IMMORTAL VOYAGE</p>
+      <h1>新手村</h1>
+      <p class="subtle">先用教學 Avatar 熟悉生活，再由你主動確認離開。教學物品、金錢、關係與進度都不會帶入正式人生。</p>
+    </header>
+
+    <section id="recovery-panel" class="card" hidden>
+      <h2>確認上一個動作</h2>
+      <p id="recovery-text" class="message">上一個動作的結果尚未確認。</p>
+      <button id="recovery-button" type="button">重新確認上一個動作</button>
+    </section>
+
+    <section id="birth-panel" class="card" hidden>
+      <h2>建立教學 Avatar</h2>
+      <form id="birth-form">
+        <label for="character-name">教學顯示名稱</label>
+        <div class="row">
+          <input id="character-name" maxlength="24" required autocomplete="off">
+          <button type="submit">開始教學</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="game-panel" hidden>
+      <div class="grid">
+        <article class="card">
+          <h2 id="location-name">世界</h2>
+          <p id="location-description"></p>
+          <p id="narrative-text" class="narrative"></p>
+          <div id="narrative-actions" class="actions"></div>
+        </article>
+
+        <article class="card">
+          <h2 id="character-heading">教學 Avatar</h2>
+          <dl id="character-state" class="stats"></dl>
+        </article>
+      </div>
+
+      <article id="leave-tutorial-panel" class="card" hidden>
+        <h2>離開新手村</h2>
+        <p>離開後，教學 Avatar 的物品、金錢、關係與進度會全部丟棄，不能帶入正式人生。</p>
+        <p class="subtle">確認後會進入正式出生流程；目前不會產生命盤，也不會偽造紫微結果。</p>
+        <button id="leave-tutorial-button" type="button">確認離開新手村</button>
+      </article>
+
+      <article id="utility-panel" class="card" hidden>
+        <h2>可執行行動</h2>
+        <div id="world-actions" class="actions"></div>
+      </article>
+
+      <article id="trade-panel" class="card" hidden>
+        <h2>寄售交易</h2>
+        <p class="subtle">固定總價、非即時寄售。上架物品會先進入交易保管，成交或取消後再由伺服器結算。</p>
+        <form id="trade-form" class="trade-form">
+          <label>
+            物品
+            <select id="trade-item" required></select>
+          </label>
+          <label>
+            數量
+            <input id="trade-quantity" type="number" min="1" step="1" required inputmode="numeric">
+          </label>
+          <label>
+            總價
+            <input id="trade-price" type="number" min="1" step="1" required inputmode="numeric">
+          </label>
+          <button id="trade-submit" type="submit">上架寄售</button>
+        </form>
+        <div id="trade-listings" class="trade-listings"></div>
+      </article>
+    </section>
+
+    <section id="formal-birth-panel" class="card" hidden>
+      <h2>正式出生</h2>
+      <p>新手村教學資料已與正式世界分離。請選擇這一世的正式姓名與出生地。</p>
+      <form id="formal-birth-form">
+        <label for="formal-character-name">正式姓名</label>
+        <input id="formal-character-name" maxlength="24" required autocomplete="off">
+
+        <label for="birth-location">出生地</label>
+        <select id="birth-location" required></select>
+        <p id="birth-location-description" class="subtle"></p>
+        <button type="submit">正式出生</button>
+      </form>
+    </section>
+
+    <article class="card">
+      <h2>訊息</h2>
+      <p id="message" class="message">正在進入新手村……</p>
+    </article>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

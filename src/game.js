@@ -106,8 +106,8 @@ export function createFileBackedDevelopmentGame({
   enabledModules,
   contentPack = devStarterPack,
   lifeBirthPolicy = 'direct',
+  runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT,
 } = {}) {
-  const runtimeEnvironment = LOCAL_DEVELOPMENT_ENVIRONMENT;
   const store = new FileGameStore({
     filePath,
     createInitialWorld: () => createInitialWorld({ nowMs: now(), worldId: runtimeEnvironment.worldNamespace }),
