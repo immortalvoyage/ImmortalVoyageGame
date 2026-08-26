@@ -1,11 +1,13 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
+import { validatePlayerDisplayName } from './player-name.js';
 
-const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 7, actions: ['character.birth'] });
+const manifest = validateGameModuleManifest({ name: 'character', dataVersion: 8, actions: ['character.birth'] });
 
 function birth({ world, actor, action, context }) {
   if (world.characters[actor.sessionId]) return { ok: false, code: 'CHARACTER_EXISTS' };
-  const name = String(action.payload?.name ?? '').trim();
-  if (name.length < 1 || name.length > 24) return { ok: false, code: 'INVALID_NAME' };
+  const validatedName = validatePlayerDisplayName(action.payload?.name);
+  if (!validatedName.ok) return { ok: false, code: 'INVALID_NAME' };
+  const name = validatedName.name;
 
   const character = {
     id: `char:${world.nextCharacterSequence++}`,
