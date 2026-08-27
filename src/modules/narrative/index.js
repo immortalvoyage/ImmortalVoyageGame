@@ -14,7 +14,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 19, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 20, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -120,13 +120,26 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
 }
 
+const NEED_LABELS = Object.freeze({ hunger: '飢餓', thirst: '口渴', fatigue: '疲勞' });
+
+function formatConsumeEffect(effect) {
+  return Object.entries(effect)
+    .filter(([need, delta]) => NEED_LABELS[need] && Number.isInteger(delta) && delta !== 0)
+    .map(([need, delta]) => `${NEED_LABELS[need]}${delta < 0 ? '減少' : '增加'} ${Math.abs(delta)}`)
+    .join('、');
+}
+
 function buildUtilities(view, character, isActionAvailable, contentPack) {
   const utilities = [];
   const location = contentPack.locations[character.locationId];
   if (isActionAvailable('survival.consume')) {
     for (const [itemId, quantity] of Object.entries(character.inventory)) {
       const item = contentPack.items[itemId];
-      if (quantity > 0 && item?.consumeEffect) utilities.push(option(item.consumeLabel ?? `使用${item.name}`, 'survival.consume', { itemId }));
+      if (quantity > 0 && item?.consumeEffect) {
+        const effectText = formatConsumeEffect(item.consumeEffect);
+        const label = item.consumeLabel ?? `使用${item.name}`;
+        utilities.push(option(effectText ? `${label}（${effectText}）` : label, 'survival.consume', { itemId }));
+      }
     }
   }
   if (isActionAvailable('survival.rest') && character.needs.fatigue > 0 && location.rest) {
