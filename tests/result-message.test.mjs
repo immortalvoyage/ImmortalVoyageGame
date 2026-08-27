@@ -100,6 +100,7 @@ test('trade success and failures produce deterministic feedback without raw code
 
 test('known action failures are translated without exposing raw codes', () => {
   assert.equal(formatActionResult({ ok: false, code: 'INSUFFICIENT_FUNDS' }, '購買食物'), '金錢不足。');
+  assert.equal(formatActionResult({ ok: false, code: 'CARRY_CAPACITY_EXCEEDED' }, '取水'), '目前攜帶負荷已滿；先消耗、出售或寄售部分物品再取得新的物品。');
   assert.equal(formatActionResult({ ok: false, code: 'PURPOSE_TARGET_UNKNOWN' }, '尋找某人'), '你目前沒有足夠情報尋找這個目標。');
   assert.equal(formatActionResult({ ok: false, code: 'INVALID_NAME' }, '出生'), '姓名不符合規則；請使用 1～24 個可辨識文字，避免保留身份或特殊控制字元。');
 });

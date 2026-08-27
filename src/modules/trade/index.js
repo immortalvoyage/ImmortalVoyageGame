@@ -1,12 +1,12 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { MAX_TRADE_LISTINGS } from '../../core/world-state.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
-import { addStack, removeStack } from '../inventory/index.js';
+import { addStack, canApplyInventoryDelta, removeStack } from '../inventory/index.js';
 
 const MAX_PUBLIC_TRADE_LISTINGS = 50;
 const manifest = validateGameModuleManifest({
   name: 'trade',
-  dataVersion: 1,
+  dataVersion: 2,
   actions: ['trade.list', 'trade.browse', 'trade.buy', 'trade.cancel'],
 });
 
@@ -135,6 +135,9 @@ function buy({ world, actor, action, context }) {
   if (!Number.isSafeInteger(seller.money + listing.totalPrice)) return { ok: false, code: 'TRADE_BALANCE_LIMIT' };
   if (!Object.hasOwn(context.contentPack.items, listing.itemId)) return { ok: false, code: 'TRADE_ITEM_NOT_AVAILABLE' };
   if (!canAddStack(buyer, listing.itemId, listing.quantity)) return { ok: false, code: 'TRADE_INVENTORY_LIMIT' };
+  if (!canApplyInventoryDelta(buyer.inventory, context.contentPack.items, context.contentPack.inventory.carryCapacityUnits, { [listing.itemId]: listing.quantity })) {
+    return { ok: false, code: 'CARRY_CAPACITY_EXCEEDED' };
+  }
 
   buyer.money -= listing.totalPrice;
   seller.money += listing.totalPrice;
@@ -189,6 +192,9 @@ function cancel({ world, actor, action, context }) {
   }
   if (!Object.hasOwn(context.contentPack.items, listing.itemId)) return { ok: false, code: 'TRADE_ITEM_NOT_AVAILABLE' };
   if (!canAddStack(character, listing.itemId, listing.quantity)) return { ok: false, code: 'TRADE_INVENTORY_LIMIT' };
+  if (!canApplyInventoryDelta(character.inventory, context.contentPack.items, context.contentPack.inventory.carryCapacityUnits, { [listing.itemId]: listing.quantity })) {
+    return { ok: false, code: 'CARRY_CAPACITY_EXCEEDED' };
+  }
 
   addStack(character, listing.itemId, listing.quantity);
   delete world.tradeListings[listing.id];

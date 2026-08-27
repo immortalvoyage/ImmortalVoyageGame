@@ -44,6 +44,7 @@ test('formed state appears progressively when the character actually earns it', 
   view.relationships = [{ npc: { name: '搬運領班' }, familiarity: { name: '見過幾面' } }];
   view.knowledge = [{ name: '初始聚落的基本生活去處' }];
   view.inventoryItems = [{ name: '飲用水', quantity: 1 }];
+  view.carry = { load: 1, capacity: 20, overloaded: false };
 
   const rows = buildCharacterSummaryRows(view);
   assert.deepEqual(rows.map(([key]) => key), [
@@ -54,6 +55,7 @@ test('formed state appears progressively when the character actually earns it', 
     '社會標籤',
     '關係',
     '已知情報',
+    '攜帶負荷',
     '貨幣',
     '飢餓',
     '口渴',
@@ -61,5 +63,6 @@ test('formed state appears progressively when the character actually earns it', 
     '背包',
   ]);
   assert.equal(rows.find(([key]) => key === '現職')?.[1], '搬運雜役｜雇主：搬運領班｜工作地：初始聚落街口｜每次報酬：2');
+  assert.equal(rows.find(([key]) => key === '攜帶負荷')?.[1], '1 / 20');
   assert.equal(rows.find(([key]) => key === '背包')?.[1], '飲用水 × 1');
 });

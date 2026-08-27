@@ -46,6 +46,11 @@ export function buildCharacterSummaryRows(view) {
     .map((item) => `${item.name} × ${item.quantity}`)
     .join('、') || '空';
 
+  const carry = view.carry;
+  if (carry && Number.isSafeInteger(carry.load) && Number.isSafeInteger(carry.capacity)) {
+    rows.push(['攜帶負荷', `${carry.load} / ${carry.capacity}${carry.overloaded ? '（超載）' : ''}`]);
+  }
+
   rows.push(
     ['貨幣', String(character.money)],
     ['飢餓', String(character.needs.hunger)],

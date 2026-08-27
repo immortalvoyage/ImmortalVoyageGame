@@ -126,6 +126,9 @@ export function validateContentPack(pack) {
   requireInteger(survival.restFatigueRelief, 'pack.survival.restFatigueRelief', { min: 1, max: 100 });
   if (warningThreshold >= criticalThreshold) fail('pack.survival.warningThreshold must be lower than criticalThreshold');
 
+  const inventory = requireRecord(pack.inventory, 'pack.inventory');
+  requireInteger(inventory.carryCapacityUnits, 'pack.inventory.carryCapacityUnits', { min: 1, max: 10000 });
+
   const items = requireRecord(pack.items, 'pack.items');
   const locations = requireRecord(pack.locations, 'pack.locations');
   const progressionTags = requireRecord(pack.progressionTags, 'pack.progressionTags');
@@ -152,6 +155,7 @@ export function validateContentPack(pack) {
     requireText(itemId, 'item id');
     requireRecord(item, `items.${itemId}`);
     requireText(item.name, `items.${itemId}.name`);
+    requireInteger(item.carryUnits, `items.${itemId}.carryUnits`, { min: 0, max: 1000 });
     if (item.consumeLabel !== undefined) requireText(item.consumeLabel, `items.${itemId}.consumeLabel`);
     validateNeedMap(item.consumeEffect, `items.${itemId}.consumeEffect`, { min: -100, max: 100 });
   }

@@ -1,12 +1,12 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
-import { addStack, removeStack } from '../inventory/index.js';
+import { addStack, canApplyInventoryDelta, removeStack } from '../inventory/index.js';
 import { resolveCharacterSurvival } from './elapsed.js';
 
 const manifest = validateGameModuleManifest({
   name: 'survival',
-  dataVersion: 8,
+  dataVersion: 9,
   actions: ['survival.gather', 'survival.consume', 'survival.rest'],
 });
 
@@ -17,6 +17,9 @@ function gather({ world, actor, action, context }) {
   const location = context.contentPack.locations[character.locationId];
   const gatherable = location?.gatherables?.find((entry) => entry.itemId === itemId);
   if (!gatherable) return { ok: false, code: 'RESOURCE_NOT_AVAILABLE' };
+  if (!canApplyInventoryDelta(character.inventory, context.contentPack.items, context.contentPack.inventory.carryCapacityUnits, { [itemId]: gatherable.quantity })) {
+    return { ok: false, code: 'CARRY_CAPACITY_EXCEEDED' };
+  }
   addStack(character, itemId, gatherable.quantity);
   const behaviorCount = recordBehavior(character, gatherable.behaviorId);
   return {
