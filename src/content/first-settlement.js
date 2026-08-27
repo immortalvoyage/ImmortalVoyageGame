@@ -4,9 +4,10 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 4,
+  dataVersion: 5,
   startingLocationId: 'first-square',
   birthLocations: Object.freeze(['first-square']),
+  inventory: Object.freeze({ carryCapacityUnits: 20 }),
   survival: Object.freeze({
     warningThreshold: 60,
     criticalThreshold: 85,
@@ -14,21 +15,25 @@ export const firstSettlementPack = Object.freeze({
   }),
   items: Object.freeze({
     'drinking-water': Object.freeze({
+      carryUnits: 1,
       name: '飲用水',
       consumeLabel: '喝水',
       consumeEffect: Object.freeze({ thirst: -30 }),
     }),
     'coarse-bread': Object.freeze({
+      carryUnits: 1,
       name: '粗麵餅',
       consumeLabel: '吃粗麵餅',
       consumeEffect: Object.freeze({ hunger: -30 }),
     }),
     'wild-fruit': Object.freeze({
+      carryUnits: 1,
       name: '野果',
       consumeLabel: '吃野果',
       consumeEffect: Object.freeze({ hunger: -20, thirst: -5 }),
     }),
     'simple-ration': Object.freeze({
+      carryUnits: 1,
       name: '簡單乾糧',
       consumeLabel: '吃簡單乾糧',
       consumeEffect: Object.freeze({ hunger: -40, thirst: -10 }),

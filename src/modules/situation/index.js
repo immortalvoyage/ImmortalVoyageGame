@@ -1,6 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { hasEmploymentForJob } from '../employment/index.js';
+import { canApplyInventoryDelta } from '../inventory/index.js';
 import { formatTravelDuration } from '../location/index.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
@@ -9,7 +10,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 3,
+  dataVersion: 4,
   actions: ['situation.observe'],
 });
 
@@ -96,7 +97,9 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
       .map((job) => option(job.label, 'economy.work', { jobId: job.id }));
 
   const gather = isActionAvailable('survival.gather')
-    ? (location.gatherables ?? []).map((entry) => option(entry.label, 'survival.gather', { itemId: entry.itemId }))
+    ? (location.gatherables ?? [])
+      .filter((entry) => canApplyInventoryDelta(character.inventory, contentPack.items, contentPack.inventory.carryCapacityUnits, { [entry.itemId]: entry.quantity }))
+      .map((entry) => option(entry.label, 'survival.gather', { itemId: entry.itemId }))
     : [];
 
   const travel = isActionAvailable('location.travel')

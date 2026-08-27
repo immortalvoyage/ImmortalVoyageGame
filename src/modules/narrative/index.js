@@ -2,7 +2,7 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildEmploymentViewForActor, hasEmploymentForJob } from '../employment/index.js';
-import { buildPublicInventory } from '../inventory/index.js';
+import { buildPublicCarryState, buildPublicInventory } from '../inventory/index.js';
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
@@ -14,7 +14,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 20, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 21, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -62,6 +62,7 @@ function scene({ world, actor, context }) {
       trade,
       survivalCondition,
       inventoryItems: buildPublicInventory(character.inventory, contentPack.items),
+      carry: buildPublicCarryState(character.inventory, contentPack.items, contentPack.inventory.carryCapacityUnits),
       narrative: {
         mode: 'deterministic-fallback',
         text: sceneText(view, survivalCondition),
@@ -158,7 +159,7 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {
-      if (!canCraftRecipe(character, recipe)) continue;
+      if (!canCraftRecipe(character, recipe, contentPack)) continue;
       const ingredients = recipe.inputs
         .map((input) => `${contentPack.items[input.itemId].name}×${input.quantity}`)
         .join('＋');
@@ -167,7 +168,7 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('economy.buy')) {
     for (const offer of location.market ?? []) {
-      if (!canBuyOffer(character, offer)) continue;
+      if (!canBuyOffer(character, offer, contentPack)) continue;
       const item = contentPack.items[offer.itemId];
       if (item) utilities.push(option(`購買${item.name}（${offer.price}）`, 'economy.buy', { itemId: offer.itemId }));
     }

@@ -1,9 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
-import { addStack, removeStack } from '../inventory/index.js';
+import { addStack, canApplyInventoryDelta, removeStack } from '../inventory/index.js';
 
-const manifest = validateGameModuleManifest({ name: 'crafting', dataVersion: 2, actions: ['crafting.craft'] });
+const manifest = validateGameModuleManifest({ name: 'crafting', dataVersion: 3, actions: ['crafting.craft'] });
 
 function craft({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
@@ -19,6 +19,12 @@ function craft({ world, actor, action, context }) {
     if ((character.inventory[input.itemId] ?? 0) < input.quantity) {
       return { ok: false, code: 'CRAFT_MATERIALS_MISSING' };
     }
+  }
+
+  const delta = { [recipe.output.itemId]: recipe.output.quantity };
+  for (const input of recipe.inputs) delta[input.itemId] = (delta[input.itemId] ?? 0) - input.quantity;
+  if (!canApplyInventoryDelta(character.inventory, contentPack.items, contentPack.inventory.carryCapacityUnits, delta)) {
+    return { ok: false, code: 'CARRY_CAPACITY_EXCEEDED' };
   }
 
   for (const input of recipe.inputs) removeStack(character, input.itemId, input.quantity);

@@ -2,10 +2,10 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { hasEmploymentForJob } from '../employment/index.js';
-import { addStack } from '../inventory/index.js';
+import { addStack, canApplyInventoryDelta } from '../inventory/index.js';
 import { canPerformSurvivalLimitedWork } from '../survival/condition.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 6, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 7, actions: ['economy.work', 'economy.buy'] });
 
 function survivalGuardEnabled(context) {
   const isActionAvailable = context?.isActionAvailable;
@@ -58,6 +58,9 @@ function buy({ world, actor, action, context }) {
   const offer = location?.market?.find((entry) => entry.itemId === itemId);
   if (!offer) return { ok: false, code: 'ITEM_NOT_SOLD' };
   if (character.money < offer.price) return { ok: false, code: 'INSUFFICIENT_FUNDS' };
+  if (!canApplyInventoryDelta(character.inventory, context.contentPack.items, context.contentPack.inventory.carryCapacityUnits, { [itemId]: 1 })) {
+    return { ok: false, code: 'CARRY_CAPACITY_EXCEEDED' };
+  }
   character.money -= offer.price;
   addStack(character, itemId, 1);
   return {

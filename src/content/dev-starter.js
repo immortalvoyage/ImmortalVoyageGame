@@ -2,8 +2,9 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const devStarterPack = Object.freeze({
   id: 'dev-starter',
-  dataVersion: 17,
+  dataVersion: 18,
   startingLocationId: 'starter-square',
+  inventory: Object.freeze({ carryCapacityUnits: 20 }),
   survival: Object.freeze({
     warningThreshold: 60,
     criticalThreshold: 85,
@@ -11,16 +12,19 @@ export const devStarterPack = Object.freeze({
   }),
   items: Object.freeze({
     water: Object.freeze({
+      carryUnits: 1,
       name: '水',
       consumeLabel: '飲水',
       consumeEffect: Object.freeze({ thirst: -25 }),
     }),
     food: Object.freeze({
+      carryUnits: 1,
       name: '食物',
       consumeLabel: '進食',
       consumeEffect: Object.freeze({ hunger: -25 }),
     }),
     'simple-meal': Object.freeze({
+      carryUnits: 1,
       name: '簡單餐食',
       consumeLabel: '吃簡單餐食',
       consumeEffect: Object.freeze({ hunger: -35, thirst: -15 }),

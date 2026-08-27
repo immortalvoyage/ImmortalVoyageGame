@@ -2,8 +2,9 @@ import { validateContentPack } from './validate-content-pack.js';
 
 export const tutorialVillagePack = Object.freeze({
   id: 'tutorial-village',
-  dataVersion: 1,
+  dataVersion: 2,
   startingLocationId: 'tutorial-square',
+  inventory: Object.freeze({ carryCapacityUnits: 20 }),
   survival: Object.freeze({
     warningThreshold: 60,
     criticalThreshold: 85,
@@ -11,11 +12,13 @@ export const tutorialVillagePack = Object.freeze({
   }),
   items: Object.freeze({
     'tutorial-water': Object.freeze({
+      carryUnits: 1,
       name: '教學用飲水',
       consumeLabel: '飲用教學用飲水',
       consumeEffect: Object.freeze({ thirst: -25 }),
     }),
     'tutorial-bread': Object.freeze({
+      carryUnits: 1,
       name: '教學用乾糧',
       consumeLabel: '吃教學用乾糧',
       consumeEffect: Object.freeze({ hunger: -25 }),
