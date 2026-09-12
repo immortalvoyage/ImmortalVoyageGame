@@ -6,6 +6,7 @@ import { buildPublicCarryState, buildPublicInventory } from '../inventory/index.
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { isNpcAvailableAt } from '../npc/availability.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
 import { findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
@@ -14,7 +15,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 21, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 22, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -46,8 +47,8 @@ function scene({ world, actor, context }) {
     ? buildPublicSurvivalCondition(character, contentPack.survival)
     : null;
   const narrativeOptions = isActionAvailable('situation.observe')
-    ? buildSituationOpportunities({ character, contentPack, isActionAvailable })
-    : buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition);
+    ? buildSituationOpportunities({ character, contentPack, isActionAvailable, logicalTimeSeconds: world.logicalTimeSeconds })
+    : buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition, world.logicalTimeSeconds);
 
   return {
     ok: true,
@@ -89,7 +90,7 @@ function sceneText(view, survivalCondition) {
 }
 
 // Safe fallback while the Situation Module is feature-disabled.
-function buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition) {
+function buildLegacyOptions(view, character, isActionAvailable, contentPack, survivalCondition, logicalTimeSeconds) {
   const options = [];
   const location = contentPack.locations[character.locationId];
   const visibleNpcIds = new Set(view.visibleNpcs.map((npc) => npc.id));
@@ -98,7 +99,9 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
 
   for (const npc of view.visibleNpcs) options.push(option(`和${npc.name}談談`, 'npc.interact', { npcId: npc.id }));
   for (const target of buildKnownPurposeTargets(character, contentPack, { knowledgeActive })) {
-    if (!visibleNpcIds.has(target.id)) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
+    const npc = contentPack.npcs[target.id];
+    const locallyUnavailable = npc?.locationId === character.locationId && !isNpcAvailableAt(npc, logicalTimeSeconds);
+    if (!visibleNpcIds.has(target.id) && !locallyUnavailable) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
   if (survivalCondition?.severity !== 'critical') {
     if (employmentActive && !character.currentEmployment) {

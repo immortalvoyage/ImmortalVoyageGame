@@ -1,18 +1,19 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { isNpcAvailableAt } from '../npc/availability.js';
 
 const manifest = validateGameModuleManifest({
   name: 'employment',
-  dataVersion: 1,
+  dataVersion: 2,
   actions: ['employment.accept', 'employment.resign', 'employment.observe'],
 });
 
-function localJob(character, contentPack, jobId) {
+function localJob(character, contentPack, jobId, logicalTimeSeconds) {
   const location = contentPack.locations[character.locationId];
   const job = location?.jobs?.find((entry) => entry.id === jobId) ?? null;
   if (!job) return null;
   const employer = contentPack.npcs[job.employerNpcId];
-  if (!employer || employer.locationId !== character.locationId) return null;
+  if (!employer || employer.locationId !== character.locationId || !isNpcAvailableAt(employer, logicalTimeSeconds)) return null;
   return { location, job, employer };
 }
 
@@ -57,7 +58,7 @@ function accept({ world, actor, action, context }) {
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   if (character.currentEmployment) return { ok: false, code: 'EMPLOYMENT_ALREADY_ACTIVE' };
 
-  const resolved = localJob(character, context.contentPack, action.payload?.jobId);
+  const resolved = localJob(character, context.contentPack, action.payload?.jobId, world.logicalTimeSeconds);
   if (!resolved) return { ok: false, code: 'EMPLOYMENT_OFFER_NOT_AVAILABLE' };
   const { job } = resolved;
 

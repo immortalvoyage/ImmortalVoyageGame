@@ -2,16 +2,17 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
 import { grantKnowledge } from '../knowledge/index.js';
+import { isNpcAvailableAt } from './availability.js';
 import { findHighestFamiliarityLevel, findUnlockedFamiliarityTopics } from '../relationship/familiarity.js';
 
-const manifest = validateGameModuleManifest({ name: 'npc', dataVersion: 5, actions: ['npc.interact', 'npc.ask'] });
+const manifest = validateGameModuleManifest({ name: 'npc', dataVersion: 6, actions: ['npc.interact', 'npc.ask'] });
 
 function interact({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
   const npcId = action.payload?.npcId;
   const npc = context.contentPack.npcs[npcId];
-  if (!npc || npc.locationId !== character.locationId) return { ok: false, code: 'NPC_NOT_AVAILABLE' };
+  if (!npc || npc.locationId !== character.locationId || !isNpcAvailableAt(npc, world.logicalTimeSeconds)) return { ok: false, code: 'NPC_NOT_AVAILABLE' };
 
   const relationshipActive = context?.isActionAvailable?.('relationship.observe') ?? false;
   const familiarity = relationshipActive ? findHighestFamiliarityLevel(character, npc) : null;
@@ -41,7 +42,7 @@ function ask({ world, actor, action, context }) {
   const npcId = action.payload?.npcId;
   const topicId = action.payload?.topicId;
   const npc = context.contentPack.npcs[npcId];
-  if (!npc || npc.locationId !== character.locationId) return { ok: false, code: 'NPC_NOT_AVAILABLE' };
+  if (!npc || npc.locationId !== character.locationId || !isNpcAvailableAt(npc, world.logicalTimeSeconds)) return { ok: false, code: 'NPC_NOT_AVAILABLE' };
   if (!(context?.isActionAvailable?.('relationship.observe') ?? false)) {
     return { ok: false, code: 'NPC_TOPIC_NOT_AVAILABLE' };
   }
