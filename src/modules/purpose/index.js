@@ -1,9 +1,10 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { applyTravelStep, findNextRouteStep, publicLocation } from '../location/index.js';
+import { isNpcAvailableAt } from '../npc/availability.js';
 import { isKnownNpcTarget } from './known-targets.js';
 
-const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 5, actions: ['purpose.find-npc'] });
+const manifest = validateGameModuleManifest({ name: 'purpose', dataVersion: 6, actions: ['purpose.find-npc'] });
 
 function foundResult(character, npcId, npc, extra = {}) {
   return {
@@ -35,7 +36,11 @@ function findNpc({ world, actor, action, context }) {
     return { ok: false, code: 'PURPOSE_TARGET_UNKNOWN' };
   }
 
-  if (npc.locationId === character.locationId) return foundResult(character, npcId, npc);
+  if (npc.locationId === character.locationId) {
+    return isNpcAvailableAt(npc, world.logicalTimeSeconds)
+      ? foundResult(character, npcId, npc)
+      : { ok: false, code: 'PURPOSE_TARGET_NOT_PRESENT' };
+  }
 
   const nextLocationId = findNextRouteStep(character.locationId, npc.locationId, contentPack);
   const route = nextLocationId
@@ -52,7 +57,7 @@ function findNpc({ world, actor, action, context }) {
       travelSeconds: route.travelSeconds,
     },
   };
-  if (nextLocationId === npc.locationId) {
+  if (nextLocationId === npc.locationId && isNpcAvailableAt(npc, world.logicalTimeSeconds)) {
     const found = foundResult(character, npcId, npc, {
       location: publicLocation(nextLocationId, contentPack),
       needs: structuredClone(character.needs),

@@ -3,6 +3,7 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { hasEmploymentForJob } from '../employment/index.js';
 import { canApplyInventoryDelta } from '../inventory/index.js';
 import { formatTravelDuration } from '../location/index.js';
+import { isNpcAvailableAt } from '../npc/availability.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 
@@ -10,7 +11,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 4,
+  dataVersion: 5,
   actions: ['situation.observe'],
 });
 
@@ -18,9 +19,9 @@ function option(label, type, payload = {}) {
   return { label, intent: { type, payload } };
 }
 
-function visibleNpcsAt(character, contentPack) {
+function visibleNpcsAt(character, contentPack, logicalTimeSeconds) {
   return Object.entries(contentPack.npcs)
-    .filter(([, npc]) => npc.locationId === character.locationId)
+    .filter(([, npc]) => npc.locationId === character.locationId && isNpcAvailableAt(npc, logicalTimeSeconds))
     .map(([id, npc]) => ({ id, name: npc.name }));
 }
 
@@ -55,12 +56,12 @@ function normalOpportunityOrder({ social, purpose, employment, work, gather, tra
   ];
 }
 
-export function buildSituationOpportunities({ character, contentPack, isActionAvailable }) {
+export function buildSituationOpportunities({ character, contentPack, isActionAvailable, logicalTimeSeconds = 0 }) {
   if (!character || !contentPack || typeof isActionAvailable !== 'function') return [];
   const location = contentPack.locations[character.locationId];
   if (!location) return [];
 
-  const visibleNpcs = visibleNpcsAt(character, contentPack);
+  const visibleNpcs = visibleNpcsAt(character, contentPack, logicalTimeSeconds);
   const visibleNpcIds = new Set(visibleNpcs.map((npc) => npc.id));
   const survivalActive = isActionAvailable('survival.gather')
     || isActionAvailable('survival.consume')
@@ -128,6 +129,7 @@ export function buildSituationViewForActor(world, actor, context) {
       character,
       contentPack: context.contentPack,
       isActionAvailable: context.isActionAvailable,
+      logicalTimeSeconds: world.logicalTimeSeconds,
     }),
   };
 }

@@ -288,6 +288,13 @@ export function validateContentPack(pack) {
     if (npc.knownAtStart !== undefined && typeof npc.knownAtStart !== 'boolean') {
       fail(`${path}.knownAtStart must be boolean`);
     }
+    if (npc.availability !== undefined) {
+      const availability = requireRecord(npc.availability, `${path}.availability`);
+      const periodSeconds = requireInteger(availability.periodSeconds, `${path}.availability.periodSeconds`, { min: 1, max: MAX_ROUTE_TRAVEL_SECONDS });
+      const startOffsetSeconds = requireInteger(availability.startOffsetSeconds, `${path}.availability.startOffsetSeconds`, { min: 0, max: periodSeconds - 1 });
+      const durationSeconds = requireInteger(availability.durationSeconds, `${path}.availability.durationSeconds`, { min: 1, max: periodSeconds });
+      if (startOffsetSeconds + durationSeconds > periodSeconds) fail(`${path}.availability active window must fit within one period`);
+    }
     validateNpcRelationship(npc, path, declaredBehaviorIds, knowledge);
   }
 

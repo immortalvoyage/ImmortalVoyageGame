@@ -1,8 +1,9 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { publicCharacter } from '../character/index.js';
+import { isNpcAvailableAt } from '../npc/availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'location', dataVersion: 3, actions: ['location.travel', 'location.observe'] });
+const manifest = validateGameModuleManifest({ name: 'location', dataVersion: 4, actions: ['location.travel', 'location.observe'] });
 
 function survivalIsActive(context) {
   const available = context?.isActionAvailable;
@@ -94,7 +95,7 @@ export function buildLocationView(world, actor, contentPack) {
     location: publicLocation(character.locationId, contentPack),
     routes: contentPack.locations[character.locationId].routes.map((route) => publicRoute(route, contentPack)),
     visibleNpcs: Object.entries(contentPack.npcs)
-      .filter(([, npc]) => npc.locationId === character.locationId)
+      .filter(([, npc]) => npc.locationId === character.locationId && isNpcAvailableAt(npc, world.logicalTimeSeconds))
       .map(([id, npc]) => ({ id, name: npc.name })),
   };
 }
