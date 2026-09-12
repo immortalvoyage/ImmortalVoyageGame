@@ -10,7 +10,52 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('zero-money critical character retains deterministic food, water, rest, and work recovery path', async () => {
+function findRoute(pack, from, to) {
+  const queue = [{ locationId: from, path: [] }];
+  const visited = new Set();
+  while (queue.length) {
+    const current = queue.shift();
+    if (current.locationId === to) return current.path;
+    if (visited.has(current.locationId)) continue;
+    visited.add(current.locationId);
+    for (const route of pack.locations[current.locationId].routes ?? []) {
+      queue.push({ locationId: route.destinationId, path: [...current.path, { type: 'location.travel', payload: { destinationId: route.destinationId } }] });
+    }
+  }
+  return null;
+}
+
+function findFiniteRecoveryTargets(pack) {
+  const recovery = {};
+  for (const [locationId, location] of Object.entries(pack.locations)) {
+    if (location.rest && !recovery.fatigue) recovery.fatigue = { locationId, actions: [{ type: 'survival.rest', payload: {} }] };
+    for (const gatherable of location.gatherables ?? []) {
+      const effect = pack.items[gatherable.itemId]?.consumeEffect;
+      if (!effect) continue;
+      for (const need of ['hunger', 'thirst']) {
+        if (effect[need] < 0 && !recovery[need]) {
+          recovery[need] = { locationId, actions: [
+            { type: 'survival.gather', payload: { itemId: gatherable.itemId } },
+            { type: 'survival.consume', payload: { itemId: gatherable.itemId } },
+          ] };
+        }
+      }
+    }
+  }
+  return recovery;
+}
+
+async function executeRecovery(runtime, store, prefix, target) {
+  const from = store.snapshot().characters[actor.sessionId].locationId;
+  const route = findRoute(firstSettlementPack, from, target.locationId);
+  assert.ok(route, `recovery target ${target.locationId} must be finitely reachable`);
+  for (const [index, action] of [...route, ...target.actions].entries()) {
+    const result = await dispatch(runtime, `${prefix}-${index}`, action.type, action.payload);
+    assert.equal(result.ok, true, `${action.type} must remain an authoritative recovery step`);
+  }
+}
+
+test('zero-money critical character retains a finite authoritative recovery path back to work', async () => {
   const healthy = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
   assert.equal((await dispatch(healthy.runtime, 'birth', 'character.birth', { name: '窮困旅人' })).ok, true);
   assert.equal((await dispatch(healthy.runtime, 'accept', 'employment.accept', { jobId: 'first-carrying-work' })).ok, true);
@@ -24,37 +69,28 @@ test('zero-money critical character retains deterministic food, water, rest, and
   const { runtime } = createGame({ store, contentPack: firstSettlementPack, now: () => 1000 });
 
   const beforeRejectedWork = store.snapshot();
-  const rejectedWork = await dispatch(runtime, 'critical-work', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.deepEqual(rejectedWork, { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' });
+  assert.deepEqual(await dispatch(runtime, 'critical-work', 'economy.work', { jobId: 'first-carrying-work' }), { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' });
   assert.deepEqual(store.snapshot(), beforeRejectedWork);
 
   let scene = await dispatch(runtime, 'critical-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition.severity, 'critical');
   assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
-  assert.ok(scene.data.narrative.options.some(
-    (entry) => entry.intent.type === 'location.travel' && entry.intent.payload.destinationId === 'first-outskirts',
-  ));
 
-  assert.equal((await dispatch(runtime, 'outskirts', 'location.travel', { destinationId: 'first-outskirts' })).ok, true);
-  assert.equal((await dispatch(runtime, 'fruit', 'survival.gather', { itemId: 'wild-fruit' })).ok, true);
-  assert.equal((await dispatch(runtime, 'eat-fruit', 'survival.consume', { itemId: 'wild-fruit' })).ok, true);
+  const recovery = findFiniteRecoveryTargets(firstSettlementPack);
+  assert.deepEqual(Object.keys(recovery).sort(), ['fatigue', 'hunger', 'thirst']);
+  for (const need of ['hunger', 'thirst', 'fatigue']) {
+    await executeRecovery(runtime, store, `recover-${need}`, recovery[need]);
+    assert.ok(store.snapshot().characters[actor.sessionId].needs[need] < firstSettlementPack.survival.criticalThreshold);
+  }
+  assert.equal(store.snapshot().characters[actor.sessionId].money, 0);
 
-  assert.equal((await dispatch(runtime, 'back-square-1', 'location.travel', { destinationId: 'first-square' })).ok, true);
-  assert.equal((await dispatch(runtime, 'well', 'location.travel', { destinationId: 'first-well' })).ok, true);
-  assert.equal((await dispatch(runtime, 'water', 'survival.gather', { itemId: 'drinking-water' })).ok, true);
-  assert.equal((await dispatch(runtime, 'drink', 'survival.consume', { itemId: 'drinking-water' })).ok, true);
+  const currentLocation = store.snapshot().characters[actor.sessionId].locationId;
+  const returnRoute = findRoute(firstSettlementPack, currentLocation, firstSettlementPack.startingLocationId);
+  assert.ok(returnRoute, 'recovery must retain a finite authoritative route back to the livelihood hub');
+  for (const [index, action] of returnRoute.entries()) {
+    assert.equal((await dispatch(runtime, `return-${index}`, action.type, action.payload)).ok, true);
+  }
 
-  assert.equal((await dispatch(runtime, 'back-square-2', 'location.travel', { destinationId: 'first-square' })).ok, true);
-  assert.equal((await dispatch(runtime, 'lodging', 'location.travel', { destinationId: 'first-lodging' })).ok, true);
-  assert.equal((await dispatch(runtime, 'rest', 'survival.rest')).ok, true);
-
-  const recoveredAtLodging = store.snapshot().characters[actor.sessionId];
-  assert.ok(recoveredAtLodging.needs.hunger < firstSettlementPack.survival.criticalThreshold);
-  assert.ok(recoveredAtLodging.needs.thirst < firstSettlementPack.survival.criticalThreshold);
-  assert.ok(recoveredAtLodging.needs.fatigue < firstSettlementPack.survival.criticalThreshold);
-  assert.equal(recoveredAtLodging.money, 0);
-
-  assert.equal((await dispatch(runtime, 'back-square-3', 'location.travel', { destinationId: 'first-square' })).ok, true);
   const recoveredWork = await dispatch(runtime, 'recovered-work', 'economy.work', { jobId: 'first-carrying-work' });
   assert.equal(recoveredWork.code, 'WORK_COMPLETED');
   assert.equal(store.snapshot().characters[actor.sessionId].money, 2);

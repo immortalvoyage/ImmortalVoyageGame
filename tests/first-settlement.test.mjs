@@ -10,19 +10,16 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('first settlement candidate validates and contains the minimum mortal-life topology', () => {
+test('first settlement candidate validates and exposes livelihood plus survival capabilities without canon-specific recovery fixtures', () => {
   assert.equal(validateContentPack(firstSettlementPack), firstSettlementPack);
-  assert.equal(firstSettlementPack.startingLocationId, 'first-square');
-  assert.equal(Object.keys(firstSettlementPack.locations).length, 4);
-  assert.equal(firstSettlementPack.locations['first-square'].routes.length, 3);
-  assert.ok(firstSettlementPack.locations['first-well'].gatherables.some((entry) => entry.itemId === 'drinking-water'));
-  assert.ok(firstSettlementPack.locations['first-outskirts'].gatherables.some((entry) => entry.itemId === 'wild-fruit'));
-  assert.ok(firstSettlementPack.locations['first-square'].market.some((entry) => entry.itemId === 'coarse-bread'));
-  assert.ok(firstSettlementPack.locations['first-lodging'].rest);
-  assert.equal(
-    Object.values(firstSettlementPack.locations).flatMap((location) => location.jobs).length,
-    2,
-  );
+  assert.ok(firstSettlementPack.locations[firstSettlementPack.startingLocationId]);
+  const locations = Object.values(firstSettlementPack.locations);
+  assert.ok(locations.flatMap((location) => location.jobs).length >= 1);
+  assert.ok(locations.flatMap((location) => location.market).some((offer) => firstSettlementPack.items[offer.itemId]?.consumeEffect));
+  assert.ok(locations.some((location) => location.rest));
+  for (const need of ['hunger', 'thirst']) {
+    assert.ok(locations.flatMap((location) => location.gatherables).some((entry) => firstSettlementPack.items[entry.itemId]?.consumeEffect?.[need] < 0));
+  }
 });
 
 test('fresh mortal can find an employer, earn, buy food, obtain water, consume supplies, change jobs, and rest', async () => {
