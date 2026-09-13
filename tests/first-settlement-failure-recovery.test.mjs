@@ -74,7 +74,7 @@ test('zero-money critical character retains a finite authoritative recovery path
 
   let scene = await dispatch(runtime, 'critical-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition.severity, 'critical');
-  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
 
   const recovery = findFiniteRecoveryTargets(firstSettlementPack);
   assert.deepEqual(Object.keys(recovery).sort(), ['fatigue', 'hunger', 'thirst']);

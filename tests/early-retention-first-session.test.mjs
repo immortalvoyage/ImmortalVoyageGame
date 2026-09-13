@@ -39,7 +39,7 @@ test('first settlement exposes an immediate meaningful choice and a short visibl
       familiarity: { name: '見過幾面' },
     },
   ]);
-  const livingBasicsTopic = consequenceScene.data.utilities.find((utility) => utility.intent.type === 'npc.ask');
+  const livingBasicsTopic = consequenceScene.data.dialogueTopics.find((utility) => utility.intent.type === 'npc.ask');
   assert.deepEqual(livingBasicsTopic?.intent.payload, {
     npcId: 'first-foreman',
     topicId: 'first-foreman-living-basics',

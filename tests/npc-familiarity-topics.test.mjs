@@ -10,7 +10,7 @@ async function dispatch(runtime, requestId, type, payload = {}) {
 }
 
 function topicUtilities(scene) {
-  return scene.data.utilities.filter((entry) => entry.intent.type === 'npc.ask');
+  return scene.data.dialogueTopics.filter((entry) => entry.intent.type === 'npc.ask');
 }
 
 test('familiarity unlocks structured NPC topics cumulatively without exposing response text', async () => {

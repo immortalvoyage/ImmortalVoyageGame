@@ -36,9 +36,9 @@ test('critical-only recovery work replaces free food and water fixtures without 
   });
 
   const scene = await dispatch(game.runtime, 'critical-scene', 'narrative.scene');
-  const recoveryChoices = scene.data.narrative.options.filter((entry) => entry.intent.type === 'economy.recovery-work');
+  const recoveryChoices = scene.data.utilities.filter((entry) => entry.intent.type === 'economy.recovery-work');
   assert.equal(recoveryChoices.length, 2);
-  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'survival.gather'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'survival.gather'), false);
 
   const meal = await dispatch(game.runtime, 'meal-work', 'economy.recovery-work', { recoveryWorkId: 'first-meal-recovery-work' });
   assert.equal(meal.code, 'RECOVERY_WORK_COMPLETED');
@@ -100,7 +100,7 @@ test('recovery work fails closed when Survival consumption is disabled and legac
   await setCharacter(game, (character) => { character.needs.hunger = 90; });
 
   const scene = await dispatch(game.runtime, 'scene-disabled', 'narrative.scene');
-  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.recovery-work'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.recovery-work'), false);
   const before = game.store.snapshot();
   assert.equal((await dispatch(game.runtime, 'forged-disabled', 'economy.recovery-work', { recoveryWorkId: 'first-meal-recovery-work' })).code, 'RECOVERY_WORK_NOT_AVAILABLE');
   assert.deepEqual(game.store.snapshot(), before);
@@ -116,7 +116,7 @@ test('Situation-off Narrative fallback still exposes eligible recovery work whil
   await setCharacter(game, (character) => { character.needs.hunger = 90; });
 
   const scene = await dispatch(game.runtime, 'scene-fallback', 'narrative.scene');
-  assert.ok(scene.data.narrative.options.some(
+  assert.ok(scene.data.utilities.some(
     (entry) => entry.intent.type === 'economy.recovery-work'
       && entry.intent.payload.recoveryWorkId === 'first-meal-recovery-work',
   ));

@@ -93,3 +93,31 @@ test('tutorial naming uses the same server-side player-name guard as formal char
   assert.equal(accepted.ok, true);
   assert.equal(accepted.data.character.name, 'Alice Lin');
 });
+
+
+test('tutorial action surfaces separate direction choices from immediate operations', async () => {
+  const tutorial = createTutorialDevelopmentGame({ now: () => 1000 });
+  await dispatch(tutorial.runtime, 'surface-birth', 'character.birth', { name: '介面測試者' });
+
+  let scene = await dispatch(tutorial.runtime, 'surface-initial', 'narrative.scene');
+  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'npc.interact'));
+  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'employment.accept'));
+  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'location.travel'));
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
+
+  await dispatch(tutorial.runtime, 'surface-accept', 'employment.accept', { jobId: 'tutorial-odd-job' });
+  scene = await dispatch(tutorial.runtime, 'surface-employed', 'narrative.scene');
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
+  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
+
+  await dispatch(tutorial.runtime, 'surface-talk', 'npc.interact', { npcId: 'tutorial-guide' });
+  scene = await dispatch(tutorial.runtime, 'surface-topic', 'narrative.scene');
+  assert.ok(scene.data.dialogueTopics.some((entry) => entry.intent.type === 'npc.ask'));
+  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'npc.ask'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'npc.ask'), false);
+
+  await dispatch(tutorial.runtime, 'surface-well', 'location.travel', { destinationId: 'tutorial-well' });
+  scene = await dispatch(tutorial.runtime, 'surface-gather', 'narrative.scene');
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'survival.gather'));
+  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'survival.gather'), false);
+});

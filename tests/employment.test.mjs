@@ -48,7 +48,7 @@ test('work requires an authoritative employer contract when Employment is enable
   assert.ok(scene.data.narrative.options.some(
     (entry) => entry.intent.type === 'employment.accept' && entry.intent.payload.jobId === 'starter-labor',
   ));
-  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
 });
 
 test('accepting employment persists one current job and exposes only bounded public contract data', async () => {
@@ -74,7 +74,7 @@ test('accepting employment persists one current job and exposes only bounded pub
   });
   const scene = await dispatch(game.runtime, 'scene-employed', 'narrative.scene');
   assert.equal(scene.data.employment.current.job.title, '聚落雜役');
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
   assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'employment.resign'));
 });
 
@@ -133,6 +133,6 @@ test('Employment Module off removes contract state from presentation and does no
   assert.equal((await dispatch(game.runtime, 'accept-disabled', 'employment.accept', { jobId: 'starter-labor' })).code, 'UNKNOWN_ACTION');
   const scene = await dispatch(game.runtime, 'scene-disabled', 'narrative.scene');
   assert.equal(scene.data.employment, null);
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
   assert.equal((await dispatch(game.runtime, 'work-disabled', 'economy.work', { jobId: 'starter-labor' })).code, 'WORK_COMPLETED');
 });

@@ -29,7 +29,7 @@ test('warning condition is visible but does not block contracted work', async ()
   const scene = await dispatch(game.runtime, 'warning-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition.severity, 'warning');
   assert.ok(scene.data.survivalCondition.warningNeeds.some((entry) => entry.name === '飢餓'));
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
 
   const work = await dispatch(game.runtime, 'warning-work', 'economy.work', { jobId: 'starter-labor' });
   assert.equal(work.code, 'WORK_COMPLETED');
@@ -56,7 +56,7 @@ test('critical state hides work but keeps travel routes available for food and w
 
   const scene = await dispatch(game.runtime, 'critical-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition.severity, 'critical');
-  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
   const destinations = scene.data.narrative.options
     .filter((entry) => entry.intent.type === 'location.travel')
     .map((entry) => entry.intent.payload.destinationId);
@@ -103,7 +103,7 @@ test('critical thirst at the well still allows gathering and critical fatigue ex
   });
 
   const scene = await dispatch(game.runtime, 'well-critical-scene', 'narrative.scene');
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'survival.gather'));
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'survival.gather'));
   assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'survival.rest'));
   assert.equal((await dispatch(game.runtime, 'gather-water', 'survival.gather', { itemId: 'water' })).code, 'RESOURCE_GATHERED');
 });
@@ -119,7 +119,7 @@ test('disabling Survival Module disables the condition guard instead of leaving 
 
   const scene = await dispatch(game.runtime, 'no-survival-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition, null);
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'));
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
   assert.equal((await dispatch(game.runtime, 'no-survival-work', 'economy.work', { jobId: 'starter-labor' })).code, 'WORK_COMPLETED');
   assert.equal((await dispatch(game.runtime, 'no-survival-rest', 'survival.rest')).code, 'UNKNOWN_ACTION');
 });
