@@ -46,6 +46,8 @@ function failureMessage(code, fallbackLabel) {
       return '這裡目前沒有這份工作。';
     case 'SURVIVAL_CONDITION_TOO_POOR':
       return '目前的飢餓、口渴或疲勞狀況太差，先補給或休整後再工作。';
+    case 'RECOVERY_WORK_NOT_AVAILABLE':
+      return '目前沒有符合你狀況的應急短工；先使用手上的補給或尋找其他恢復方式。';
     case 'MARKET_NOT_AVAILABLE':
       return '這裡目前無法交易。';
     case 'ITEM_NOT_SOLD':
@@ -157,6 +159,13 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return '你休息了一會兒，疲勞有所緩解。';
     case 'WORK_COMPLETED':
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
+    case 'RECOVERY_WORK_COMPLETED': {
+      const name = text(result.data?.reward?.name);
+      const quantity = result.data?.reward?.quantity;
+      return name && Number.isSafeInteger(quantity) && quantity > 0
+        ? `短工完成，取得${name} × ${quantity}。`
+        : fallback;
+    }
     case 'PURCHASE_COMPLETED':
       return `${text(fallbackLabel, '購買')}：交易完成。`;
     case 'CRAFT_COMPLETED': {

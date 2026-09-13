@@ -4,8 +4,9 @@ import { recordBehavior } from '../character/behavior.js';
 import { hasEmploymentForJob } from '../employment/index.js';
 import { addStack, canApplyInventoryDelta } from '../inventory/index.js';
 import { canPerformSurvivalLimitedWork } from '../survival/condition.js';
+import { findEligibleRecoveryWork } from './recovery-work.js';
 
-const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 7, actions: ['economy.work', 'economy.buy'] });
+const manifest = validateGameModuleManifest({ name: 'economy', dataVersion: 8, actions: ['economy.work', 'economy.buy', 'economy.recovery-work'] });
 
 function survivalGuardEnabled(context) {
   const isActionAvailable = context?.isActionAvailable;
@@ -50,6 +51,32 @@ function work({ world, actor, action, context }) {
   };
 }
 
+function recoveryWork({ world, actor, action, context }) {
+  const character = getOwnedActiveCharacter(world, actor);
+  if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
+  if (!(context?.isActionAvailable?.('survival.consume') ?? false)) {
+    return { ok: false, code: 'RECOVERY_WORK_NOT_AVAILABLE' };
+  }
+  const entry = findEligibleRecoveryWork(character, context.contentPack, action.payload?.recoveryWorkId);
+  if (!entry) return { ok: false, code: 'RECOVERY_WORK_NOT_AVAILABLE' };
+
+  addStack(character, entry.reward.itemId, entry.reward.quantity);
+  const behaviorCount = recordBehavior(character, entry.behaviorId);
+  const item = context.contentPack.items[entry.reward.itemId];
+  return {
+    ok: true,
+    code: 'RECOVERY_WORK_COMPLETED',
+    data: {
+      reward: { name: item.name, quantity: entry.reward.quantity },
+      inventory: structuredClone(character.inventory),
+    },
+    events: [
+      { type: 'economy.recovery-supply-earned', data: { characterId: character.id, itemId: entry.reward.itemId, quantity: entry.reward.quantity, source: entry.id } },
+      { type: 'character.behavior-recorded', data: { characterId: character.id, behaviorId: entry.behaviorId, count: behaviorCount } },
+    ],
+  };
+}
+
 function buy({ world, actor, action, context }) {
   const character = getOwnedActiveCharacter(world, actor);
   if (!character) return { ok: false, code: 'NO_ACTIVE_CHARACTER' };
@@ -71,4 +98,4 @@ function buy({ world, actor, action, context }) {
   };
 }
 
-export const economyModule = { manifest, actions: { 'economy.work': work, 'economy.buy': buy } };
+export const economyModule = { manifest, actions: { 'economy.work': work, 'economy.buy': buy, 'economy.recovery-work': recoveryWork } };

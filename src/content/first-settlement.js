@@ -4,7 +4,7 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 5,
+  dataVersion: 6,
   startingLocationId: 'first-square',
   birthLocations: Object.freeze(['first-square']),
   inventory: Object.freeze({ carryCapacityUnits: 20 }),
@@ -59,6 +59,10 @@ export const firstSettlementPack = Object.freeze({
           rewardMoney: 2,
           needCosts: Object.freeze({ hunger: 4, thirst: 5, fatigue: 2 }),
         }),
+      ]),
+      recoveryWork: Object.freeze([
+        Object.freeze({ id: 'first-meal-recovery-work', label: '幫忙做一小段臨時雜務，換取一份基本食物', behaviorId: 'recovery-work:first-meal', reward: Object.freeze({ itemId: 'coarse-bread', quantity: 1 }) }),
+        Object.freeze({ id: 'first-water-recovery-work', label: '幫忙做一小段臨時雜務，換取一份飲水', behaviorId: 'recovery-work:first-water', reward: Object.freeze({ itemId: 'drinking-water', quantity: 1 }) }),
       ]),
       market: Object.freeze([
         Object.freeze({ itemId: 'coarse-bread', price: 1 }),

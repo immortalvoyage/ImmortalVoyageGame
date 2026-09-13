@@ -1,6 +1,7 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { hasEmploymentForJob } from '../employment/index.js';
+import { eligibleRecoveryWork } from '../economy/recovery-work.js';
 import { canApplyInventoryDelta } from '../inventory/index.js';
 import { formatTravelDuration } from '../location/index.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
@@ -11,7 +12,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 5,
+  dataVersion: 6,
   actions: ['situation.observe'],
 });
 
@@ -97,6 +98,11 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
       .filter((job) => !employmentActive || hasEmploymentForJob(character, job, character.locationId))
       .map((job) => option(job.label, 'economy.work', { jobId: job.id }));
 
+  const recoveryWork = isActionAvailable('economy.recovery-work') && isActionAvailable('survival.consume')
+    ? eligibleRecoveryWork(character, contentPack, location)
+      .map((entry) => option(entry.label, 'economy.recovery-work', { recoveryWorkId: entry.id }))
+    : [];
+
   const gather = isActionAvailable('survival.gather')
     ? (location.gatherables ?? [])
       .filter((entry) => canApplyInventoryDelta(character.inventory, contentPack.items, contentPack.inventory.carryCapacityUnits, { [entry.itemId]: entry.quantity }))
@@ -115,7 +121,7 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
   // Critical pressure keeps immediate recovery/exits ahead of optional social, purpose, or job-contract content.
   // Normal flow reserves category diversity so a crowded location cannot crowd out livelihood or an exit.
   const ordered = survivalCondition?.severity === 'critical'
-    ? [...gather, ...travel, ...social, ...purpose, ...employment]
+    ? [...recoveryWork, ...gather, ...travel, ...social, ...purpose, ...employment]
     : normalOpportunityOrder({ social, purpose, employment, work, gather, travel });
 
   return dedupeAndLimit(ordered);

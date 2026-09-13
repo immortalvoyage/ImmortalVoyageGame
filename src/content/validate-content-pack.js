@@ -231,6 +231,26 @@ export function validateContentPack(pack) {
       validateNeedMap(job.needCosts, `${path}.needCosts`, { min: 0, max: 100 });
     }
 
+    const recoveryWork = location.recoveryWork === undefined
+      ? []
+      : requireArray(location.recoveryWork, `locations.${locationId}.recoveryWork`);
+    const recoveryWorkIds = new Set();
+    for (const [index, entry] of recoveryWork.entries()) {
+      const path = `locations.${locationId}.recoveryWork[${index}]`;
+      requireRecord(entry, path);
+      const id = requireText(entry.id, `${path}.id`);
+      rememberUnique(recoveryWorkIds, id, `locations.${locationId}.recoveryWork ids`);
+      requireText(entry.label, `${path}.label`);
+      requireText(entry.behaviorId, `${path}.behaviorId`);
+      declaredBehaviorIds.add(entry.behaviorId);
+      validateItemQuantity(entry.reward, `${path}.reward`, items);
+      if (entry.reward.quantity !== 1) fail(`${path}.reward.quantity must be exactly 1`);
+      const rewardItem = items[entry.reward.itemId];
+      const requiredRelief = 101 - criticalThreshold;
+      const resolvesCriticalNeed = ['hunger', 'thirst'].some((need) => rewardItem.consumeEffect?.[need] <= -requiredRelief);
+      if (!resolvesCriticalNeed) fail(`${path}.reward must resolve hunger or thirst from maximum need below critical threshold`);
+    }
+
     const market = requireArray(location.market, `locations.${locationId}.market`);
     const marketItemIds = new Set();
     for (const [index, offer] of market.entries()) {

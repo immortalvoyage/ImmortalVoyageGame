@@ -2,6 +2,7 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildEmploymentViewForActor, hasEmploymentForJob } from '../employment/index.js';
+import { eligibleRecoveryWork } from '../economy/recovery-work.js';
 import { buildPublicCarryState, buildPublicInventory } from '../inventory/index.js';
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
@@ -15,7 +16,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 22, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 23, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -115,6 +116,11 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
       if (!employmentActive || hasEmploymentForJob(character, job, character.locationId)) {
         options.push(option(job.label, 'economy.work', { jobId: job.id }));
       }
+    }
+  }
+  if (survivalCondition?.severity === 'critical' && isActionAvailable('economy.recovery-work') && isActionAvailable('survival.consume')) {
+    for (const entry of eligibleRecoveryWork(character, contentPack, location)) {
+      options.push(option(entry.label, 'economy.recovery-work', { recoveryWorkId: entry.id }));
     }
   }
   for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));

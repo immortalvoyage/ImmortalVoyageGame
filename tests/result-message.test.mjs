@@ -112,3 +112,14 @@ test('unknown or incomplete results use safe fallback without exposing raw inter
   assert.equal(failed, '測試行動：無法完成。');
   assert.equal(failed.includes('SERVER_INTERNAL_SECRET_CODE'), false);
 });
+
+test('critical recovery work has bounded player-safe success and failure feedback', () => {
+  assert.equal(
+    formatActionResult({ ok: true, code: 'RECOVERY_WORK_COMPLETED', data: { reward: { name: '粗麵餅', quantity: 1 } } }, '應急短工'),
+    '短工完成，取得粗麵餅 × 1。',
+  );
+  assert.equal(
+    formatActionResult({ ok: false, code: 'RECOVERY_WORK_NOT_AVAILABLE' }, '應急短工'),
+    '目前沒有符合你狀況的應急短工；先使用手上的補給或尋找其他恢復方式。',
+  );
+});
