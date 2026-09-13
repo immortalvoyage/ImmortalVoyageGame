@@ -33,7 +33,15 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
 .trade-listing p { margin: 0; line-height: 1.5; }
 @media (max-width: 720px) {
   .shell { padding-top: 18px; }
-  .grid { grid-template-columns: 1fr; }
+  #game-panel:not([hidden]) { display: flex; flex-direction: column; }
+  .grid { display: contents; }
+  .location-card { order: 1; }
+  #travel-panel { order: 2; }
+  #dialogue-panel { order: 3; }
+  #utility-panel { order: 4; }
+  #trade-panel { order: 5; }
+  .character-card { order: 6; }
+  #leave-tutorial-panel { order: 7; }
   .card { border-radius: 14px; padding: 16px; }
   button { min-height: 44px; }
   .trade-form { grid-template-columns: 1fr 1fr; }
