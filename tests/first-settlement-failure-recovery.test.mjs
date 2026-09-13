@@ -29,14 +29,14 @@ function findFiniteRecoveryTargets(pack) {
   const recovery = {};
   for (const [locationId, location] of Object.entries(pack.locations)) {
     if (location.rest && !recovery.fatigue) recovery.fatigue = { locationId, actions: [{ type: 'survival.rest', payload: {} }] };
-    for (const gatherable of location.gatherables ?? []) {
-      const effect = pack.items[gatherable.itemId]?.consumeEffect;
+    for (const entry of location.recoveryWork ?? []) {
+      const effect = pack.items[entry.reward.itemId]?.consumeEffect;
       if (!effect) continue;
       for (const need of ['hunger', 'thirst']) {
         if (effect[need] < 0 && !recovery[need]) {
           recovery[need] = { locationId, actions: [
-            { type: 'survival.gather', payload: { itemId: gatherable.itemId } },
-            { type: 'survival.consume', payload: { itemId: gatherable.itemId } },
+            { type: 'economy.recovery-work', payload: { recoveryWorkId: entry.id } },
+            { type: 'survival.consume', payload: { itemId: entry.reward.itemId } },
           ] };
         }
       }

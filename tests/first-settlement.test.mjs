@@ -17,8 +17,11 @@ test('first settlement candidate validates and exposes livelihood plus survival 
   assert.ok(locations.flatMap((location) => location.jobs).length >= 1);
   assert.ok(locations.flatMap((location) => location.market).some((offer) => firstSettlementPack.items[offer.itemId]?.consumeEffect));
   assert.ok(locations.some((location) => location.rest));
+  assert.equal(firstSettlementPack.items['wild-fruit'], undefined);
+  assert.equal(locations.flatMap((location) => location.gatherables).length, 0);
+  const recoveryWork = locations.flatMap((location) => location.recoveryWork ?? []);
   for (const need of ['hunger', 'thirst']) {
-    assert.ok(locations.flatMap((location) => location.gatherables).some((entry) => firstSettlementPack.items[entry.itemId]?.consumeEffect?.[need] < 0));
+    assert.ok(recoveryWork.some((entry) => firstSettlementPack.items[entry.reward.itemId]?.consumeEffect?.[need] < 0));
   }
 });
 
@@ -44,19 +47,17 @@ test('fresh mortal can find an employer, earn, buy food, obtain water, consume s
   assert.equal(game.store.snapshot().characters[actor.sessionId].money, 1);
   assert.equal((await dispatch(game.runtime, 'eat-bread', 'survival.consume', { itemId: 'coarse-bread' })).code, 'ITEM_CONSUMED');
 
-  assert.equal((await dispatch(game.runtime, 'resign-carrying', 'employment.resign')).code, 'EMPLOYMENT_ENDED');
-  assert.equal((await dispatch(game.runtime, 'to-well', 'location.travel', { destinationId: 'first-well' })).code, 'TRAVEL_COMPLETED');
-  assert.equal((await dispatch(game.runtime, 'get-water', 'survival.gather', { itemId: 'drinking-water' })).code, 'RESOURCE_GATHERED');
+  assert.equal((await dispatch(game.runtime, 'buy-water', 'economy.buy', { itemId: 'drinking-water' })).code, 'PURCHASE_COMPLETED');
+  assert.equal(game.store.snapshot().characters[actor.sessionId].money, 0);
   assert.equal((await dispatch(game.runtime, 'drink-water', 'survival.consume', { itemId: 'drinking-water' })).code, 'ITEM_CONSUMED');
-
-  await dispatch(game.runtime, 'well-home', 'location.travel', { destinationId: 'first-square' });
+  assert.equal((await dispatch(game.runtime, 'resign-carrying', 'employment.resign')).code, 'EMPLOYMENT_ENDED');
   await dispatch(game.runtime, 'to-lodging', 'location.travel', { destinationId: 'first-lodging' });
   scene = await dispatch(game.runtime, 'scene-lodging', 'narrative.scene');
   assert.ok(scene.data.narrative.options.some(
     (entry) => entry.intent.type === 'employment.accept' && entry.intent.payload.jobId === 'first-lodging-work',
   ));
   assert.ok(scene.data.utilities.some(
-    (entry) => entry.intent.type === 'survival.rest' && entry.label === '在公共通鋪休息',
+    (entry) => entry.intent.type === 'survival.rest' && entry.label === '在簡易宿所休息',
   ));
 
   assert.equal((await dispatch(game.runtime, 'accept-lodging', 'employment.accept', { jobId: 'first-lodging-work' })).code, 'EMPLOYMENT_STARTED');

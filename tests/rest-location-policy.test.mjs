@@ -53,7 +53,7 @@ test('declared rest place exposes its Content-Pack label and deterministic fatig
 
   const scene = await dispatch(game.runtime, 'scene-lodging', 'narrative.scene');
   const rest = scene.data.utilities.find((entry) => entry.intent.type === 'survival.rest');
-  assert.deepEqual(rest, { label: '在公共通鋪休息', intent: { type: 'survival.rest', payload: {} } });
+  assert.deepEqual(rest, { label: '在簡易宿所休息', intent: { type: 'survival.rest', payload: {} } });
 
   const before = game.store.snapshot().characters[actor.sessionId].needs.fatigue;
   const result = await dispatch(game.runtime, 'rest-lodging', 'survival.rest');
