@@ -36,7 +36,7 @@ test('global status feedback is accessible and precedes phase content', async ()
   }
 
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  assert.match(css, /\.status-card\s*\{[^}]*position:\s*sticky;[^}]*top:\s*8px;[^}]*z-index:\s*5;[^}]*\}/s);
+  assert.match(css, /\.status-card\s*\{[^}]*flex:\s*0 0 auto;[^}]*position:\s*relative;[^}]*z-index:\s*5;[^}]*\}/s);
 });
 test('compact layout keeps location context visible while detail surfaces are tabbed', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
@@ -70,4 +70,17 @@ test('compact gameplay uses one operation surface instead of stacking every pane
   assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
   assert.match(mobile, /header h1\s*\{[^}]*font-size:\s*1\.65rem;/s);
   assert.match(mobile, /button\s*\{[^}]*min-height:\s*44px;/s);
+});
+
+test('browser shell is fixed to the viewport and compact navigation stays outside the scrollable detail surface', async () => {
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  assert.match(css, /html, body\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.shell\s*\{[^}]*height:\s*100dvh;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
+
+  const compact = css.slice(css.indexOf('@media (max-width: 1024px)'));
+  assert.match(compact, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*overflow:\s*hidden;/s);
+  assert.match(compact, /\.location-card\s*\{[^}]*flex:\s*0 0 auto;/s);
+  assert.match(compact, /\.mobile-game-nav\s*\{[^}]*flex:\s*0 0 auto;[^}]*display:\s*grid;/s);
+  assert.match(compact, /#travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel[^}]*overflow:\s*auto;/s);
 });

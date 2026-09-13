@@ -5,10 +5,11 @@
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; }
+html, body { height: 100%; overflow: hidden; }
+body { margin: 0; min-height: 0; }
 button, input, select { font: inherit; }
-.shell { width: min(980px, 100%); margin: 0 auto; padding: 28px 18px 60px; }
-header { padding: 28px 2px 18px; }
+.shell { width: min(980px, 100%); height: 100dvh; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; overflow: hidden; }
+header { flex: 0 0 auto; padding: 16px 2px 10px; }
 h1 { margin: 2px 0 8px; font-size: clamp(2rem, 8vw, 4.5rem); line-height: .95; font-weight: 650; }
 h2 { margin: 0 0 14px; font-size: 1.08rem; }
 .eyebrow { letter-spacing: .14em; font-size: .72rem; margin: 0; }
@@ -32,13 +33,17 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
 .trade-listings { display: grid; gap: 10px; }
 .trade-listing { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #ddd6c8; padding-top: 10px; }
 .trade-listing p { margin: 0; line-height: 1.5; }
+.status-card { flex: 0 0 auto; position: relative; top: auto; z-index: 5; }
+#birth-panel, #recovery-panel { flex: 0 0 auto; }
+#game-panel:not([hidden]) { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+
 @media (max-width: 1024px) {
   .shell { padding: 8px 10px 24px; }
   header { padding: 8px 2px 4px; }
   header h1 { margin: 0 0 4px; font-size: 1.65rem; line-height: 1.08; }
   header .eyebrow { font-size: .62rem; }
   header .subtle { margin: 4px 0 8px; line-height: 1.4; }
-  #game-panel:not([hidden]) { display: flex; flex-direction: column; }
+  #game-panel:not([hidden]) { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   .grid { display: contents; }
   .card { border-radius: 12px; padding: 12px; margin: 7px 0; }
   h2 { margin-bottom: 8px; }
@@ -49,21 +54,19 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
   .status-card { top: 4px; padding: 8px 12px; margin: 4px 0 7px; }
   .status-card h2 { display: none; }
   .message { min-height: 0; line-height: 1.35; }
-  .mobile-game-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 7px 0; }
+  .mobile-game-nav { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 7px 0; }
   .mobile-game-nav button { width: 100%; min-width: 0; padding-inline: 6px; }
   .mobile-game-nav button[aria-pressed="false"] { background: transparent; color: #2b2a27; }
-  .character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel { display: none !important; }
+  .location-card { flex: 0 0 auto; }
+  .character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel { display: none !important; min-height: 0; overflow: auto; overscroll-behavior: contain; }
   #game-panel[data-mobile-tab="travel"] #travel-panel:not([hidden]),
   #game-panel[data-mobile-tab="dialogue"] #dialogue-panel:not([hidden]),
   #game-panel[data-mobile-tab="actions"] #utility-panel:not([hidden]),
   #game-panel[data-mobile-tab="actions"] #trade-panel:not([hidden]),
   #game-panel[data-mobile-tab="character"] .character-card,
-  #game-panel[data-mobile-tab="character"] #leave-tutorial-panel:not([hidden]) { display: block !important; }
+  #game-panel[data-mobile-tab="character"] #leave-tutorial-panel:not([hidden]) { display: block !important; flex: 1 1 0; }
   .trade-form { grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 10px; }
   .trade-form label:first-child { grid-column: 1 / -1; }
   .trade-form button { grid-column: 1 / -1; }
   .trade-listing { align-items: flex-start; flex-direction: column; }
 }
-
-
-.status-card { position: sticky; top: 8px; z-index: 5; }
