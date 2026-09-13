@@ -5,68 +5,142 @@
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; }
-body { margin: 0; min-height: 0; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { min-height: 0; }
 button, input, select { font: inherit; }
-.shell { width: min(980px, 100%); height: 100dvh; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; overflow: hidden; }
-header { flex: 0 0 auto; padding: 16px 2px 10px; }
-h1 { margin: 2px 0 8px; font-size: clamp(2rem, 8vw, 4.5rem); line-height: .95; font-weight: 650; }
-h2 { margin: 0 0 14px; font-size: 1.08rem; }
-.eyebrow { letter-spacing: .14em; font-size: .72rem; margin: 0; }
-.subtle { color: #66635b; max-width: 42rem; }
-.grid { display: grid; grid-template-columns: 1.35fr .9fr; gap: 14px; }
-.card { background: rgba(255,255,255,.68); border: 1px solid #d9d3c5; border-radius: 18px; padding: 18px; margin: 14px 0; box-shadow: 0 10px 30px rgba(50,45,35,.05); }
-.row, .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.mobile-game-nav { display: none; }
-input, select { min-width: 0; padding: 11px 13px; border: 1px solid #bcb5a7; border-radius: 10px; background: white; color: #20201d; }
-.row input { flex: 1 1 220px; }
-button { border: 1px solid #777064; border-radius: 999px; background: #2b2a27; color: white; padding: 9px 14px; cursor: pointer; }
-button.secondary { background: transparent; color: #2b2a27; }
+.shell {
+  width: min(1180px, 100%);
+  height: 100dvh;
+  margin: 0 auto;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  overflow: hidden;
+}
+header { min-width: 0; padding: 2px 2px 0; }
+header .eyebrow { margin: 0; font-size: .66rem; letter-spacing: .14em; }
+header h1 { margin: 1px 0 2px; font-size: clamp(1.55rem, 3vw, 2.4rem); line-height: 1; }
+header .subtle { margin: 2px 0 0; color: #66635b; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card {
+  background: rgba(255,255,255,.72);
+  border: 1px solid #d9d3c5;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(50,45,35,.05);
+}
+h2 { margin: 0 0 10px; font-size: 1.02rem; }
+.subtle { color: #66635b; }
+.status-card { min-height: 42px; display: flex; align-items: center; padding: 8px 12px; }
+.status-card h2 { display: none; }
+.message { margin: 0; line-height: 1.35; }
+#birth-panel, #recovery-panel, #formal-birth-panel { min-height: 0; overflow: hidden; }
+#game-panel:not([hidden]) {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  overflow: hidden;
+}
+.workspace-nav {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+button {
+  min-height: 42px;
+  border: 1px solid #777064;
+  border-radius: 12px;
+  background: #2b2a27;
+  color: white;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button.secondary,
+.workspace-nav button[aria-pressed="false"] { background: transparent; color: #2b2a27; }
 button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
-.stats { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; }
+.workspace-view {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+}
+#game-panel[data-mobile-tab="scene"] [data-workspace-view="scene"],
+#game-panel[data-mobile-tab="travel"] [data-workspace-view="travel"]:not([hidden]),
+#game-panel[data-mobile-tab="dialogue"] [data-workspace-view="dialogue"]:not([hidden]),
+#game-panel[data-mobile-tab="actions"] [data-workspace-view="actions"]:not([hidden]),
+#game-panel[data-mobile-tab="trade"] [data-workspace-view="trade"]:not([hidden]),
+#game-panel[data-mobile-tab="character"] [data-workspace-view="character"]:not([hidden]),
+#game-panel[data-mobile-tab="character"] .character-card { display: flex; }
+.location-card p { margin: 5px 0; line-height: 1.45; }
+#location-description { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.narrative { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.actions {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+.actions > button { width: 100%; }
+.stats {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px 12px;
+  margin: 0;
+}
 .stats dt { color: #68645c; }
-.stats dd { margin: 0; font-weight: 600; }
-.message { min-height: 1.5em; margin: 0; }
-.narrative { line-height: 1.75; margin: 16px 0; }
-.trade-form { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(90px, .6fr) minmax(100px, .7fr) auto; gap: 10px; align-items: end; margin: 14px 0 18px; }
-.trade-form label { display: grid; gap: 5px; font-size: .9rem; color: #68645c; }
-.trade-listings { display: grid; gap: 10px; }
-.trade-listing { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #ddd6c8; padding-top: 10px; }
-.trade-listing p { margin: 0; line-height: 1.5; }
-.status-card { flex: 0 0 auto; position: relative; top: auto; z-index: 5; }
-#birth-panel, #recovery-panel { flex: 0 0 auto; }
-#game-panel:not([hidden]) { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-
-@media (max-width: 1024px) {
-  .shell { padding: 8px 10px 24px; }
-  header { padding: 8px 2px 4px; }
-  header h1 { margin: 0 0 4px; font-size: 1.65rem; line-height: 1.08; }
-  header .eyebrow { font-size: .62rem; }
-  header .subtle { margin: 4px 0 8px; line-height: 1.4; }
-  #game-panel:not([hidden]) { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-  .grid { display: contents; }
-  .card { border-radius: 12px; padding: 12px; margin: 7px 0; }
-  h2 { margin-bottom: 8px; }
-  .location-card p { margin: 6px 0; line-height: 1.45; }
-  .narrative { margin: 8px 0; line-height: 1.55; }
-  .actions { gap: 7px; }
-  button { min-height: 44px; padding: 8px 12px; }
-  .status-card { top: 4px; padding: 8px 12px; margin: 4px 0 7px; }
-  .status-card h2 { display: none; }
-  .message { min-height: 0; line-height: 1.35; }
-  .mobile-game-nav { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 7px 0; }
-  .mobile-game-nav button { width: 100%; min-width: 0; padding-inline: 6px; }
-  .mobile-game-nav button[aria-pressed="false"] { background: transparent; color: #2b2a27; }
-  .location-card { flex: 0 0 auto; }
-  .character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel { display: none !important; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-  #game-panel[data-mobile-tab="travel"] #travel-panel:not([hidden]),
-  #game-panel[data-mobile-tab="dialogue"] #dialogue-panel:not([hidden]),
-  #game-panel[data-mobile-tab="actions"] #utility-panel:not([hidden]),
-  #game-panel[data-mobile-tab="actions"] #trade-panel:not([hidden]),
-  #game-panel[data-mobile-tab="character"] .character-card,
-  #game-panel[data-mobile-tab="character"] #leave-tutorial-panel:not([hidden]) { display: block !important; flex: 1 1 0; }
-  .trade-form { grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 10px; }
+.stats dd { margin: 0; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pager { margin-top: auto; display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+.pager[hidden] { display: none; }
+.pager span { text-align: center; color: #68645c; font-size: .88rem; }
+input, select { min-width: 0; padding: 9px 11px; border: 1px solid #bcb5a7; border-radius: 9px; background: white; color: #20201d; }
+.row { display: flex; gap: 8px; }
+.row input { flex: 1 1 auto; }
+.trade-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(90px, .6fr) minmax(100px, .7fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.trade-form label { display: grid; gap: 4px; font-size: .85rem; color: #68645c; }
+.trade-listings { display: grid; gap: 8px; min-height: 0; }
+.trade-listing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid #ddd6c8;
+  padding-top: 8px;
+}
+.trade-listing p { margin: 0; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lifecycle-card { margin-top: 8px; height: auto; flex: 0 0 auto; }
+.lifecycle-card p { margin: 4px 0 8px; }
+@media (max-width: 720px) {
+  .shell { padding: 6px 8px; gap: 6px; }
+  header h1 { font-size: 1.45rem; }
+  header .subtle { font-size: .78rem; }
+  .workspace-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .workspace-nav button { min-height: 38px; padding: 6px 8px; }
+  .card { border-radius: 11px; padding: 10px; }
+  .actions { grid-template-columns: 1fr; gap: 6px; }
+  .actions > button { min-height: 40px; }
+  #location-description { -webkit-line-clamp: 2; }
+  .narrative { -webkit-line-clamp: 3; }
+  .trade-form { grid-template-columns: 1fr 1fr; }
   .trade-form label:first-child { grid-column: 1 / -1; }
   .trade-form button { grid-column: 1 / -1; }
-  .trade-listing { align-items: flex-start; flex-direction: column; }
+}
+
+#birth-panel:not([hidden]), #formal-birth-panel:not([hidden]), #recovery-panel:not([hidden]) { align-self: start; width: 100%; }
+
+@media (min-width: 721px) {
+  #game-panel:not([hidden]) { grid-template-columns: minmax(280px, .78fr) minmax(0, 1.22fr); grid-template-rows: auto minmax(0, 1fr); }
+  .workspace-nav { grid-column: 1 / -1; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .workspace-nav [data-mobile-tab="scene"] { display: none; }
+  [data-workspace-view="scene"] { display: flex !important; grid-column: 1; grid-row: 2; }
+  [data-workspace-view="travel"], [data-workspace-view="dialogue"], [data-workspace-view="actions"], [data-workspace-view="trade"], [data-workspace-view="character"] { grid-column: 2; grid-row: 2; }
+  #game-panel[data-mobile-tab="scene"] [data-workspace-view="character"] { display: flex; }
 }
