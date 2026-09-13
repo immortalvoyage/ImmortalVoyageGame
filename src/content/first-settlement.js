@@ -4,7 +4,7 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 7,
+  dataVersion: 8,
   startingLocationId: 'first-square',
   birthLocations: Object.freeze(['first-square']),
   inventory: Object.freeze({ carryCapacityUnits: 20 }),
@@ -92,6 +92,7 @@ export const firstSettlementPack = Object.freeze({
       name: '聚落外緣',
       description: '人煙漸少，幾條路向聚落外側延伸；離開聚落後能遇到什麼，沒有固定保證。',
       calendarZoneId: 'world-zone:origin',
+      externalRouteStaging: true,
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 12 * 60, needCosts: Object.freeze({ hunger: 1, thirst: 1 }) }),
       ]),

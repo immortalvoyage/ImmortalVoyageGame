@@ -188,6 +188,9 @@ export function validateContentPack(pack) {
     requireText(location.name, `locations.${locationId}.name`);
     requireText(location.description, `locations.${locationId}.description`);
     requireText(location.calendarZoneId, `locations.${locationId}.calendarZoneId`);
+    if (location.externalRouteStaging !== undefined && location.externalRouteStaging !== true) {
+      fail(`locations.${locationId}.externalRouteStaging must be true when declared`);
+    }
     if (location.rest !== undefined) {
       const rest = requireRecord(location.rest, `locations.${locationId}.rest`);
       requireText(rest.label, `locations.${locationId}.rest.label`);
