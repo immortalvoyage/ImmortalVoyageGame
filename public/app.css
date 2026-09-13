@@ -15,7 +15,8 @@ h2 { margin: 0 0 14px; font-size: 1.08rem; }
 .subtle { color: #66635b; max-width: 42rem; }
 .grid { display: grid; grid-template-columns: 1.35fr .9fr; gap: 14px; }
 .card { background: rgba(255,255,255,.68); border: 1px solid #d9d3c5; border-radius: 18px; padding: 18px; margin: 14px 0; box-shadow: 0 10px 30px rgba(50,45,35,.05); }
-.row, .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.row, .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mobile-game-nav { display: none; }
 input, select { min-width: 0; padding: 11px 13px; border: 1px solid #bcb5a7; border-radius: 10px; background: white; color: #20201d; }
 .row input { flex: 1 1 220px; }
 button { border: 1px solid #777064; border-radius: 999px; background: #2b2a27; color: white; padding: 9px 14px; cursor: pointer; }
@@ -32,22 +33,37 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
 .trade-listing { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #ddd6c8; padding-top: 10px; }
 .trade-listing p { margin: 0; line-height: 1.5; }
 @media (max-width: 720px) {
-  .shell { padding-top: 18px; }
+  .shell { padding: 8px 10px 24px; }
+  header { padding: 8px 2px 4px; }
+  header h1 { margin: 0 0 4px; font-size: 1.65rem; line-height: 1.08; }
+  header .eyebrow { font-size: .62rem; }
+  header .subtle { margin: 4px 0 8px; line-height: 1.4; }
   #game-panel:not([hidden]) { display: flex; flex-direction: column; }
   .grid { display: contents; }
-  .location-card { order: 1; }
-  #travel-panel { order: 2; }
-  #dialogue-panel { order: 3; }
-  #utility-panel { order: 4; }
-  #trade-panel { order: 5; }
-  .character-card { order: 6; }
-  #leave-tutorial-panel { order: 7; }
-  .card { border-radius: 14px; padding: 16px; }
-  button { min-height: 44px; }
-  .trade-form { grid-template-columns: 1fr 1fr; }
+  .card { border-radius: 12px; padding: 12px; margin: 7px 0; }
+  h2 { margin-bottom: 8px; }
+  .location-card p { margin: 6px 0; line-height: 1.45; }
+  .narrative { margin: 8px 0; line-height: 1.55; }
+  .actions { gap: 7px; }
+  button { min-height: 44px; padding: 8px 12px; }
+  .status-card { top: 4px; padding: 8px 12px; margin: 4px 0 7px; }
+  .status-card h2 { display: none; }
+  .message { min-height: 0; line-height: 1.35; }
+  .mobile-game-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 7px 0; }
+  .mobile-game-nav button { width: 100%; min-width: 0; padding-inline: 6px; }
+  .mobile-game-nav button[aria-pressed="false"] { background: transparent; color: #2b2a27; }
+  .character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel { display: none !important; }
+  #game-panel[data-mobile-tab="travel"] #travel-panel:not([hidden]),
+  #game-panel[data-mobile-tab="dialogue"] #dialogue-panel:not([hidden]),
+  #game-panel[data-mobile-tab="actions"] #utility-panel:not([hidden]),
+  #game-panel[data-mobile-tab="actions"] #trade-panel:not([hidden]),
+  #game-panel[data-mobile-tab="character"] .character-card,
+  #game-panel[data-mobile-tab="character"] #leave-tutorial-panel:not([hidden]) { display: block !important; }
+  .trade-form { grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 10px; }
   .trade-form label:first-child { grid-column: 1 / -1; }
   .trade-form button { grid-column: 1 / -1; }
   .trade-listing { align-items: flex-start; flex-direction: column; }
 }
+
 
 .status-card { position: sticky; top: 8px; z-index: 5; }

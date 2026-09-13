@@ -38,7 +38,7 @@ test('global status feedback is accessible and precedes phase content', async ()
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
   assert.match(css, /\.status-card\s*\{[^}]*position:\s*sticky;[^}]*top:\s*8px;[^}]*z-index:\s*5;[^}]*\}/s);
 });
-test('mobile layout prioritizes gameplay actions before full character detail', async () => {
+test('mobile layout keeps location context visible while detail surfaces are tabbed', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
     const source = await html(name);
     assert.ok(source.includes('class="card location-card"'));
@@ -49,7 +49,25 @@ test('mobile layout prioritizes gameplay actions before full character detail', 
   const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
   assert.match(mobile, /#game-panel:not\(\[hidden\]\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;/s);
   assert.match(mobile, /\.grid\s*\{\s*display:\s*contents;\s*\}/s);
-  assert.match(mobile, /\.location-card\s*\{\s*order:\s*1;/s);
-  assert.match(mobile, /#utility-panel\s*\{\s*order:\s*4;/s);
-  assert.match(mobile, /\.character-card\s*\{\s*order:\s*6;/s);
+  assert.match(mobile, /\.character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel\s*\{\s*display:\s*none !important;/s);
+  assert.match(mobile, /#game-panel\[data-mobile-tab="actions"\] #utility-panel:not\(\[hidden\]\)/s);
+  assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
+});
+
+test('mobile gameplay uses one compact operation surface instead of stacking every panel', async () => {
+  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
+    const source = await html(name);
+    assert.ok(source.includes('id="mobile-game-nav"'));
+    for (const tab of ['travel', 'dialogue', 'actions', 'character']) {
+      assert.ok(source.includes(`data-mobile-tab="${tab}"`), `${name} must expose ${tab} mobile tab`);
+    }
+  }
+
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
+  assert.match(mobile, /\.mobile-game-nav\s*\{[^}]*display:\s*grid;/s);
+  assert.match(mobile, /#game-panel\[data-mobile-tab="actions"\] #utility-panel:not\(\[hidden\]\)/s);
+  assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
+  assert.match(mobile, /header h1\s*\{[^}]*font-size:\s*1\.65rem;/s);
+  assert.match(mobile, /button\s*\{[^}]*min-height:\s*44px;/s);
 });

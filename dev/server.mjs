@@ -19,6 +19,7 @@ const STATIC_FILES = new Map([
   ['/character-summary.js', ['character-summary.js', 'text/javascript; charset=utf-8']],
   ['/result-message.js', ['result-message.js', 'text/javascript; charset=utf-8']],
   ['/scene-visibility.js', ['scene-visibility.js', 'text/javascript; charset=utf-8']],
+  ['/mobile-tabs.js', ['mobile-tabs.js', 'text/javascript; charset=utf-8']],
   ['/trade-visibility.js', ['trade-visibility.js', 'text/javascript; charset=utf-8']],
   ['/app.css', ['app.css', 'text/css; charset=utf-8']],
 ]);
