@@ -23,6 +23,7 @@ import { careerModule } from './modules/career/index.js';
 import { relationshipModule } from './modules/relationship/index.js';
 import { knowledgeModule } from './modules/knowledge/index.js';
 import { estateModule } from './modules/estate/index.js';
+import { magicModule } from './modules/magic/index.js';
 import { situationModule } from './modules/situation/index.js';
 import { narrativeModule } from './modules/narrative/index.js';
 
@@ -43,6 +44,7 @@ const allModules = [
   relationshipModule,
   knowledgeModule,
   estateModule,
+  magicModule,
   situationModule,
   narrativeModule,
 ];

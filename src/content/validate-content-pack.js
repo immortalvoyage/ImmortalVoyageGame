@@ -1,3 +1,5 @@
+import { validateMagicContent } from '../modules/magic/content.js';
+
 const NEED_KEYS = new Set(['hunger', 'thirst', 'fatigue']);
 const PROGRESSION_KINDS = new Set(['skill', 'social']);
 const MAX_ROUTE_TRAVEL_SECONDS = 30 * 24 * 60 * 60;
@@ -119,6 +121,7 @@ export function validateContentPack(pack) {
   requireText(pack.id, 'pack.id');
   requireInteger(pack.dataVersion, 'pack.dataVersion', { min: 1 });
   requireText(pack.startingLocationId, 'pack.startingLocationId');
+  validateMagicContent(pack.magic);
 
   const survival = requireRecord(pack.survival, 'pack.survival');
   const warningThreshold = requireInteger(survival.warningThreshold, 'pack.survival.warningThreshold', { min: 1, max: 99 });
