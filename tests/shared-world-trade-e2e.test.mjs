@@ -101,3 +101,63 @@ test('two formal players affect the same authoritative world through trade', asy
   assert.equal(world.gameEvents.filter((event) => event.type === 'trade.completed').length, 1);
   assert.equal(world.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, 1);
 });
+
+
+test('competing buyers cannot purchase the same authoritative listing twice', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'iv-shared-trade-race-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'formal-world.json');
+  const server = createOnboardingDevServer({ filePath, now: () => 6000 });
+  const base = await listen(server);
+  t.after(() => close(server));
+
+  const cookies = [];
+  for (let index = 0; index < 3; index += 1) {
+    const page = await fetch(base + '/');
+    cookies.push(page.headers.get('set-cookie').split(';')[0]);
+  }
+  const [sellerCookie, buyerACookie, buyerBCookie] = cookies;
+  assert.equal(new Set(cookies).size, 3);
+
+  await createFormalPlayer(base, sellerCookie, 'race-seller', '競售者');
+  await createFormalPlayer(base, buyerACookie, 'race-buyer-a', '競買甲');
+  await createFormalPlayer(base, buyerBCookie, 'race-buyer-b', '競買乙');
+  let result = await earnAndBuyBread(base, sellerCookie, 'race-seller');
+  assert.equal(result.body.data.money, 1);
+  result = await postAction(base, sellerCookie, 'race-list', 'trade.list', {
+    itemId: 'coarse-bread',
+    quantity: 1,
+    totalPrice: 1,
+  });
+  assert.equal(result.body.code, 'TRADE_LISTED');
+  const listingId = result.body.data.listing.id;
+
+  for (const [cookie, prefix] of [[buyerACookie, 'race-a'], [buyerBCookie, 'race-b']]) {
+    result = await postAction(base, cookie, `${prefix}-employment`, 'employment.accept', { jobId: 'first-carrying-work' });
+    assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
+    result = await postAction(base, cookie, `${prefix}-work`, 'economy.work', { jobId: 'first-carrying-work' });
+    assert.equal(result.body.code, 'WORK_COMPLETED');
+    assert.equal(result.body.data.money, 2);
+  }
+
+  const [buyA, buyB] = await Promise.all([
+    postAction(base, buyerACookie, 'race-buy-a', 'trade.buy', { listingId }),
+    postAction(base, buyerBCookie, 'race-buy-b', 'trade.buy', { listingId }),
+  ]);
+  const codes = [buyA.body.code, buyB.body.code].sort();
+  assert.deepEqual(codes, ['TRADE_LISTING_NOT_AVAILABLE', 'TRADE_PURCHASED'].sort());
+
+  const world = JSON.parse(await readFile(filePath, 'utf8'));
+  const sellerId = sessionIdFrom(sellerCookie);
+  const buyerAId = sessionIdFrom(buyerACookie);
+  const buyerBId = sessionIdFrom(buyerBCookie);
+  const buyerStates = [world.characters[buyerAId], world.characters[buyerBId]];
+
+  assert.equal(world.tradeListings[listingId], undefined);
+  assert.equal(world.characters[sellerId].money, 2);
+  assert.equal(buyerStates.filter((character) => character.inventory['coarse-bread'] === 1).length, 1);
+  assert.equal(buyerStates.filter((character) => character.money === 1).length, 1);
+  assert.equal(buyerStates.filter((character) => character.money === 2).length, 1);
+  assert.equal(world.gameEvents.filter((event) => event.type === 'trade.completed').length, 1);
+  assert.equal(world.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, 1);
+});
