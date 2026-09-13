@@ -38,3 +38,18 @@ test('global status feedback is accessible and precedes phase content', async ()
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
   assert.match(css, /\.status-card\s*\{[^}]*position:\s*sticky;[^}]*top:\s*8px;[^}]*z-index:\s*5;[^}]*\}/s);
 });
+test('mobile layout prioritizes gameplay actions before full character detail', async () => {
+  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
+    const source = await html(name);
+    assert.ok(source.includes('class="card location-card"'));
+    assert.ok(source.includes('class="card character-card"'));
+  }
+
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
+  assert.match(mobile, /#game-panel:not\(\[hidden\]\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;/s);
+  assert.match(mobile, /\.grid\s*\{\s*display:\s*contents;\s*\}/s);
+  assert.match(mobile, /\.location-card\s*\{\s*order:\s*1;/s);
+  assert.match(mobile, /#utility-panel\s*\{\s*order:\s*4;/s);
+  assert.match(mobile, /\.character-card\s*\{\s*order:\s*6;/s);
+});
