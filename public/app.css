@@ -32,7 +32,7 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
 .trade-listings { display: grid; gap: 10px; }
 .trade-listing { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #ddd6c8; padding-top: 10px; }
 .trade-listing p { margin: 0; line-height: 1.5; }
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .shell { padding: 8px 10px 24px; }
   header { padding: 8px 2px 4px; }
   header h1 { margin: 0 0 4px; font-size: 1.65rem; line-height: 1.08; }

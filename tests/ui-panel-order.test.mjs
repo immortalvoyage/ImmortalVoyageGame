@@ -38,7 +38,7 @@ test('global status feedback is accessible and precedes phase content', async ()
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
   assert.match(css, /\.status-card\s*\{[^}]*position:\s*sticky;[^}]*top:\s*8px;[^}]*z-index:\s*5;[^}]*\}/s);
 });
-test('mobile layout keeps location context visible while detail surfaces are tabbed', async () => {
+test('compact layout keeps location context visible while detail surfaces are tabbed', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
     const source = await html(name);
     assert.ok(source.includes('class="card location-card"'));
@@ -46,7 +46,7 @@ test('mobile layout keeps location context visible while detail surfaces are tab
   }
 
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
+  const mobile = css.slice(css.indexOf('@media (max-width: 1024px)'));
   assert.match(mobile, /#game-panel:not\(\[hidden\]\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;/s);
   assert.match(mobile, /\.grid\s*\{\s*display:\s*contents;\s*\}/s);
   assert.match(mobile, /\.character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel\s*\{\s*display:\s*none !important;/s);
@@ -54,7 +54,7 @@ test('mobile layout keeps location context visible while detail surfaces are tab
   assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
 });
 
-test('mobile gameplay uses one compact operation surface instead of stacking every panel', async () => {
+test('compact gameplay uses one operation surface instead of stacking every panel', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
     const source = await html(name);
     assert.ok(source.includes('id="mobile-game-nav"'));
@@ -64,7 +64,7 @@ test('mobile gameplay uses one compact operation surface instead of stacking eve
   }
 
   const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
+  const mobile = css.slice(css.indexOf('@media (max-width: 1024px)'));
   assert.match(mobile, /\.mobile-game-nav\s*\{[^}]*display:\s*grid;/s);
   assert.match(mobile, /#game-panel\[data-mobile-tab="actions"\] #utility-panel:not\(\[hidden\]\)/s);
   assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
