@@ -32,7 +32,7 @@ test('location observation exposes bounded route duration without route need-cos
   assert.equal(well.needCosts, undefined);
 
   const scene = await dispatch(game.runtime, 'scene', 'narrative.scene');
-  const wellChoice = scene.data.narrative.options.find(
+  const wellChoice = scene.data.travelOptions.find(
     (entry) => entry.intent.type === 'location.travel' && entry.intent.payload.destinationId === 'starter-well',
   );
   assert.ok(wellChoice.label.includes('約5 分鐘'));

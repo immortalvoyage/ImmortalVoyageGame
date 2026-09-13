@@ -16,7 +16,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 24, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 25, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -71,6 +71,7 @@ function scene({ world, actor, context }) {
         options: narrativeOptions,
       },
       dialogueTopics: buildDialogueTopics(view, character, isActionAvailable, contentPack),
+      travelOptions: buildTravelOptions(view, isActionAvailable),
       utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
   };
@@ -112,10 +113,12 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
       options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
     }
   }
-  for (const route of view.routes) {
-    options.push(option(`前往${route.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.id }));
-  }
   return options.filter((choice) => isActionAvailable(choice.intent.type)).slice(0, 4);
+}
+
+function buildTravelOptions(view, isActionAvailable) {
+  if (!isActionAvailable('location.travel')) return [];
+  return view.routes.map((route) => option(`前往${route.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.id }));
 }
 
 const NEED_LABELS = Object.freeze({ hunger: '飢餓', thirst: '口渴', fatigue: '疲勞' });

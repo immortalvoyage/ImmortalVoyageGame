@@ -63,5 +63,5 @@ test('narrative omits purpose choices when purpose module is disabled', async ()
   const scene = await dispatch(runtime, 'scene-disabled', 'narrative.scene');
   assert.equal(scene.data.narrative.options.some((choice) => choice.intent.type === 'purpose.find-npc'), false);
   assert.ok(scene.data.utilities.some((choice) => choice.intent.type === 'survival.gather'));
-  assert.ok(scene.data.narrative.options.some((choice) => choice.intent.type === 'location.travel'));
+  assert.ok(scene.data.travelOptions.some((choice) => choice.intent.type === 'location.travel'));
 });

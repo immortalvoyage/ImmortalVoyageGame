@@ -57,9 +57,7 @@ test('critical state hides work but keeps travel routes available for food and w
   const scene = await dispatch(game.runtime, 'critical-scene', 'narrative.scene');
   assert.equal(scene.data.survivalCondition.severity, 'critical');
   assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
-  const destinations = scene.data.narrative.options
-    .filter((entry) => entry.intent.type === 'location.travel')
-    .map((entry) => entry.intent.payload.destinationId);
+  const destinations = scene.data.travelOptions.map((entry) => entry.intent.payload.destinationId);
   assert.ok(destinations.includes('starter-well'));
   assert.ok(destinations.includes('starter-grove'));
 });

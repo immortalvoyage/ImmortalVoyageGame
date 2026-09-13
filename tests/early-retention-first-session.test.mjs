@@ -25,7 +25,7 @@ test('first settlement exposes an immediate meaningful choice and a short visibl
   assert.equal(firstScene.data.narrative.options.length <= 4, true);
   assert.equal(optionTypes(firstScene).includes('npc.interact'), true);
   assert.equal(optionTypes(firstScene).includes('employment.accept'), true);
-  assert.equal(optionTypes(firstScene).includes('location.travel'), true);
+  assert.equal(firstScene.data.travelOptions.some((entry) => entry.intent.type === 'location.travel'), true);
 
   const talked = await dispatch(game.runtime, 'talk-foreman', 'npc.interact', { npcId: 'first-foreman' });
   assert.equal(talked.ok, true);

@@ -1,6 +1,5 @@
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
-import { formatTravelDuration } from '../location/index.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
@@ -9,7 +8,7 @@ export const MAX_SITUATION_OPPORTUNITIES = 4;
 
 const manifest = validateGameModuleManifest({
   name: 'situation',
-  dataVersion: 7,
+  dataVersion: 8,
   actions: ['situation.observe'],
 });
 
@@ -36,14 +35,13 @@ function dedupeAndLimit(opportunities) {
   return result;
 }
 
-function normalOpportunityOrder({ social, purpose, employment, travel }) {
-  const primary = [purpose[0], social[0], employment[0], travel[0]].filter(Boolean);
+function normalOpportunityOrder({ social, purpose, employment }) {
+  const primary = [purpose[0], social[0], employment[0]].filter(Boolean);
   return [
     ...primary,
     ...purpose.slice(1),
     ...employment.slice(1),
     ...social.slice(1),
-    ...travel.slice(1),
   ];
 }
 
@@ -82,20 +80,12 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
       })
     : [];
 
-  const travel = isActionAvailable('location.travel')
-    ? (location.routes ?? []).map((route) => {
-      const destination = contentPack.locations[route.destinationId];
-      return destination
-        ? option(`前往${destination.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.destinationId })
-        : null;
-    }).filter(Boolean)
-    : [];
 
-  // Situation owns direction/social/contract choices; immediate operational actions live in Narrative utilities.
-  // Critical pressure keeps exits ahead of optional social, purpose, or job-contract content.
+
+  // Situation owns bounded social/purpose/contract choices only. Travel is projected separately so routes cannot be crowded out.
   const ordered = survivalCondition?.severity === 'critical'
-    ? [...travel, ...social, ...purpose, ...employment]
-    : normalOpportunityOrder({ social, purpose, employment, travel });
+    ? [...social, ...purpose, ...employment]
+    : normalOpportunityOrder({ social, purpose, employment });
 
   return dedupeAndLimit(ordered);
 }
