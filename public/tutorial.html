@@ -37,60 +37,47 @@
     </section>
 
     <section id="game-panel" hidden>
-      <div class="grid">
-        <article class="card location-card">
-          <h2 id="location-name">世界</h2>
-          <p id="location-description"></p>
-          <p id="narrative-text" class="narrative"></p>
-          <div id="narrative-actions" class="actions"></div>
-        </article>
-
-        <article class="card character-card">
-          <h2>教學 Avatar</h2>
-          <dl id="character-state" class="stats"></dl>
-        </article>
-      </div>
-      <nav id="mobile-game-nav" class="mobile-game-nav" aria-label="遊戲操作">
+      <nav id="mobile-game-nav" class="workspace-nav" aria-label="遊戲操作">
+        <button type="button" data-mobile-tab="scene" aria-pressed="false">情境</button>
         <button type="button" data-mobile-tab="travel" aria-pressed="false">移動</button>
         <button type="button" data-mobile-tab="dialogue" aria-pressed="false">對話</button>
         <button type="button" data-mobile-tab="actions" aria-pressed="false">行動</button>
+        <button type="button" data-mobile-tab="trade" aria-pressed="false">交易</button>
         <button type="button" data-mobile-tab="character" aria-pressed="false">角色</button>
       </nav>
 
-      <article id="travel-panel" class="card" hidden>
-        <h2>移動</h2>
-        <div id="travel-actions" class="actions"></div>
+      <article class="card workspace-view location-card" data-workspace-view="scene">
+        <h2 id="location-name">世界</h2>
+        <p id="location-description"></p>
+        <p id="narrative-text" class="narrative"></p>
+        <div id="narrative-actions" class="actions"></div>
       </article>
 
-      <article id="dialogue-panel" class="card" hidden>
-        <h2>對話</h2>
-        <div id="dialogue-actions" class="actions"></div>
+      <article id="travel-panel" class="card workspace-view" data-workspace-view="travel" hidden>
+        <h2>移動</h2><div id="travel-actions" class="actions"></div>
+      </article>
+      <article id="dialogue-panel" class="card workspace-view" data-workspace-view="dialogue" hidden>
+        <h2>對話</h2><div id="dialogue-actions" class="actions"></div>
+      </article>
+      <article id="utility-panel" class="card workspace-view" data-workspace-view="actions" hidden>
+        <h2>可執行行動</h2><div id="world-actions" class="actions"></div>
       </article>
 
-      <article id="utility-panel" class="card" hidden>
-        <h2>可執行行動</h2>
-        <div id="world-actions" class="actions"></div>
-      </article>
-
-      <article id="trade-panel" class="card" hidden>
+      <article id="trade-panel" class="card workspace-view" data-workspace-view="trade" hidden>
         <h2>寄售交易</h2>
-        <p class="subtle">固定總價、非即時寄售。上架物品會先進入交易保管，成交或取消後再由伺服器結算。</p>
         <form id="trade-form" class="trade-form">
-          <label>
-            物品
-            <select id="trade-item" required></select>
-          </label>
-          <label>
-            數量
-            <input id="trade-quantity" type="number" min="1" step="1" required inputmode="numeric">
-          </label>
-          <label>
-            總價
-            <input id="trade-price" type="number" min="1" step="1" required inputmode="numeric">
-          </label>
+          <label>物品<select id="trade-item" required></select></label>
+          <label>數量<input id="trade-quantity" type="number" min="1" step="1" required inputmode="numeric"></label>
+          <label>總價<input id="trade-price" type="number" min="1" step="1" required inputmode="numeric"></label>
           <button id="trade-submit" type="submit">上架寄售</button>
         </form>
         <div id="trade-listings" class="trade-listings"></div>
+      </article>
+
+      <article class="card workspace-view character-card" data-workspace-view="character">
+        <h2 id="character-heading">教學 Avatar</h2>
+        <dl id="character-state" class="stats"></dl>
+        <div id="character-pager" class="pager" hidden></div>
       </article>
     </section>
 

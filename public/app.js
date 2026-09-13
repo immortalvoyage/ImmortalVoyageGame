@@ -28,6 +28,7 @@ const locationName = document.querySelector('#location-name');
 const locationDescription = document.querySelector('#location-description');
 const narrativeText = document.querySelector('#narrative-text');
 const characterState = document.querySelector('#character-state');
+const characterPager = document.querySelector('#character-pager');
 const tradePanel = document.querySelector('#trade-panel');
 const tradeForm = document.querySelector('#trade-form');
 const tradeItem = document.querySelector('#trade-item');
@@ -52,6 +53,10 @@ let pendingAction = readPendingAction(globalThis.sessionStorage);
 let formalBirthOptions = [];
 let tutorialNameForFormalBirth = '';
 let activeMobileTab = 'actions';
+const pageBySurface = { travel: 0, dialogue: 0, actions: 0, trade: 0, character: 0 };
+const ACTION_PAGE_SIZE = 4;
+const CHARACTER_PAGE_SIZE = 8;
+const TRADE_PAGE_SIZE = 2;
 
 function requestId() {
   return crypto.randomUUID();
@@ -199,6 +204,37 @@ function button(label, type, payload, secondary = false) {
   return element;
 }
 
+function makePager(surface, page, pageCount) {
+  const pager = document.createElement('div');
+  pager.className = 'pager';
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.className = 'secondary';
+  previous.textContent = '上一頁';
+  previous.disabled = page <= 0;
+  previous.addEventListener('click', () => { pageBySurface[surface] = Math.max(0, page - 1); render(); });
+  const label = document.createElement('span');
+  label.textContent = `${page + 1} / ${pageCount}`;
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = 'secondary';
+  next.textContent = '下一頁';
+  next.disabled = page >= pageCount - 1;
+  next.addEventListener('click', () => { pageBySurface[surface] = Math.min(pageCount - 1, page + 1); render(); });
+  pager.append(previous, label, next);
+  return pager;
+}
+
+function renderPagedButtons(container, choices, surface, mapper) {
+  const pageCount = Math.max(1, Math.ceil(choices.length / ACTION_PAGE_SIZE));
+  const page = Math.min(pageBySurface[surface] ?? 0, pageCount - 1);
+  pageBySurface[surface] = page;
+  const visible = choices.slice(page * ACTION_PAGE_SIZE, (page + 1) * ACTION_PAGE_SIZE);
+  const nodes = visible.map(mapper);
+  if (pageCount > 1) nodes.push(makePager(surface, page, pageCount));
+  container.replaceChildren(...nodes);
+}
+
 function renderTrade() {
   if (!shouldShowTradePanel(view.trade)) {
     tradePanel.hidden = true;
@@ -234,7 +270,11 @@ function renderTrade() {
     tradePrice.value = '';
   }
 
-  const listingNodes = listings.map((listing) => {
+  const pageCount = Math.max(1, Math.ceil(listings.length / TRADE_PAGE_SIZE));
+  const page = Math.min(pageBySurface.trade, pageCount - 1);
+  pageBySurface.trade = page;
+  const visibleListings = listings.slice(page * TRADE_PAGE_SIZE, (page + 1) * TRADE_PAGE_SIZE);
+  const listingNodes = visibleListings.map((listing) => {
     const row = document.createElement('div');
     row.className = 'trade-listing';
     const details = document.createElement('p');
@@ -249,6 +289,7 @@ function renderTrade() {
     empty.textContent = '目前沒有寄售。';
     listingNodes.push(empty);
   }
+  if (pageCount > 1) listingNodes.push(makePager('trade', page, pageCount));
   tradeListings.replaceChildren(...listingNodes);
 }
 
@@ -256,9 +297,11 @@ function renderTrade() {
 function syncMobileTabs() {
   if (!mobileGameNav) return;
   const availability = {
+    scene: true,
     travel: !travelPanel.hidden,
     dialogue: !dialoguePanel.hidden,
-    actions: !utilityPanel.hidden || !tradePanel.hidden,
+    actions: !utilityPanel.hidden,
+    trade: !tradePanel.hidden,
     character: true,
   };
   activeMobileTab = chooseMobileTab(activeMobileTab, availability);
@@ -284,24 +327,30 @@ function render() {
 
   characterState.replaceChildren();
   const rows = buildCharacterSummaryRows(view);
-  for (const [key, value] of rows) {
+  const characterPageCount = Math.max(1, Math.ceil(rows.length / CHARACTER_PAGE_SIZE));
+  const characterPage = Math.min(pageBySurface.character, characterPageCount - 1);
+  pageBySurface.character = characterPage;
+  const visibleRows = rows.slice(characterPage * CHARACTER_PAGE_SIZE, (characterPage + 1) * CHARACTER_PAGE_SIZE);
+  for (const [key, value] of visibleRows) {
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
     dt.textContent = key;
     dd.textContent = value;
     characterState.append(dt, dd);
   }
+  characterPager.hidden = characterPageCount <= 1;
+  if (characterPageCount > 1) characterPager.replaceChildren(...makePager('character', characterPage, characterPageCount).children);
 
   narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
   const travelOptions = Array.isArray(view.travelOptions) ? view.travelOptions : [];
   travelPanel.hidden = travelOptions.length === 0;
-  travelActions.replaceChildren(...travelOptions.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
+  renderPagedButtons(travelActions, travelOptions, 'travel', (choice) => button(choice.label, choice.intent.type, choice.intent.payload));
   const dialogueTopics = Array.isArray(view.dialogueTopics) ? view.dialogueTopics : [];
   dialoguePanel.hidden = dialogueTopics.length === 0;
-  dialogueActions.replaceChildren(...dialogueTopics.map((topic) => button(topic.label, topic.intent.type, topic.intent.payload, true)));
+  renderPagedButtons(dialogueActions, dialogueTopics, 'dialogue', (topic) => button(topic.label, topic.intent.type, topic.intent.payload, true));
   const utilities = Array.isArray(view.utilities) ? view.utilities : [];
   utilityPanel.hidden = !shouldShowUtilityPanel(utilities);
-  worldActions.replaceChildren(...utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
+  renderPagedButtons(worldActions, utilities, 'actions', (utility) => button(utility.label, utility.intent.type, utility.intent.payload, true));
   renderTrade();
   syncMobileTabs();
 }

@@ -3,84 +3,59 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const publicDir = new URL('../public/', import.meta.url);
+async function html(name) { return readFile(new URL(name, publicDir), 'utf8'); }
 
-async function html(name) {
-  return readFile(new URL(name, publicDir), 'utf8');
-}
+const views = ['scene', 'travel', 'dialogue', 'actions', 'trade', 'character'];
 
-test('all browser shells use a real dialogue heading', async () => {
+test('all browser shells expose one fixed workspace navigation model', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
     const source = await html(name);
-    assert.ok(source.includes('<h2>對話</h2>'), `${name} must label the dialogue surface`);
-    assert.equal(source.includes('<h2>??</h2>'), false);
+    assert.ok(source.includes('class="workspace-nav"'));
+    for (const view of views) assert.ok(source.includes(`data-mobile-tab="${view}"`), `${name} missing ${view}`);
+    assert.ok(source.includes('data-workspace-view="scene"'));
+    assert.ok(source.includes('data-workspace-view="character"'));
   }
 });
 
-test('tutorial exit decision comes after current gameplay surfaces', async () => {
-  const source = await html('onboarding.html');
-  const leave = source.indexOf('id="leave-tutorial-panel"');
-  assert.ok(source.indexOf('id="travel-panel"') < leave);
-  assert.ok(source.indexOf('id="dialogue-panel"') < leave);
-  assert.ok(source.indexOf('id="utility-panel"') < leave);
-  assert.ok(source.indexOf('id="trade-panel"') < leave);
-  assert.ok(leave < source.indexOf('id="formal-birth-panel"'));
-});
-test('global status feedback is accessible and precedes phase content', async () => {
+test('world surfaces are views instead of vertically stacked gameplay sections', async () => {
   for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
     const source = await html(name);
-    const status = source.indexOf('id="status-panel"');
-    assert.ok(status >= 0, `${name} must expose the global status panel`);
+    assert.ok(source.includes('data-workspace-view="travel"'));
+    assert.ok(source.includes('data-workspace-view="dialogue"'));
+    assert.ok(source.includes('data-workspace-view="actions"'));
+    assert.ok(source.includes('data-workspace-view="trade"'));
+  }
+  const onboarding = await html('onboarding.html');
+  assert.match(onboarding, /id="leave-tutorial-panel"[^>]*data-workspace-view="character"/);
+});
+test('fixed workspace forbids document and gameplay scrolling', async () => {
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  assert.match(css, /html, body\s*\{[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.shell\s*\{[^}]*height:\s*100dvh;[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*overflow:\s*hidden;/s);
+  assert.match(css, /\.workspace-view\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;[^}]*display:\s*none;/s);
+  assert.equal(/overflow:\s*(?:auto|scroll)/.test(css), false, 'gameplay CSS must not reintroduce scrolling containers');
+  const desktop = css.slice(css.indexOf('@media (min-width: 721px)'));
+  assert.match(desktop, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*grid-template-columns:/s);
+  assert.match(desktop, /\[data-workspace-view=\"scene\"\]\s*\{[^}]*display:\s*flex !important;[^}]*grid-column:\s*1;/s);
+  assert.match(desktop, /\[data-workspace-view=\"actions\"\][^}]*grid-column:\s*2;/s);
+});
+
+test('workspace keeps trade separate and paginates bounded detail lists', async () => {
+  const source = await readFile(new URL('app.js', publicDir), 'utf8');
+  assert.match(source, /ACTION_PAGE_SIZE\s*=\s*4/);
+  assert.match(source, /CHARACTER_PAGE_SIZE\s*=\s*8/);
+  assert.match(source, /TRADE_PAGE_SIZE\s*=\s*2/);
+  assert.match(source, /renderPagedButtons\(travelActions/);
+  assert.match(source, /renderPagedButtons\(dialogueActions/);
+  assert.match(source, /renderPagedButtons\(worldActions/);
+  assert.match(source, /trade:\s*!tradePanel\.hidden/);
+  assert.doesNotMatch(source, /actions:\s*!utilityPanel\.hidden\s*\|\|\s*!tradePanel\.hidden/);
+});
+
+test('global action feedback remains accessible without becoming a scroll anchor', async () => {
+  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
+    const source = await html(name);
     assert.ok(source.includes('role="status" aria-live="polite" aria-atomic="true"'));
-    assert.ok(status < source.indexOf('id="birth-panel"'));
-    assert.ok(status < source.indexOf('id="game-panel"'));
   }
-
-  const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  assert.match(css, /\.status-card\s*\{[^}]*flex:\s*0 0 auto;[^}]*position:\s*relative;[^}]*z-index:\s*5;[^}]*\}/s);
-});
-test('compact layout keeps location context visible while detail surfaces are tabbed', async () => {
-  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
-    const source = await html(name);
-    assert.ok(source.includes('class="card location-card"'));
-    assert.ok(source.includes('class="card character-card"'));
-  }
-
-  const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  const mobile = css.slice(css.indexOf('@media (max-width: 1024px)'));
-  assert.match(mobile, /#game-panel:not\(\[hidden\]\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;/s);
-  assert.match(mobile, /\.grid\s*\{\s*display:\s*contents;\s*\}/s);
-  assert.match(mobile, /\.character-card, #travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel\s*\{\s*display:\s*none !important;/s);
-  assert.match(mobile, /#game-panel\[data-mobile-tab="actions"\] #utility-panel:not\(\[hidden\]\)/s);
-  assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
-});
-
-test('compact gameplay uses one operation surface instead of stacking every panel', async () => {
-  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
-    const source = await html(name);
-    assert.ok(source.includes('id="mobile-game-nav"'));
-    for (const tab of ['travel', 'dialogue', 'actions', 'character']) {
-      assert.ok(source.includes(`data-mobile-tab="${tab}"`), `${name} must expose ${tab} mobile tab`);
-    }
-  }
-
-  const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  const mobile = css.slice(css.indexOf('@media (max-width: 1024px)'));
-  assert.match(mobile, /\.mobile-game-nav\s*\{[^}]*display:\s*grid;/s);
-  assert.match(mobile, /#game-panel\[data-mobile-tab="actions"\] #utility-panel:not\(\[hidden\]\)/s);
-  assert.match(mobile, /#game-panel\[data-mobile-tab="character"\] \.character-card/s);
-  assert.match(mobile, /header h1\s*\{[^}]*font-size:\s*1\.65rem;/s);
-  assert.match(mobile, /button\s*\{[^}]*min-height:\s*44px;/s);
-});
-
-test('browser shell is fixed to the viewport and compact navigation stays outside the scrollable detail surface', async () => {
-  const css = await readFile(new URL('app.css', publicDir), 'utf8');
-  assert.match(css, /html, body\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;/s);
-  assert.match(css, /\.shell\s*\{[^}]*height:\s*100dvh;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*overflow:\s*hidden;/s);
-  assert.match(css, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
-
-  const compact = css.slice(css.indexOf('@media (max-width: 1024px)'));
-  assert.match(compact, /#game-panel:not\(\[hidden\]\)\s*\{[^}]*overflow:\s*hidden;/s);
-  assert.match(compact, /\.location-card\s*\{[^}]*flex:\s*0 0 auto;/s);
-  assert.match(compact, /\.mobile-game-nav\s*\{[^}]*flex:\s*0 0 auto;[^}]*display:\s*grid;/s);
-  assert.match(compact, /#travel-panel, #dialogue-panel, #utility-panel, #trade-panel, #leave-tutorial-panel[^}]*overflow:\s*auto;/s);
 });
