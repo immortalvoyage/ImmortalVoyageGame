@@ -21,6 +21,7 @@ function boundedPack(capacity = 2) {
   const pack = structuredClone(firstSettlementPack);
   pack.dataVersion = 999;
   pack.inventory.carryCapacityUnits = capacity;
+  pack.locations['first-well'].gatherables = [{ itemId: 'drinking-water', quantity: 1, label: 'test water', behaviorId: 'gather:test-water' }];
   return pack;
 }
 
@@ -88,7 +89,8 @@ test('gather, market buy, and crafting fail atomically when they would increase 
 });
 
 test('legacy overloaded inventory remains loadable, can recover downward, and cannot increase load', async () => {
-  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
+  const pack = boundedPack(firstSettlementPack.inventory.carryCapacityUnits);
+  const game = createDevelopmentGame({ contentPack: pack, now: () => 1000 });
   const who = actor('carry-legacy');
   await birth(game, who, '舊檔旅人');
 

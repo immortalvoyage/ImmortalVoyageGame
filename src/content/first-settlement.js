@@ -4,7 +4,7 @@ import { validateContentPack } from './validate-content-pack.js';
 // must not be treated as final novel/world canon until the opening-world SSOT fixes them.
 export const firstSettlementPack = Object.freeze({
   id: 'first-settlement-candidate',
-  dataVersion: 6,
+  dataVersion: 7,
   startingLocationId: 'first-square',
   birthLocations: Object.freeze(['first-square']),
   inventory: Object.freeze({ carryCapacityUnits: 20 }),
@@ -25,12 +25,6 @@ export const firstSettlementPack = Object.freeze({
       name: '粗麵餅',
       consumeLabel: '吃粗麵餅',
       consumeEffect: Object.freeze({ hunger: -30 }),
-    }),
-    'wild-fruit': Object.freeze({
-      carryUnits: 1,
-      name: '野果',
-      consumeLabel: '吃野果',
-      consumeEffect: Object.freeze({ hunger: -20, thirst: -5 }),
     }),
     'simple-ration': Object.freeze({
       carryUnits: 1,
@@ -83,38 +77,34 @@ export const firstSettlementPack = Object.freeze({
       ]),
     }),
     'first-well': Object.freeze({
-      name: '公共水井',
-      description: '有人維護的公共水井提供安全的日常飲水，是沒有錢時仍能取得水的基本去處。',
+      name: '聚落供水處',
+      description: '聚落裡集中處理日常用水的地方；能否直接取用、如何交換或由誰維持，都依當地規矩而定。',
       calendarZoneId: 'world-zone:origin',
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 5 * 60, needCosts: Object.freeze({ thirst: 1 }) }),
       ]),
       jobs: Object.freeze([]),
       market: Object.freeze([]),
-      gatherables: Object.freeze([
-        Object.freeze({ itemId: 'drinking-water', quantity: 1, label: '在公共水井取水', behaviorId: 'gather:first-water' }),
-      ]),
+      gatherables: Object.freeze([]),
       recipes: Object.freeze([]),
     }),
     'first-outskirts': Object.freeze({
-      name: '近郊採集地',
-      description: '聚落外緣仍找得到少量可食野果；產量不高，但足以作為最基本的求生退路。',
+      name: '聚落外緣',
+      description: '人煙漸少，幾條路向聚落外側延伸；離開聚落後能遇到什麼，沒有固定保證。',
       calendarZoneId: 'world-zone:origin',
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 12 * 60, needCosts: Object.freeze({ hunger: 1, thirst: 1 }) }),
       ]),
       jobs: Object.freeze([]),
       market: Object.freeze([]),
-      gatherables: Object.freeze([
-        Object.freeze({ itemId: 'wild-fruit', quantity: 1, label: '尋找可食野果', behaviorId: 'gather:first-fruit' }),
-      ]),
+      gatherables: Object.freeze([]),
       recipes: Object.freeze([]),
     }),
     'first-lodging': Object.freeze({
-      name: '公共通鋪',
-      description: '一處規矩簡單的公共通鋪。有人維持基本秩序並提供最低限度的留宿照料，也會找人做打掃整理的短工。',
+      name: '簡易宿所',
+      description: '一處可以合法停留休息的簡易宿所，規矩樸素，也會找人做打掃整理的短工。',
       calendarZoneId: 'world-zone:origin',
-      rest: Object.freeze({ label: '在公共通鋪休息' }),
+      rest: Object.freeze({ label: '在簡易宿所休息' }),
       shelter: Object.freeze({ absenceSurvivalCapSeconds: 6 * 60 * 60 }),
       routes: Object.freeze([
         Object.freeze({ destinationId: 'first-square', travelSeconds: 4 * 60, needCosts: Object.freeze({ fatigue: 1 }) }),
@@ -122,8 +112,8 @@ export const firstSettlementPack = Object.freeze({
       jobs: Object.freeze([
         Object.freeze({
           id: 'first-lodging-work',
-          title: '通鋪雜役',
-          label: '做一輪通鋪整理',
+          title: '宿所雜役',
+          label: '做一輪宿所整理',
           employerNpcId: 'first-lodging-keeper',
           behaviorId: 'work:first-lodging',
           rewardMoney: 2,
@@ -142,14 +132,9 @@ export const firstSettlementPack = Object.freeze({
       requirements: Object.freeze([Object.freeze({ behaviorId: 'work:first-carrying', minCount: 2 })]),
     }),
     'first-lodging-regular': Object.freeze({
-      name: '通鋪熟面孔',
+      name: '宿所熟面孔',
       kind: 'social',
       requirements: Object.freeze([Object.freeze({ behaviorId: 'work:first-lodging', minCount: 2 })]),
-    }),
-    'first-foraging-basics': Object.freeze({
-      name: '近郊採集入門',
-      kind: 'skill',
-      requirements: Object.freeze([Object.freeze({ behaviorId: 'gather:first-fruit', minCount: 2 })]),
     }),
     'first-ration-prep': Object.freeze({
       name: '乾糧整理',
@@ -163,7 +148,7 @@ export const firstSettlementPack = Object.freeze({
       requirements: Object.freeze([Object.freeze({ behaviorId: 'work:first-carrying', minCount: 3 })]),
     }),
     'first-lodging-hand': Object.freeze({
-      name: '通鋪雜役熟手',
+      name: '宿所雜役熟手',
       requirements: Object.freeze([Object.freeze({ behaviorId: 'work:first-lodging', minCount: 3 })]),
     }),
   }),
@@ -190,7 +175,7 @@ export const firstSettlementPack = Object.freeze({
               Object.freeze({
                 id: 'first-foreman-living-basics',
                 label: '問問基本生活去處',
-                responseText: '沒錢先去公共水井取水，近郊也找得到些野果；累了就去公共通鋪。',
+                responseText: '真撐不住時，街口有臨時雜務能換一份基本食物或飲水；累了就找能合法休息的宿所。',
                 grantsKnowledgeIds: Object.freeze(['first-living-basics']),
               }),
             ]),
@@ -199,15 +184,15 @@ export const firstSettlementPack = Object.freeze({
       }),
     }),
     'first-lodging-keeper': Object.freeze({
-      name: '通鋪管事',
+      name: '宿所管事',
       locationId: 'first-lodging',
       greeting: '要休息就守規矩；想賺點小錢，也有打掃整理的活。',
-      searchLabel: '尋找通鋪管事',
+      searchLabel: '尋找宿所管事',
       knownAtStart: true,
       relationship: Object.freeze({
         behaviorId: 'interact:npc:first-lodging-keeper',
         levels: Object.freeze([
-          Object.freeze({ name: '見過幾面', minCount: 1, responseText: '通鋪不講排場，能安穩睡一覺就好。' }),
+          Object.freeze({ name: '見過幾面', minCount: 1, responseText: '宿所不講排場，能安穩睡一覺就好。' }),
         ]),
       }),
     }),
