@@ -41,3 +41,5 @@ button:disabled, input:disabled, select:disabled { opacity: .55; cursor: wait; }
   .trade-form button { grid-column: 1 / -1; }
   .trade-listing { align-items: flex-start; flex-direction: column; }
 }
+
+.status-card { position: sticky; top: 8px; z-index: 5; }

@@ -25,3 +25,16 @@ test('tutorial exit decision comes after current gameplay surfaces', async () =>
   assert.ok(source.indexOf('id="trade-panel"') < leave);
   assert.ok(leave < source.indexOf('id="formal-birth-panel"'));
 });
+test('global status feedback is accessible and precedes phase content', async () => {
+  for (const name of ['index.html', 'tutorial.html', 'onboarding.html']) {
+    const source = await html(name);
+    const status = source.indexOf('id="status-panel"');
+    assert.ok(status >= 0, `${name} must expose the global status panel`);
+    assert.ok(source.includes('role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(status < source.indexOf('id="birth-panel"'));
+    assert.ok(status < source.indexOf('id="game-panel"'));
+  }
+
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  assert.match(css, /\.status-card\s*\{[^}]*position:\s*sticky;[^}]*top:\s*8px;[^}]*z-index:\s*5;[^}]*\}/s);
+});
