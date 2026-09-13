@@ -18,6 +18,8 @@ const recoveryText = document.querySelector('#recovery-text');
 const recoveryButton = document.querySelector('#recovery-button');
 const narrativeActions = document.querySelector('#narrative-actions');
 const worldActions = document.querySelector('#world-actions');
+const dialoguePanel = document.querySelector('#dialogue-panel');
+const dialogueActions = document.querySelector('#dialogue-actions');
 const utilityPanel = document.querySelector('#utility-panel');
 const locationName = document.querySelector('#location-name');
 const locationDescription = document.querySelector('#location-description');
@@ -266,6 +268,9 @@ function render() {
   }
 
   narrativeActions.replaceChildren(...view.narrative.options.map((choice) => button(choice.label, choice.intent.type, choice.intent.payload)));
+  const dialogueTopics = Array.isArray(view.dialogueTopics) ? view.dialogueTopics : [];
+  dialoguePanel.hidden = dialogueTopics.length === 0;
+  dialogueActions.replaceChildren(...dialogueTopics.map((topic) => button(topic.label, topic.intent.type, topic.intent.payload, true)));
   const utilities = Array.isArray(view.utilities) ? view.utilities : [];
   utilityPanel.hidden = !shouldShowUtilityPanel(utilities);
   worldActions.replaceChildren(...utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));

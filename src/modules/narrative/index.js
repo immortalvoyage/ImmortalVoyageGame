@@ -3,7 +3,7 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildEmploymentViewForActor, hasEmploymentForJob } from '../employment/index.js';
 import { eligibleRecoveryWork } from '../economy/recovery-work.js';
-import { buildPublicCarryState, buildPublicInventory } from '../inventory/index.js';
+import { buildPublicCarryState, buildPublicInventory, canApplyInventoryDelta } from '../inventory/index.js';
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
@@ -16,7 +16,7 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 23, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 24, actions: ['narrative.scene'] });
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;
@@ -70,6 +70,7 @@ function scene({ world, actor, context }) {
         text: sceneText(view, survivalCondition),
         options: narrativeOptions,
       },
+      dialogueTopics: buildDialogueTopics(view, character, isActionAvailable, contentPack),
       utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
   };
@@ -104,26 +105,13 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
     const locallyUnavailable = npc?.locationId === character.locationId && !isNpcAvailableAt(npc, logicalTimeSeconds);
     if (!visibleNpcIds.has(target.id) && !locallyUnavailable) options.push(option(target.searchLabel, 'purpose.find-npc', { npcId: target.id }));
   }
-  if (survivalCondition?.severity !== 'critical') {
-    if (employmentActive && !character.currentEmployment) {
-      for (const job of location.jobs ?? []) {
-        if (!visibleNpcIds.has(job.employerNpcId)) continue;
-        const employer = contentPack.npcs[job.employerNpcId];
-        options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
-      }
-    }
+  if (survivalCondition?.severity !== 'critical' && employmentActive && !character.currentEmployment) {
     for (const job of location.jobs ?? []) {
-      if (!employmentActive || hasEmploymentForJob(character, job, character.locationId)) {
-        options.push(option(job.label, 'economy.work', { jobId: job.id }));
-      }
+      if (!visibleNpcIds.has(job.employerNpcId)) continue;
+      const employer = contentPack.npcs[job.employerNpcId];
+      options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
     }
   }
-  if (survivalCondition?.severity === 'critical' && isActionAvailable('economy.recovery-work') && isActionAvailable('survival.consume')) {
-    for (const entry of eligibleRecoveryWork(character, contentPack, location)) {
-      options.push(option(entry.label, 'economy.recovery-work', { recoveryWorkId: entry.id }));
-    }
-  }
-  for (const gatherable of location.gatherables ?? []) options.push(option(gatherable.label, 'survival.gather', { itemId: gatherable.itemId }));
   for (const route of view.routes) {
     options.push(option(`前往${route.name}（約${formatTravelDuration(route.travelSeconds)}）`, 'location.travel', { destinationId: route.id }));
   }
@@ -139,9 +127,37 @@ function formatConsumeEffect(effect) {
     .join('、');
 }
 
+function buildDialogueTopics(view, character, isActionAvailable, contentPack) {
+  if (!isActionAvailable('npc.ask') || !isActionAvailable('relationship.observe')) return [];
+  const topics = [];
+  for (const publicNpc of view.visibleNpcs) {
+    const npc = contentPack.npcs[publicNpc.id];
+    for (const topic of findUnlockedFamiliarityTopics(character, npc)) {
+      topics.push(option(`${publicNpc.name}：${topic.label}`, 'npc.ask', { npcId: publicNpc.id, topicId: topic.id }));
+    }
+  }
+  return topics;
+}
+
 function buildUtilities(view, character, isActionAvailable, contentPack) {
   const utilities = [];
   const location = contentPack.locations[character.locationId];
+  const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
+  const survivalCondition = survivalActive ? buildPublicSurvivalCondition(character, contentPack.survival) : null;
+  const employmentActive = isActionAvailable('employment.observe') && isActionAvailable('employment.accept');
+  if (survivalCondition?.severity !== 'critical' && isActionAvailable('economy.work')) {
+    for (const job of location.jobs ?? []) {
+      if (!employmentActive || hasEmploymentForJob(character, job, character.locationId)) utilities.push(option(job.label, 'economy.work', { jobId: job.id }));
+    }
+  }
+  if (isActionAvailable('economy.recovery-work') && isActionAvailable('survival.consume')) {
+    for (const entry of eligibleRecoveryWork(character, contentPack, location)) utilities.push(option(entry.label, 'economy.recovery-work', { recoveryWorkId: entry.id }));
+  }
+  if (isActionAvailable('survival.gather')) {
+    for (const entry of location.gatherables ?? []) {
+      if (canApplyInventoryDelta(character.inventory, contentPack.items, contentPack.inventory.carryCapacityUnits, { [entry.itemId]: entry.quantity })) utilities.push(option(entry.label, 'survival.gather', { itemId: entry.itemId }));
+    }
+  }
   if (isActionAvailable('survival.consume')) {
     for (const [itemId, quantity] of Object.entries(character.inventory)) {
       const item = contentPack.items[itemId];
@@ -157,14 +173,6 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   }
   if (isActionAvailable('employment.resign') && character.currentEmployment) {
     utilities.push(option('離開目前工作', 'employment.resign'));
-  }
-  if (isActionAvailable('npc.ask') && isActionAvailable('relationship.observe')) {
-    for (const publicNpc of view.visibleNpcs) {
-      const npc = contentPack.npcs[publicNpc.id];
-      for (const topic of findUnlockedFamiliarityTopics(character, npc)) {
-        utilities.push(option(`${publicNpc.name}：${topic.label}`, 'npc.ask', { npcId: publicNpc.id, topicId: topic.id }));
-      }
-    }
   }
   if (isActionAvailable('crafting.craft')) {
     for (const recipe of location.recipes ?? []) {

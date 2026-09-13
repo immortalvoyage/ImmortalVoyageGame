@@ -100,7 +100,7 @@ test('tutorial browser API completes the visible T0 living loop and keeps sessio
   };
   const scene = async () => act('narrative.scene');
   const visibleIntent = (current, type, predicate = () => true) => {
-    const entries = [...current.data.narrative.options, ...(current.data.utilities ?? [])];
+    const entries = [...current.data.narrative.options, ...(current.data.dialogueTopics ?? []), ...(current.data.utilities ?? [])];
     const match = entries.find(({ intent }) => intent.type === type && predicate(intent.payload ?? {}));
     assert.ok(match, `${type} must be visible in the current scene`);
     return match.intent;

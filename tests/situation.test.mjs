@@ -64,13 +64,15 @@ test('Situation observe returns at most four server-shaped world opportunities i
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type.startsWith('crafting.')), false);
 });
 
-test('accepted employment replaces the employer offer with the contracted work opportunity', async () => {
+test('accepted employment removes the contract offer while work appears on the operational utility surface', async () => {
   const game = await bornGame();
   await dispatch(game.runtime, 'accept', 'employment.accept', { jobId: 'starter-labor' });
   const situation = await dispatch(game.runtime, 'after-accept', 'situation.observe');
+  const scene = await dispatch(game.runtime, 'after-accept-scene', 'narrative.scene');
 
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'), false);
-  assert.ok(situation.data.opportunities.some(
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.ok(scene.data.utilities.some(
     (entry) => entry.intent.type === 'economy.work' && entry.intent.payload.jobId === 'starter-labor',
   ));
 });
@@ -144,7 +146,8 @@ test('Situation Module off removes direct observation while Narrative keeps the 
   assert.equal(direct.code, 'UNKNOWN_ACTION');
 
   const scene = await dispatch(game.runtime, 'fallback-scene', 'narrative.scene');
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'));
+  assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
   assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'location.travel'));
 });
 

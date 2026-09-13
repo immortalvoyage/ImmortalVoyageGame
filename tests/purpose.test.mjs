@@ -62,6 +62,6 @@ test('narrative omits purpose choices when purpose module is disabled', async ()
   await dispatch(runtime, 'leave-disabled', 'location.travel', { destinationId: 'starter-well' });
   const scene = await dispatch(runtime, 'scene-disabled', 'narrative.scene');
   assert.equal(scene.data.narrative.options.some((choice) => choice.intent.type === 'purpose.find-npc'), false);
-  assert.ok(scene.data.narrative.options.some((choice) => choice.intent.type === 'survival.gather'));
+  assert.ok(scene.data.utilities.some((choice) => choice.intent.type === 'survival.gather'));
   assert.ok(scene.data.narrative.options.some((choice) => choice.intent.type === 'location.travel'));
 });

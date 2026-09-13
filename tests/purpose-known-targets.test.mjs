@@ -30,7 +30,7 @@ function purposeChoices(scene) {
 }
 
 function topicUtilities(scene) {
-  return scene.data.utilities.filter((entry) => entry.intent.type === 'npc.ask');
+  return scene.data.dialogueTopics.filter((entry) => entry.intent.type === 'npc.ask');
 }
 
 test('unknown hidden NPC is absent from Narrative and forged purpose search fails without mutation', async () => {

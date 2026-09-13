@@ -53,7 +53,7 @@ test('topic eligibility is not knowledge; successful ask persists bounded discov
   await unlockLivingAdvice(runtime);
 
   let scene = await dispatch(runtime, 'scene-before-ask', 'narrative.scene');
-  const askUtility = scene.data.utilities.find(
+  const askUtility = scene.data.dialogueTopics.find(
     (choice) => choice.intent.type === 'npc.ask' && choice.intent.payload.topicId === 'foreman-living-advice',
   );
   assert.ok(askUtility);

@@ -28,7 +28,7 @@ test('first settlement remains playable across three lazy-resolved mortal days',
     const scene = await dispatch(game.runtime, `scene-${cycle}`, 'narrative.scene');
     assert.equal(scene.ok, true);
     assert.notEqual(scene.data.survivalCondition.severity, 'critical');
-    assert.ok(scene.data.narrative.options.some(
+    assert.ok(scene.data.utilities.some(
       (entry) => entry.intent.type === 'economy.work' && entry.intent.payload.jobId === 'first-carrying-work',
     ));
 
