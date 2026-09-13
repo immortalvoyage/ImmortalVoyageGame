@@ -59,3 +59,9 @@ test('global action feedback remains accessible without becoming a scroll anchor
     assert.ok(source.includes('role="status" aria-live="polite" aria-atomic="true"'));
   }
 });
+test('mobile workspace keeps primary touch targets at least 44px high', async () => {
+  const css = await readFile(new URL('app.css', publicDir), 'utf8');
+  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
+  assert.match(mobile, /\.workspace-nav button\s*\{[^}]*min-height:\s*44px;/s);
+  assert.match(mobile, /\.actions > button\s*\{[^}]*min-height:\s*44px;/s);
+});
