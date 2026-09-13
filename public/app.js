@@ -3,7 +3,7 @@ import { forgetPendingAction, readPendingAction, rememberPendingAction } from '.
 import { buildCharacterSummaryRows } from './character-summary.js';
 import { formatActionResult } from './result-message.js';
 import { shouldShowTradePanel } from './trade-visibility.js';
-import { shouldShowNarrativeText, shouldShowUtilityPanel } from './scene-visibility.js';
+import { narrativeTextForDisplay, shouldShowUtilityPanel } from './scene-visibility.js';
 
 const pageMode = document.body.dataset.mode ?? '';
 const onboardingMode = pageMode === 'onboarding';
@@ -256,8 +256,9 @@ function render() {
   gamePanel.hidden = false;
   locationName.textContent = view.location.name;
   locationDescription.textContent = view.location.description;
-  narrativeText.textContent = view.narrative.text;
-  narrativeText.hidden = !shouldShowNarrativeText(view.location.description, view.narrative.text);
+  const displayedNarrative = narrativeTextForDisplay(view.location.description, view.narrative.text);
+  narrativeText.textContent = displayedNarrative;
+  narrativeText.hidden = displayedNarrative.length === 0;
 
   characterState.replaceChildren();
   const rows = buildCharacterSummaryRows(view);
