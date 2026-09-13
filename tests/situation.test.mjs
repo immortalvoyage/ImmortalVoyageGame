@@ -59,7 +59,7 @@ test('Situation observe returns at most four server-shaped world opportunities i
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'npc.interact'));
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'));
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'), false);
-  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'));
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'), false);
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type.startsWith('trade.')), false);
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type.startsWith('crafting.')), false);
 });
@@ -93,24 +93,24 @@ test('critical survival pressure keeps recovery travel ahead of optional social 
   });
 
   const situation = await dispatch(game.runtime, 'critical-situation', 'situation.observe');
+  const scene = await dispatch(game.runtime, 'critical-scene', 'narrative.scene');
   assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'economy.work'), false);
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'), false);
 
-  const destinations = situation.data.opportunities
-    .filter((entry) => entry.intent.type === 'location.travel')
-    .map((entry) => entry.intent.payload.destinationId);
+  const destinations = scene.data.travelOptions.map((entry) => entry.intent.payload.destinationId);
   assert.deepEqual(destinations.slice(0, 2), ['starter-well', 'starter-grove']);
-  assert.ok(situation.data.opportunities.findIndex((entry) => entry.intent.type === 'location.travel')
-    < situation.data.opportunities.findIndex((entry) => entry.intent.type === 'npc.interact'));
 });
 
 test('crowded locations cannot crowd livelihood and travel out of the bounded opportunity set', async () => {
   const game = await bornGame({ contentPack: crowdedPack() });
   const situation = await dispatch(game.runtime, 'crowded', 'situation.observe');
+  const scene = await dispatch(game.runtime, 'crowded-scene', 'narrative.scene');
 
   assert.equal(situation.data.opportunities.length, MAX_SITUATION_OPPORTUNITIES);
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'npc.interact'));
   assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'employment.accept'));
-  assert.ok(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'));
+  assert.equal(situation.data.opportunities.some((entry) => entry.intent.type === 'location.travel'), false);
+  assert.ok(scene.data.travelOptions.some((entry) => entry.intent.type === 'location.travel'));
 });
 
 test('knowledge-derived Purpose opportunities require authoritative learned state and do not leak target location', async () => {
@@ -148,7 +148,7 @@ test('Situation Module off removes direct observation while Narrative keeps the 
   const scene = await dispatch(game.runtime, 'fallback-scene', 'narrative.scene');
   assert.equal(scene.data.narrative.options.some((entry) => entry.intent.type === 'economy.work'), false);
   assert.ok(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'));
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'location.travel'));
+  assert.ok(scene.data.travelOptions.some((entry) => entry.intent.type === 'location.travel'));
 });
 
 test('Situation observation requires an owned active character', async () => {

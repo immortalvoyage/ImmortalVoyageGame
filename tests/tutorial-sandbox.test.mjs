@@ -102,7 +102,7 @@ test('tutorial action surfaces separate direction choices from immediate operati
   let scene = await dispatch(tutorial.runtime, 'surface-initial', 'narrative.scene');
   assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'npc.interact'));
   assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'employment.accept'));
-  assert.ok(scene.data.narrative.options.some((entry) => entry.intent.type === 'location.travel'));
+  assert.ok(scene.data.travelOptions.some((entry) => entry.intent.type === 'location.travel'));
   assert.equal(scene.data.utilities.some((entry) => entry.intent.type === 'economy.work'), false);
 
   await dispatch(tutorial.runtime, 'surface-accept', 'employment.accept', { jobId: 'tutorial-odd-job' });

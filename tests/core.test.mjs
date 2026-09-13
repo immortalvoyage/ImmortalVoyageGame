@@ -150,7 +150,7 @@ test('narrative does not offer intents from disabled gameplay modules', async ()
   const scene = await dispatch(runtime, 'ds', 'narrative.scene');
   assert.equal(scene.ok, true);
   assert.deepEqual(
-    scene.data.narrative.options.map((choice) => choice.intent.type),
+    scene.data.travelOptions.map((choice) => choice.intent.type),
     ['location.travel', 'location.travel'],
   );
 });
