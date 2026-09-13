@@ -4,6 +4,7 @@ import { buildCharacterSummaryRows } from './character-summary.js';
 import { formatActionResult } from './result-message.js';
 import { shouldShowTradePanel } from './trade-visibility.js';
 import { narrativeTextForDisplay, shouldShowUtilityPanel } from './scene-visibility.js';
+import { chooseMobileTab } from './mobile-tabs.js';
 
 const pageMode = document.body.dataset.mode ?? '';
 const onboardingMode = pageMode === 'onboarding';
@@ -42,12 +43,15 @@ const formalCharacterName = document.querySelector('#formal-character-name');
 const birthLocation = document.querySelector('#birth-location');
 const birthLocationDescription = document.querySelector('#birth-location-description');
 const characterHeading = document.querySelector('#character-heading');
+const mobileGameNav = document.querySelector('#mobile-game-nav');
+const mobileTabButtons = [...document.querySelectorAll('[data-mobile-tab]')];
 
 let view = null;
 let busy = false;
 let pendingAction = readPendingAction(globalThis.sessionStorage);
 let formalBirthOptions = [];
 let tutorialNameForFormalBirth = '';
+let activeMobileTab = 'actions';
 
 function requestId() {
   return crypto.randomUUID();
@@ -248,6 +252,24 @@ function renderTrade() {
   tradeListings.replaceChildren(...listingNodes);
 }
 
+
+function syncMobileTabs() {
+  if (!mobileGameNav) return;
+  const availability = {
+    travel: !travelPanel.hidden,
+    dialogue: !dialoguePanel.hidden,
+    actions: !utilityPanel.hidden || !tradePanel.hidden,
+    character: true,
+  };
+  activeMobileTab = chooseMobileTab(activeMobileTab, availability);
+  gamePanel.dataset.mobileTab = activeMobileTab;
+  for (const tabButton of mobileTabButtons) {
+    const tab = tabButton.dataset.mobileTab;
+    tabButton.hidden = availability[tab] === false;
+    tabButton.setAttribute('aria-pressed', String(tab === activeMobileTab));
+  }
+}
+
 function render() {
   birthPanel.hidden = true;
   if (formalBirthPanel) formalBirthPanel.hidden = true;
@@ -281,6 +303,7 @@ function render() {
   utilityPanel.hidden = !shouldShowUtilityPanel(utilities);
   worldActions.replaceChildren(...utilities.map((utility) => button(utility.label, utility.intent.type, utility.intent.payload, true)));
   renderTrade();
+  syncMobileTabs();
 }
 
 function showMessage(text) {
@@ -373,6 +396,13 @@ tradeForm.addEventListener('submit', async (event) => {
     if (pendingAction) renderRecovery(text);
   }
 });
+
+for (const tabButton of mobileTabButtons) {
+  tabButton.addEventListener('click', () => {
+    activeMobileTab = tabButton.dataset.mobileTab;
+    syncMobileTabs();
+  });
+}
 
 recoveryButton.addEventListener('click', async () => {
   const resolved = await recoverPendingAction();
