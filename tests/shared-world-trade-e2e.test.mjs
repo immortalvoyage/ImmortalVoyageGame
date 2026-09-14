@@ -161,3 +161,58 @@ test('competing buyers cannot purchase the same authoritative listing twice', as
   assert.equal(world.gameEvents.filter((event) => event.type === 'trade.completed').length, 1);
   assert.equal(world.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, 1);
 });
+
+
+test('seller cancel and buyer purchase cannot both consume the same listing', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'iv-shared-trade-cancel-buy-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'formal-world.json');
+  const server = createOnboardingDevServer({ filePath, now: () => 7000 });
+  const base = await listen(server);
+  t.after(() => close(server));
+
+  const sellerPage = await fetch(base + '/');
+  const sellerCookie = sellerPage.headers.get('set-cookie').split(';')[0];
+  const buyerPage = await fetch(base + '/');
+  const buyerCookie = buyerPage.headers.get('set-cookie').split(';')[0];
+
+  await createFormalPlayer(base, sellerCookie, 'cancel-seller', '撤單者');
+  await createFormalPlayer(base, buyerCookie, 'cancel-buyer', '搶購者');
+  let result = await earnAndBuyBread(base, sellerCookie, 'cancel-seller');
+  assert.equal(result.body.data.money, 1);
+  result = await postAction(base, sellerCookie, 'cancel-list', 'trade.list', {
+    itemId: 'coarse-bread',
+    quantity: 1,
+    totalPrice: 1,
+  });
+  assert.equal(result.body.code, 'TRADE_LISTED');
+  const listingId = result.body.data.listing.id;
+
+  result = await postAction(base, buyerCookie, 'cancel-buyer-employment', 'employment.accept', { jobId: 'first-carrying-work' });
+  assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
+  result = await postAction(base, buyerCookie, 'cancel-buyer-work', 'economy.work', { jobId: 'first-carrying-work' });
+  assert.equal(result.body.code, 'WORK_COMPLETED');
+  assert.equal(result.body.data.money, 2);
+
+  const [cancelResult, buyResult] = await Promise.all([
+    postAction(base, sellerCookie, 'cancel-race-cancel', 'trade.cancel', { listingId }),
+    postAction(base, buyerCookie, 'cancel-race-buy', 'trade.buy', { listingId }),
+  ]);
+  const successCodes = [cancelResult.body.code, buyResult.body.code];
+  assert.equal(successCodes.includes('TRADE_CANCELLED') || successCodes.includes('TRADE_PURCHASED'), true);
+  assert.equal(successCodes.filter((code) => code === 'TRADE_CANCELLED' || code === 'TRADE_PURCHASED').length, 1);
+  assert.equal(successCodes.includes('TRADE_LISTING_NOT_AVAILABLE'), true);
+
+  const world = JSON.parse(await readFile(filePath, 'utf8'));
+  const sellerId = sessionIdFrom(sellerCookie);
+  const buyerId = sessionIdFrom(buyerCookie);
+  const cancelWon = cancelResult.body.code === 'TRADE_CANCELLED';
+
+  assert.equal(world.tradeListings[listingId], undefined);
+  assert.equal(world.characters[sellerId].money, cancelWon ? 1 : 2);
+  assert.equal(world.characters[sellerId].inventory['coarse-bread'] ?? 0, cancelWon ? 1 : 0);
+  assert.equal(world.characters[buyerId].money, cancelWon ? 2 : 1);
+  assert.equal(world.characters[buyerId].inventory['coarse-bread'] ?? 0, cancelWon ? 0 : 1);
+  assert.equal(world.gameEvents.filter((event) => event.type === 'trade.completed').length, cancelWon ? 0 : 1);
+  assert.equal(world.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, cancelWon ? 0 : 1);
+});
