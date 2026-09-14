@@ -160,3 +160,72 @@ test('ambiguous post-rename trade purchase replays from committed disk without d
   assert.equal(stored.gameEvents.filter((event) => event.type === 'trade.completed').length, 1);
   assert.equal(stored.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, 1);
 });
+
+
+test('pre-rename trade purchase failure leaves disk unchanged and same request retry commits once', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'iv-trade-recovery-before-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'world.json');
+  await seedWorld(filePath);
+
+  let failBeforeRename = false;
+  const fileOps = {
+    rename: async (from, to) => {
+      if (failBeforeRename) {
+        failBeforeRename = false;
+        throw Object.assign(new Error('trade rename failure'), { code: 'EIO' });
+      }
+      return rename(from, to);
+    },
+  };
+  const { runtime } = gameWithStore(filePath, fileOps);
+  const seller = { sessionId: 'trade-before-seller' };
+  const buyer = { sessionId: 'trade-before-buyer' };
+  const dispatch = (actorValue, requestId, type, payload = {}) => runtime.dispatch({
+    actor: actorValue,
+    requestId,
+    action: { type, payload },
+  });
+
+  await dispatch(seller, 'before-seller-birth', 'character.birth', { name: '前置故障賣家' });
+  await dispatch(buyer, 'before-buyer-birth', 'character.birth', { name: '前置故障買家' });
+  await dispatch(seller, 'before-seller-grove', 'location.travel', { destinationId: 'starter-grove' });
+  await dispatch(seller, 'before-seller-food', 'survival.gather', { itemId: 'food' });
+  await dispatch(seller, 'before-seller-home', 'location.travel', { destinationId: 'starter-square' });
+  const listed = await dispatch(seller, 'before-list', 'trade.list', {
+    itemId: 'food',
+    quantity: 1,
+    totalPrice: 3,
+  });
+  const listingId = listed.data.listing.id;
+  await dispatch(buyer, 'before-buyer-employment', 'employment.accept', { jobId: 'starter-labor' });
+  await dispatch(buyer, 'before-buyer-work-1', 'economy.work', { jobId: 'starter-labor' });
+  await dispatch(buyer, 'before-buyer-work-2', 'economy.work', { jobId: 'starter-labor' });
+
+  const before = JSON.parse(await readFile(filePath, 'utf8'));
+  failBeforeRename = true;
+  await assert.rejects(
+    () => dispatch(buyer, 'trade-buy-before-failure', 'trade.buy', { listingId }),
+    /trade rename failure/,
+  );
+
+  const unchanged = JSON.parse(await readFile(filePath, 'utf8'));
+  assert.deepEqual(unchanged, before);
+  assert.equal(unchanged.tradeListings[listingId].id, listingId);
+  assert.equal(unchanged.characters[seller.sessionId].money, 0);
+  assert.equal(unchanged.characters[buyer.sessionId].money, 4);
+  assert.deepEqual(unchanged.characters[buyer.sessionId].inventory, {});
+  assert.equal(unchanged.requestOrder.includes('trade-buy-before-failure'), false);
+
+  const retried = await dispatch(buyer, 'trade-buy-before-failure', 'trade.buy', { listingId });
+  assert.equal(retried.code, 'TRADE_PURCHASED');
+  const stored = JSON.parse(await readFile(filePath, 'utf8'));
+  assert.equal(stored.tradeListings[listingId], undefined);
+  assert.equal(stored.characters[seller.sessionId].money, 3);
+  assert.equal(stored.characters[buyer.sessionId].money, 1);
+  assert.deepEqual(stored.characters[buyer.sessionId].inventory, { food: 1 });
+  assert.equal(stored.requestOrder.filter((id) => id === 'trade-buy-before-failure').length, 1);
+  assert.equal(stored.gameEvents.filter((event) => event.type === 'trade.completed').length, 1);
+  assert.equal(stored.gameEvents.filter((event) => event.type === 'economy.money-transferred').length, 1);
+  assert.equal((await readdir(dir)).some((name) => name.endsWith('.tmp')), false);
+});
