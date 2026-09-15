@@ -300,6 +300,7 @@ export function validateContentPack(pack) {
         rememberUnique(inputItemIds, input.itemId, `${path}.inputs item ids`);
       }
       validateItemQuantity(recipe.output, `${path}.output`, items);
+      if (recipe.requirements !== undefined) validateBehaviorRequirements(recipe.requirements, `${path}.requirements`, declaredBehaviorIds);
     }
   }
 

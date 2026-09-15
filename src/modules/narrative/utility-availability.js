@@ -1,7 +1,9 @@
-import { canApplyInventoryDelta } from '../inventory/index.js';
+﻿import { canApplyInventoryDelta } from '../inventory/index.js';
+import { behaviorRequirementsMet } from '../progression/requirements.js';
 
 export function canCraftRecipe(character, recipe, contentPack = null) {
   if (!character || !Array.isArray(recipe?.inputs)) return false;
+  if (!behaviorRequirementsMet(character, recipe.requirements ?? [])) return false;
   const hasInputs = recipe.inputs.every((input) => Number.isSafeInteger(input?.quantity) && input.quantity > 0 && (character.inventory?.[input.itemId] ?? 0) >= input.quantity);
   if (!hasInputs || !contentPack) return hasInputs;
   const delta = { [recipe.output.itemId]: recipe.output.quantity };
