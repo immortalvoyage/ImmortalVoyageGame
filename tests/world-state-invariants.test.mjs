@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   assertWorldState,
@@ -29,6 +29,7 @@ function character(overrides = {}) {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    activeActivity: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -59,6 +60,7 @@ function archivedWorld() {
     behaviorCounts: structuredClone(active.behaviorCounts),
     knowledgeIds: structuredClone(active.knowledgeIds),
     currentEmployment: structuredClone(active.currentEmployment),
+    activeActivity: null,
     estateId: 'estate:char:1',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',

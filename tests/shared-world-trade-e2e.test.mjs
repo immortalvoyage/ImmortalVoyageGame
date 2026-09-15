@@ -39,11 +39,13 @@ async function createFormalPlayer(base, cookie, prefix, name) {
   assert.equal(result.body.code, 'FORMAL_LIFE_BORN');
 }
 
-async function earnAndBuyBread(base, cookie, prefix) {
+async function earnAndBuyBread(base, cookie, prefix, clock) {
   let result = await postAction(base, cookie, `${prefix}-employment`, 'employment.accept', { jobId: 'first-carrying-work' });
   assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
   result = await postAction(base, cookie, `${prefix}-work`, 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
+  assert.equal(result.body.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await postAction(base, cookie, `${prefix}-settle-work`, 'narrative.scene');
   result = await postAction(base, cookie, `${prefix}-bread`, 'economy.buy', { itemId: 'coarse-bread' });
   assert.equal(result.body.code, 'PURCHASE_COMPLETED');
   return result;
@@ -53,7 +55,8 @@ test('two formal players affect the same authoritative world through trade', asy
   const dir = await mkdtemp(join(tmpdir(), 'iv-shared-trade-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'formal-world.json');
-  const server = createOnboardingDevServer({ filePath, now: () => 5000 });
+  const clock = { now: 5000 };
+  const server = createOnboardingDevServer({ filePath, now: () => clock.now });
   const base = await listen(server);
   t.after(() => close(server));
   const sellerPage = await fetch(base + '/');
@@ -65,7 +68,7 @@ test('two formal players affect the same authoritative world through trade', asy
   await createFormalPlayer(base, sellerCookie, 'seller', '寄售者');
   await createFormalPlayer(base, buyerCookie, 'buyer', '購買者');
 
-  let result = await earnAndBuyBread(base, sellerCookie, 'seller');
+  let result = await earnAndBuyBread(base, sellerCookie, 'seller', clock);
   assert.equal(result.body.data.money, 1);
   result = await postAction(base, sellerCookie, 'seller-list', 'trade.list', {
     itemId: 'coarse-bread',
@@ -78,8 +81,10 @@ test('two formal players affect the same authoritative world through trade', asy
   result = await postAction(base, buyerCookie, 'buyer-employment', 'employment.accept', { jobId: 'first-carrying-work' });
   assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
   result = await postAction(base, buyerCookie, 'buyer-work', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
-  assert.equal(result.body.data.money, 2);
+  assert.equal(result.body.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await postAction(base, buyerCookie, `${result.body.code}-${clock.now}-settle`, 'narrative.scene');
+  assert.equal(JSON.parse(await readFile(filePath, 'utf8')).characters[sessionIdFrom(buyerCookie)].money, 2);
 
   result = await postAction(base, buyerCookie, 'buyer-browse', 'trade.browse');
   assert.equal(result.body.code, 'TRADE_BROWSED');
@@ -107,7 +112,8 @@ test('competing buyers cannot purchase the same authoritative listing twice', as
   const dir = await mkdtemp(join(tmpdir(), 'iv-shared-trade-race-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'formal-world.json');
-  const server = createOnboardingDevServer({ filePath, now: () => 6000 });
+  const clock = { now: 6000 };
+  const server = createOnboardingDevServer({ filePath, now: () => clock.now });
   const base = await listen(server);
   t.after(() => close(server));
 
@@ -122,7 +128,7 @@ test('competing buyers cannot purchase the same authoritative listing twice', as
   await createFormalPlayer(base, sellerCookie, 'race-seller', '競售者');
   await createFormalPlayer(base, buyerACookie, 'race-buyer-a', '競買甲');
   await createFormalPlayer(base, buyerBCookie, 'race-buyer-b', '競買乙');
-  let result = await earnAndBuyBread(base, sellerCookie, 'race-seller');
+  let result = await earnAndBuyBread(base, sellerCookie, 'race-seller', clock);
   assert.equal(result.body.data.money, 1);
   result = await postAction(base, sellerCookie, 'race-list', 'trade.list', {
     itemId: 'coarse-bread',
@@ -136,8 +142,10 @@ test('competing buyers cannot purchase the same authoritative listing twice', as
     result = await postAction(base, cookie, `${prefix}-employment`, 'employment.accept', { jobId: 'first-carrying-work' });
     assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
     result = await postAction(base, cookie, `${prefix}-work`, 'economy.work', { jobId: 'first-carrying-work' });
-    assert.equal(result.body.code, 'WORK_COMPLETED');
-    assert.equal(result.body.data.money, 2);
+    assert.equal(result.body.code, 'WORK_STARTED');
+    clock.now += 5 * 60 * 1000;
+    await postAction(base, cookie, `${prefix}-settle-work`, 'narrative.scene');
+    assert.equal(JSON.parse(await readFile(filePath, 'utf8')).characters[sessionIdFrom(cookie)].money, 2);
   }
 
   const [buyA, buyB] = await Promise.all([
@@ -167,7 +175,8 @@ test('seller cancel and buyer purchase cannot both consume the same listing', as
   const dir = await mkdtemp(join(tmpdir(), 'iv-shared-trade-cancel-buy-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'formal-world.json');
-  const server = createOnboardingDevServer({ filePath, now: () => 7000 });
+  const clock = { now: 7000 };
+  const server = createOnboardingDevServer({ filePath, now: () => clock.now });
   const base = await listen(server);
   t.after(() => close(server));
 
@@ -178,7 +187,7 @@ test('seller cancel and buyer purchase cannot both consume the same listing', as
 
   await createFormalPlayer(base, sellerCookie, 'cancel-seller', '撤單者');
   await createFormalPlayer(base, buyerCookie, 'cancel-buyer', '搶購者');
-  let result = await earnAndBuyBread(base, sellerCookie, 'cancel-seller');
+  let result = await earnAndBuyBread(base, sellerCookie, 'cancel-seller', clock);
   assert.equal(result.body.data.money, 1);
   result = await postAction(base, sellerCookie, 'cancel-list', 'trade.list', {
     itemId: 'coarse-bread',
@@ -191,8 +200,10 @@ test('seller cancel and buyer purchase cannot both consume the same listing', as
   result = await postAction(base, buyerCookie, 'cancel-buyer-employment', 'employment.accept', { jobId: 'first-carrying-work' });
   assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
   result = await postAction(base, buyerCookie, 'cancel-buyer-work', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
-  assert.equal(result.body.data.money, 2);
+  assert.equal(result.body.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await postAction(base, buyerCookie, `${result.body.code}-${clock.now}-settle`, 'narrative.scene');
+  assert.equal(JSON.parse(await readFile(filePath, 'utf8')).characters[sessionIdFrom(buyerCookie)].money, 2);
 
   const [cancelResult, buyResult] = await Promise.all([
     postAction(base, sellerCookie, 'cancel-race-cancel', 'trade.cancel', { listingId }),

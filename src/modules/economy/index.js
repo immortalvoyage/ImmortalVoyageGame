@@ -33,13 +33,35 @@ function work({ world, actor, action, context }) {
     return { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' };
   }
 
+  if (character.activeActivity) return { ok: false, code: 'ACTIVITY_ALREADY_ACTIVE' };
+  if (job.durationSeconds === undefined) return completeWork(character, job);
+
+  character.activeActivity = {
+    type: 'work',
+    jobId: job.id,
+    workLocationId: character.locationId,
+    behaviorId: job.behaviorId,
+    rewardMoney: job.rewardMoney,
+    needCosts: structuredClone(job.needCosts ?? {}),
+    startedLogicalTimeSeconds: world.logicalTimeSeconds,
+    completesLogicalTimeSeconds: world.logicalTimeSeconds + job.durationSeconds,
+  };
+  return {
+    ok: true,
+    code: 'WORK_STARTED',
+    data: { completesLogicalTimeSeconds: character.activeActivity.completesLogicalTimeSeconds },
+    events: [{ type: 'economy.work-started', data: { characterId: character.id, jobId: job.id } }],
+  };
+}
+
+
+function completeWork(character, job) {
   character.money += job.rewardMoney;
   for (const [need, cost] of Object.entries(job.needCosts ?? {})) {
     if (!(need in character.needs)) continue;
     character.needs[need] = Math.min(100, character.needs[need] + cost);
   }
   const behaviorCount = recordBehavior(character, job.behaviorId);
-
   return {
     ok: true,
     code: 'WORK_COMPLETED',
@@ -49,6 +71,24 @@ function work({ world, actor, action, context }) {
       { type: 'character.behavior-recorded', data: { characterId: character.id, behaviorId: job.behaviorId, count: behaviorCount } },
     ],
   };
+}
+
+function resolveElapsed({ world }) {
+  const events = [];
+  for (const character of Object.values(world.characters)) {
+    const activity = character.activeActivity;
+    if (character.status !== 'alive' || !activity || activity.type !== 'work') continue;
+    if (activity.completesLogicalTimeSeconds > world.logicalTimeSeconds) continue;
+    const outcome = completeWork(character, {
+      id: activity.jobId,
+      behaviorId: activity.behaviorId,
+      rewardMoney: activity.rewardMoney,
+      needCosts: activity.needCosts,
+    });
+    character.activeActivity = null;
+    events.push(...outcome.events);
+  }
+  return events;
 }
 
 function recoveryWork({ world, actor, action, context }) {
@@ -98,4 +138,4 @@ function buy({ world, actor, action, context }) {
   };
 }
 
-export const economyModule = { manifest, actions: { 'economy.work': work, 'economy.buy': buy, 'economy.recovery-work': recoveryWork } };
+export const economyModule = { manifest, actions: { 'economy.work': work, 'economy.buy': buy, 'economy.recovery-work': recoveryWork }, resolveElapsed };

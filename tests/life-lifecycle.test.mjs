@@ -134,7 +134,7 @@ test('schema v9 migrates active and archived Life identity fields to explicit nu
   delete v9Active.characters['legacy-session'].ownerAccountId;
   delete v9Active.characters['legacy-session'].birthWorldInstant;
   const migratedActive = migrateWorldState(v9Active);
-  assert.equal(migratedActive.schemaVersion, 10);
+  assert.equal(migratedActive.schemaVersion, 11);
   assert.equal(migratedActive.characters['legacy-session'].ownerAccountId, null);
   assert.equal(migratedActive.characters['legacy-session'].birthWorldInstant, null);
   assertWorldState(migratedActive);

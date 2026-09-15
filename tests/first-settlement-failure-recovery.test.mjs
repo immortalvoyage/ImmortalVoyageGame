@@ -66,7 +66,8 @@ test('zero-money critical character retains a finite authoritative recovery path
   character.inventory = {};
   character.needs = { hunger: 90, thirst: 90, fatigue: 90 };
   const store = new MemoryGameStore(criticalWorld);
-  const { runtime } = createGame({ store, contentPack: firstSettlementPack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const { runtime } = createGame({ store, contentPack: firstSettlementPack, now: () => clock.now });
 
   const beforeRejectedWork = store.snapshot();
   assert.deepEqual(await dispatch(runtime, 'critical-work', 'economy.work', { jobId: 'first-carrying-work' }), { ok: false, code: 'SURVIVAL_CONDITION_TOO_POOR' });
@@ -92,7 +93,9 @@ test('zero-money critical character retains a finite authoritative recovery path
   }
 
   const recoveredWork = await dispatch(runtime, 'recovered-work', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(recoveredWork.code, 'WORK_COMPLETED');
+  assert.equal(recoveredWork.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await dispatch(runtime, 'settle-recovered-work', 'narrative.scene');
   assert.equal(store.snapshot().characters[actor.sessionId].money, 2);
 
   scene = await dispatch(runtime, 'recovered-scene', 'narrative.scene');

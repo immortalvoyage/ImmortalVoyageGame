@@ -154,7 +154,7 @@ function buildUtilities(view, character, isActionAvailable, contentPack) {
   const survivalActive = isActionAvailable('survival.gather') || isActionAvailable('survival.consume') || isActionAvailable('survival.rest');
   const survivalCondition = survivalActive ? buildPublicSurvivalCondition(character, contentPack.survival) : null;
   const employmentActive = isActionAvailable('employment.observe') && isActionAvailable('employment.accept');
-  if (survivalCondition?.severity !== 'critical' && isActionAvailable('economy.work')) {
+  if (!character.activeActivity && survivalCondition?.severity !== 'critical' && isActionAvailable('economy.work')) {
     for (const job of location.jobs ?? []) {
       if (!employmentActive || hasEmploymentForJob(character, job, character.locationId)) utilities.push(option(job.label, 'economy.work', { jobId: job.id }));
     }

@@ -5,13 +5,19 @@ import { createDevelopmentGame } from '../src/game.js';
 
 const actor = { sessionId: 'livelihood-branch-player' };
 const dispatch = (runtime, requestId, type, payload = {}) => runtime.dispatch({ actor, requestId, action: { type, payload } });
+async function completeWork(runtime, clock, requestId, jobId) {
+  assert.equal((await dispatch(runtime, requestId, 'economy.work', { jobId })).code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await dispatch(runtime, `${requestId}-settle`, 'narrative.scene');
+}
 
 test('formal player can leave one livelihood, take another, and retain both earned identities', async () => {
-  const { runtime, store } = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const { runtime, store } = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => clock.now });
   assert.equal((await dispatch(runtime, 'birth', 'character.birth', { name: '轉業旅人' })).ok, true);
   assert.equal((await dispatch(runtime, 'carry-job', 'employment.accept', { jobId: 'first-carrying-work' })).code, 'EMPLOYMENT_STARTED');
   for (let i = 1; i <= 3; i += 1) {
-    assert.equal((await dispatch(runtime, `carry-${i}`, 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_COMPLETED');
+    await completeWork(runtime, clock, `carry-${i}`, 'first-carrying-work');
   }
   assert.equal((await dispatch(runtime, 'resign-carry', 'employment.resign')).code, 'EMPLOYMENT_ENDED');
   assert.equal((await dispatch(runtime, 'to-lodging', 'location.travel', { destinationId: 'first-lodging' })).code, 'TRAVEL_COMPLETED');
@@ -22,7 +28,7 @@ test('formal player can leave one livelihood, take another, and retain both earn
   ));
   assert.equal((await dispatch(runtime, 'lodging-job', 'employment.accept', { jobId: 'first-lodging-work' })).code, 'EMPLOYMENT_STARTED');
   for (let i = 1; i <= 3; i += 1) {
-    assert.equal((await dispatch(runtime, `lodging-${i}`, 'economy.work', { jobId: 'first-lodging-work' })).code, 'WORK_COMPLETED');
+    await completeWork(runtime, clock, `lodging-${i}`, 'first-lodging-work');
   }
 
   const scene = await dispatch(runtime, 'formed-life', 'narrative.scene');

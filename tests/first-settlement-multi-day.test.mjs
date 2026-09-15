@@ -23,7 +23,7 @@ test('first settlement remains playable across three lazy-resolved mortal days',
   );
 
   for (let cycle = 1; cycle <= 12; cycle += 1) {
-    nowMs += SIX_HOURS_MS;
+    nowMs += SIX_HOURS_MS - (5 * 60 * 1000);
 
     const scene = await dispatch(game.runtime, `scene-${cycle}`, 'narrative.scene');
     assert.equal(scene.ok, true);
@@ -34,8 +34,10 @@ test('first settlement remains playable across three lazy-resolved mortal days',
 
     assert.equal(
       (await dispatch(game.runtime, `work-${cycle}`, 'economy.work', { jobId: 'first-carrying-work' })).code,
-      'WORK_COMPLETED',
+      'WORK_STARTED',
     );
+    nowMs += 5 * 60 * 1000;
+    await dispatch(game.runtime, `settle-${cycle}`, 'narrative.scene');
     assert.equal(
       (await dispatch(game.runtime, `buy-bread-${cycle}`, 'economy.buy', { itemId: 'coarse-bread' })).code,
       'PURCHASE_COMPLETED',

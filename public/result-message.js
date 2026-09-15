@@ -172,6 +172,10 @@ export function formatActionResult(result, fallbackLabel = '行動') {
       return `${text(fallbackLabel, '使用物品')}：完成。`;
     case 'REST_COMPLETED':
       return '你休息了一會兒，疲勞有所緩解。';
+    case 'WORK_STARTED':
+      return '??????????????????';
+    case 'ACTIVITY_ALREADY_ACTIVE':
+      return '????????????????????????';
     case 'WORK_COMPLETED':
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
     case 'RECOVERY_WORK_COMPLETED': {

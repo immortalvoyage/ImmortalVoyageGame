@@ -14,7 +14,8 @@ function utilityTypes(scene) {
 }
 
 test('first-session utilities expose only actionable controls and show deterministic consume effects', async () => {
-  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => clock.now });
 
   assert.equal((await dispatch(game.runtime, 'birth', 'character.birth', { name: '行動旅人' })).ok, true);
 
@@ -24,7 +25,10 @@ test('first-session utilities expose only actionable controls and show determini
   assert.equal(utilityTypes(initial).includes('economy.buy'), false);
 
   assert.equal((await dispatch(game.runtime, 'employment', 'employment.accept', { jobId: 'first-carrying-work' })).ok, true);
-  assert.equal((await dispatch(game.runtime, 'work', 'economy.work', { jobId: 'first-carrying-work' })).ok, true);
+  assert.equal((await dispatch(game.runtime, 'work', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_STARTED');
+  const duringWork = await dispatch(game.runtime, 'scene-during-work', 'narrative.scene');
+  assert.equal(duringWork.data.utilities.some((utility) => utility.intent.type === 'economy.work'), false);
+  clock.now += 5 * 60 * 1000;
 
   const afterWork = await dispatch(game.runtime, 'scene-after-work', 'narrative.scene');
   const buyUtilities = afterWork.data.utilities.filter((utility) => utility.intent.type === 'economy.buy');
