@@ -173,9 +173,9 @@ export function formatActionResult(result, fallbackLabel = '行動') {
     case 'REST_COMPLETED':
       return '你休息了一會兒，疲勞有所緩解。';
     case 'WORK_STARTED':
-      return '??????????????????';
+      return '\u5de5\u4f5c\u5df2\u958b\u59cb\uff1b\u5b8c\u6210\u5f8c\u6703\u7531\u4e16\u754c\u898f\u5247\u7d50\u7b97\u3002';
     case 'ACTIVITY_ALREADY_ACTIVE':
-      return '????????????????????????';
+      return '\u4f60\u76ee\u524d\u6b63\u5728\u9032\u884c\u4e00\u9805\u5de5\u4f5c\uff1b\u5b8c\u6210\u524d\u4e0d\u80fd\u518d\u958b\u59cb\u53e6\u4e00\u4efd\u5de5\u4f5c\u3002';
     case 'WORK_COMPLETED':
       return `${text(fallbackLabel, '工作')}：完成，報酬已入帳。`;
     case 'RECOVERY_WORK_COMPLETED': {

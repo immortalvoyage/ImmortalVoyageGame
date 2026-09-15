@@ -47,3 +47,20 @@ test('work completion is lazy and cannot settle twice across later requests', as
   assert.equal(character.money, 2);
   assert.equal(character.behaviorCounts['work:first-carrying'], 1);
 });
+
+
+test('active formal work is projected without exposing authoritative activity internals', async () => {
+  let now = 1000;
+  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => now });
+  await dispatch(game.runtime, 'birth-presentation', 'character.birth', { name: '\u5de5\u4f5c\u65c5\u4eba' });
+  await dispatch(game.runtime, 'accept-presentation', 'employment.accept', { jobId: 'first-carrying-work' });
+  await dispatch(game.runtime, 'start-presentation', 'economy.work', { jobId: 'first-carrying-work' });
+  const scene = await dispatch(game.runtime, 'scene-presentation', 'narrative.scene');
+  assert.equal(scene.data.activity.kind, 'work');
+  assert.equal(scene.data.activity.remainingSeconds, 300);
+  assert.equal(typeof scene.data.activity.label, 'string');
+  assert.equal(JSON.stringify(scene.data.activity).includes('jobId'), false);
+  assert.equal(JSON.stringify(scene.data.activity).includes('behaviorId'), false);
+  assert.equal(JSON.stringify(scene.data.activity).includes('rewardMoney'), false);
+  assert.equal(JSON.stringify(scene.data.activity).includes('needCosts'), false);
+});

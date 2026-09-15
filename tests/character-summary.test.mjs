@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildCharacterSummaryRows } from '../public/character-summary.js';
 
@@ -65,4 +65,12 @@ test('formed state appears progressively when the character actually earns it', 
   assert.equal(rows.find(([key]) => key === '現職')?.[1], '搬運雜役｜雇主：搬運領班｜工作地：初始聚落街口｜每次報酬：2');
   assert.equal(rows.find(([key]) => key === '攜帶負荷')?.[1], '1 / 20');
   assert.equal(rows.find(([key]) => key === '背包')?.[1], '飲用水 × 1');
+});
+
+
+test('active work appears as a bounded return-state summary', () => {
+  const view = newPlayerView();
+  view.activity = { kind: 'work', label: '\u642c\u904b\u96dc\u52d9', remainingSeconds: 241 };
+  const rows = buildCharacterSummaryRows(view);
+  assert.deepEqual(rows.find(([key]) => key === '\u9032\u884c\u4e2d'), ['\u9032\u884c\u4e2d', '\u642c\u904b\u96dc\u52d9\uff08\u7d04 5 \u5206\u9418\u5f8c\u5b8c\u6210\uff09']);
 });

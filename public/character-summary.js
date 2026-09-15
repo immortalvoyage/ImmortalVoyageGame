@@ -1,4 +1,4 @@
-export function buildCharacterSummaryRows(view) {
+﻿export function buildCharacterSummaryRows(view) {
   const character = view?.character;
   if (!character) return [];
 
@@ -7,6 +7,12 @@ export function buildCharacterSummaryRows(view) {
   const careers = Array.isArray(view.careers) ? view.careers : [];
   if (careers.length > 0) {
     rows.push(['身分', careers.map((career) => career.name).join('、')]);
+  }
+
+  if (view.activity?.kind === 'work') {
+    const remaining = Number.isSafeInteger(view.activity.remainingSeconds) ? view.activity.remainingSeconds : 0;
+    const minutes = Math.max(1, Math.ceil(remaining / 60));
+    rows.push(['\u9032\u884c\u4e2d', `${view.activity.label ?? '\u5de5\u4f5c'}\uff08\u7d04 ${minutes} \u5206\u9418\u5f8c\u5b8c\u6210\uff09`]);
   }
 
   const currentEmployment = view.employment?.current;
