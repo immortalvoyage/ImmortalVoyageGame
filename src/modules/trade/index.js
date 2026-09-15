@@ -8,6 +8,7 @@ const manifest = validateGameModuleManifest({
   name: 'trade',
   dataVersion: 2,
   actions: ['trade.list', 'trade.browse', 'trade.buy', 'trade.cancel'],
+  untrackedActions: ['trade.browse'],
 });
 
 function isPositiveSafeInteger(value) {

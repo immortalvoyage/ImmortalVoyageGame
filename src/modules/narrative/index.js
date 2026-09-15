@@ -17,7 +17,12 @@ import { buildPublicSurvivalCondition } from '../survival/condition.js';
 import { buildTradeViewForActor } from '../trade/index.js';
 import { canBuyOffer, canCraftRecipe } from './utility-availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'narrative', dataVersion: 25, actions: ['narrative.scene'] });
+const manifest = validateGameModuleManifest({
+  name: 'narrative',
+  dataVersion: 25,
+  actions: ['narrative.scene'],
+  untrackedActions: ['narrative.scene'],
+});
 
 function scene({ world, actor, context }) {
   const contentPack = context.contentPack;

@@ -3,7 +3,12 @@ import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { publicCharacter } from '../character/index.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
 
-const manifest = validateGameModuleManifest({ name: 'location', dataVersion: 4, actions: ['location.travel', 'location.observe'] });
+const manifest = validateGameModuleManifest({
+  name: 'location',
+  dataVersion: 4,
+  actions: ['location.travel', 'location.observe'],
+  untrackedActions: ['location.observe'],
+});
 
 function survivalIsActive(context) {
   const available = context?.isActionAvailable;

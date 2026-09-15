@@ -2,7 +2,7 @@
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { behaviorRequirementsMet } from './requirements.js';
 
-const manifest = validateGameModuleManifest({ name: 'progression', dataVersion: 1, actions: ['progression.observe'] });
+const manifest = validateGameModuleManifest({ name: 'progression', dataVersion: 1, actions: ['progression.observe'], untrackedActions: ['progression.observe'] });
 
 export function buildProgressionView(character, progressionTags = {}) {
   const result = { skills: [], socialTags: [] };

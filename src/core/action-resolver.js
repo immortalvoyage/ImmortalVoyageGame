@@ -8,12 +8,20 @@ export class ActionResolver {
       if (this.#handlers.has(actionType)) throw new Error(`duplicate action handler: ${actionType}`);
       const handler = module.actions[actionType];
       if (typeof handler !== 'function') throw new Error(`missing handler: ${actionType}`);
-      this.#handlers.set(actionType, { moduleName: module.manifest.name, handler });
+      this.#handlers.set(actionType, {
+        moduleName: module.manifest.name,
+        handler,
+        tracksRequest: !module.manifest.untrackedActions?.includes(actionType),
+      });
     }
   }
 
   hasAction(actionType) {
     return this.#handlers.has(actionType);
+  }
+
+  tracksRequest(actionType) {
+    return this.#handlers.get(actionType)?.tracksRequest ?? true;
   }
 
   resolve({ world, actor, action, context }) {

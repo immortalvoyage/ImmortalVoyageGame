@@ -7,6 +7,7 @@ const manifest = validateGameModuleManifest({
   name: 'employment',
   dataVersion: 2,
   actions: ['employment.accept', 'employment.resign', 'employment.observe'],
+  untrackedActions: ['employment.observe'],
 });
 
 function localJob(character, contentPack, jobId, logicalTimeSeconds) {

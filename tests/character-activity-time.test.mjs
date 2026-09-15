@@ -9,7 +9,7 @@ async function dispatch(runtime, requestId, type, payload = {}) {
   return runtime.dispatch({ actor, requestId, action: { type, payload } });
 }
 
-test('successful actor requests mark private logical activity while replay and failed actions do not', async () => {
+test('successful observations resolve current logical activity while tracked replay and failed actions do not', async () => {
   let nowMs = 1000;
   const game = createDevelopmentGame({ now: () => nowMs });
 
@@ -31,10 +31,13 @@ test('successful actor requests mark private logical activity while replay and f
   assert.equal(character.lastSurvivalResolvedLogicalTimeSeconds, 60 * 60);
 
   nowMs += HOUR_MS;
-  const beforeReplay = game.store.snapshot();
-  const replay = await dispatch(game.runtime, 'scene-once', 'narrative.scene');
-  assert.deepEqual(replay, firstScene);
-  assert.deepEqual(game.store.snapshot(), beforeReplay);
+  const repeatedObservation = await dispatch(game.runtime, 'scene-once', 'narrative.scene');
+  assert.equal(repeatedObservation.ok, true);
+  character = game.store.snapshot().characters[actor.sessionId];
+  assert.equal(game.store.snapshot().logicalTimeSeconds, 2 * 60 * 60);
+  assert.equal(character.lastActiveLogicalTimeSeconds, 2 * 60 * 60);
+  assert.equal(character.lastSurvivalResolvedLogicalTimeSeconds, 2 * 60 * 60);
+  assert.equal(game.store.snapshot().requestResults['scene-once'], undefined);
 
   const beforeFailure = game.store.snapshot();
   const failed = await dispatch(game.runtime, 'unknown-action', 'test.not-registered');
