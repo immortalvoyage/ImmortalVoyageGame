@@ -1,7 +1,8 @@
-import { validateGameModuleManifest } from '../../core/module-manifest.js';
+﻿import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
+import { jobRequirementsMet } from '../progression/requirements.js';
 import { buildPublicSurvivalCondition } from '../survival/condition.js';
 
 export const MAX_SITUATION_OPPORTUNITIES = 4;
@@ -73,7 +74,7 @@ export function buildSituationOpportunities({ character, contentPack, isActionAv
 
   const employment = employmentActive && !character.currentEmployment
     ? (location.jobs ?? [])
-      .filter((job) => visibleNpcIds.has(job.employerNpcId))
+      .filter((job) => visibleNpcIds.has(job.employerNpcId) && jobRequirementsMet(character, job))
       .map((job) => {
         const employer = contentPack.npcs[job.employerNpcId];
         return option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id });

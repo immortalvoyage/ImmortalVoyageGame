@@ -1,5 +1,6 @@
-import { validateGameModuleManifest } from '../../core/module-manifest.js';
+﻿import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { jobRequirementsMet } from '../progression/requirements.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
 
 const manifest = validateGameModuleManifest({
@@ -61,6 +62,7 @@ function accept({ world, actor, action, context }) {
   const resolved = localJob(character, context.contentPack, action.payload?.jobId, world.logicalTimeSeconds);
   if (!resolved) return { ok: false, code: 'EMPLOYMENT_OFFER_NOT_AVAILABLE' };
   const { job } = resolved;
+  if (!jobRequirementsMet(character, job)) return { ok: false, code: 'EMPLOYMENT_REQUIREMENTS_NOT_MET' };
 
   character.currentEmployment = {
     jobId: job.id,

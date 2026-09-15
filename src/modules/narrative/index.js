@@ -1,4 +1,4 @@
-import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+﻿import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { buildCareerViewForActor } from '../career/index.js';
 import { buildEmploymentViewForActor, hasEmploymentForJob } from '../employment/index.js';
@@ -7,6 +7,7 @@ import { buildPublicCarryState, buildPublicInventory, canApplyInventoryDelta } f
 import { buildKnowledgeViewForActor } from '../knowledge/index.js';
 import { buildLocationView, formatTravelDuration } from '../location/index.js';
 import { buildProgressionViewForActor } from '../progression/index.js';
+import { jobRequirementsMet } from '../progression/requirements.js';
 import { isNpcAvailableAt } from '../npc/availability.js';
 import { buildKnownPurposeTargets } from '../purpose/known-targets.js';
 import { buildRelationshipViewForActor } from '../relationship/index.js';
@@ -108,7 +109,7 @@ function buildLegacyOptions(view, character, isActionAvailable, contentPack, sur
   }
   if (survivalCondition?.severity !== 'critical' && employmentActive && !character.currentEmployment) {
     for (const job of location.jobs ?? []) {
-      if (!visibleNpcIds.has(job.employerNpcId)) continue;
+      if (!visibleNpcIds.has(job.employerNpcId) || !jobRequirementsMet(character, job)) continue;
       const employer = contentPack.npcs[job.employerNpcId];
       options.push(option(`接受${employer.name}的${job.title}工作（每次報酬 ${job.rewardMoney}）`, 'employment.accept', { jobId: job.id }));
     }

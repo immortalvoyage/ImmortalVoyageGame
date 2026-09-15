@@ -1,4 +1,4 @@
-import { validateMagicContent } from '../modules/magic/content.js';
+﻿import { validateMagicContent } from '../modules/magic/content.js';
 
 const NEED_KEYS = new Set(['hunger', 'thirst', 'fatigue']);
 const PROGRESSION_KINDS = new Set(['skill', 'social']);
@@ -235,6 +235,7 @@ export function validateContentPack(pack) {
       declaredBehaviorIds.add(job.behaviorId);
       requireInteger(job.rewardMoney, `${path}.rewardMoney`, { min: 0 });
       validateNeedMap(job.needCosts, `${path}.needCosts`, { min: 0, max: 100 });
+      if (job.requirements !== undefined) validateBehaviorRequirements(job.requirements, `${path}.requirements`, declaredBehaviorIds);
     }
 
     const recoveryWork = location.recoveryWork === undefined
