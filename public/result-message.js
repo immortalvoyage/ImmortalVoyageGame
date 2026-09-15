@@ -32,6 +32,8 @@ function failureMessage(code, fallbackLabel) {
       return '你目前還無法從這個人那裡問到這件事。';
     case 'PURPOSE_TARGET_UNKNOWN':
       return '你目前沒有足夠情報尋找這個目標。';
+    case 'PURPOSE_TARGET_NOT_PRESENT':
+      return '\u4f60\u5df2\u5230\u9054\u76ee\u6a19\u6240\u5728\u8655\uff0c\u4f46\u5c0d\u65b9\u76ee\u524d\u4e0d\u5728\u53ef\u4e92\u52d5\u7684\u6642\u6bb5\u3002';
     case 'KNOWLEDGE_LIMIT_REACHED':
       return '你目前能保留的已知情報已達上限。';
     case 'EMPLOYMENT_ALREADY_ACTIVE':
