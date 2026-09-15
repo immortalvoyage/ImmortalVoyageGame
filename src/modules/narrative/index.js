@@ -67,6 +67,7 @@ function scene({ world, actor, context }) {
       relationships,
       knowledge,
       employment,
+      activity: buildPublicActivity(character, contentPack, world.logicalTimeSeconds),
       trade,
       survivalCondition,
       inventoryItems: buildPublicInventory(character.inventory, contentPack.items),
@@ -80,6 +81,18 @@ function scene({ world, actor, context }) {
       travelOptions: buildTravelOptions(view, isActionAvailable),
       utilities: buildUtilities(view, character, isActionAvailable, contentPack),
     },
+  };
+}
+
+function buildPublicActivity(character, contentPack, logicalTimeSeconds) {
+  const activity = character.activeActivity;
+  if (!activity || activity.type !== 'work') return null;
+  const location = contentPack.locations[activity.workLocationId];
+  const job = location?.jobs?.find((entry) => entry.id === activity.jobId);
+  return {
+    kind: 'work',
+    label: job?.label ?? '\u5de5\u4f5c',
+    remainingSeconds: Math.max(0, activity.completesLogicalTimeSeconds - logicalTimeSeconds),
   };
 }
 
