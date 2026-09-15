@@ -21,6 +21,7 @@ function character(sessionId, id, overrides = {}) {
     behaviorCounts: { 'work:starter-labor': 2 },
     knowledgeIds: [],
     currentEmployment: null,
+    activeActivity: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -38,6 +39,7 @@ function baseWorld() {
       employerNpcId: 'foreman',
       workLocationId: 'starter-square',
     },
+    activeActivity: null,
     inventory: { food: 2, water: 1 },
     money: 7,
   });

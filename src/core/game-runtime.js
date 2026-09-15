@@ -37,7 +37,8 @@ export class GameRuntime {
       };
       for (const module of this.modules) {
         if (typeof module.resolveElapsed === 'function' && resolvedTime.elapsedSeconds > 0) {
-          module.resolveElapsed({ world, elapsedSeconds: resolvedTime.elapsedSeconds, context });
+          const elapsedEvents = module.resolveElapsed({ world, elapsedSeconds: resolvedTime.elapsedSeconds, context });
+          if (elapsedEvents?.length) recordGameEvents(world, elapsedEvents);
         }
       }
 

@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryGameStore } from '../src/adapters/memory-game-store.js';
 import { GameRuntime } from '../src/core/game-runtime.js';
@@ -22,6 +22,7 @@ function validCharacter() {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    activeActivity: null,
     inventory: {},
     money: 0,
   };

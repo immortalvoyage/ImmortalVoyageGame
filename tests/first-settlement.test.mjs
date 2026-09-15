@@ -26,7 +26,8 @@ test('first settlement candidate validates and exposes livelihood plus survival 
 });
 
 test('fresh mortal can find an employer, earn, buy food, obtain water, consume supplies, change jobs, and rest', async () => {
-  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const game = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => clock.now });
   const born = await dispatch(game.runtime, 'birth', 'character.birth', { name: '初入聚落者' });
   assert.equal(born.ok, true);
   assert.equal(born.data.character.currentEmployment, undefined);
@@ -40,7 +41,10 @@ test('fresh mortal can find an employer, earn, buy food, obtain water, consume s
   assert.match(offer.label, /每次報酬 2/);
 
   assert.equal((await dispatch(game.runtime, 'accept-carrying', 'employment.accept', { jobId: 'first-carrying-work' })).code, 'EMPLOYMENT_STARTED');
-  assert.equal((await dispatch(game.runtime, 'work-carrying', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_COMPLETED');
+  assert.equal((await dispatch(game.runtime, 'work-carrying', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_STARTED');
+  assert.equal(game.store.snapshot().characters[actor.sessionId].money, 0);
+  clock.now += 5 * 60 * 1000;
+  await dispatch(game.runtime, 'settle-carrying', 'narrative.scene');
   assert.equal(game.store.snapshot().characters[actor.sessionId].money, 2);
 
   assert.equal((await dispatch(game.runtime, 'buy-bread', 'economy.buy', { itemId: 'coarse-bread' })).code, 'PURCHASE_COMPLETED');
@@ -61,7 +65,9 @@ test('fresh mortal can find an employer, earn, buy food, obtain water, consume s
   ));
 
   assert.equal((await dispatch(game.runtime, 'accept-lodging', 'employment.accept', { jobId: 'first-lodging-work' })).code, 'EMPLOYMENT_STARTED');
-  assert.equal((await dispatch(game.runtime, 'work-lodging', 'economy.work', { jobId: 'first-lodging-work' })).code, 'WORK_COMPLETED');
+  assert.equal((await dispatch(game.runtime, 'work-lodging', 'economy.work', { jobId: 'first-lodging-work' })).code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await dispatch(game.runtime, 'settle-lodging', 'narrative.scene');
   const beforeRest = game.store.snapshot().characters[actor.sessionId].needs.fatigue;
   assert.ok(beforeRest > 0);
   assert.equal((await dispatch(game.runtime, 'rest-lodging', 'survival.rest')).code, 'REST_COMPLETED');

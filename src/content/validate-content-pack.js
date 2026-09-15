@@ -234,6 +234,7 @@ export function validateContentPack(pack) {
       requireText(job.behaviorId, `${path}.behaviorId`);
       declaredBehaviorIds.add(job.behaviorId);
       requireInteger(job.rewardMoney, `${path}.rewardMoney`, { min: 0 });
+      if (job.durationSeconds !== undefined) requireInteger(job.durationSeconds, `${path}.durationSeconds`, { min: 1, max: 24 * 60 * 60 });
       validateNeedMap(job.needCosts, `${path}.needCosts`, { min: 0, max: 100 });
       if (job.requirements !== undefined) validateBehaviorRequirements(job.requirements, `${path}.requirements`, declaredBehaviorIds);
     }

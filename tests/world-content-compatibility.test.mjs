@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryGameStore } from '../src/adapters/memory-game-store.js';
 import { devStarterPack } from '../src/content/dev-starter.js';
@@ -24,6 +24,7 @@ function character(overrides = {}) {
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    activeActivity: null,
     inventory: {},
     money: 0,
     ...overrides,
@@ -56,6 +57,7 @@ function addHistoricalArchive(world, {
     behaviorCounts: {},
     knowledgeIds,
     currentEmployment,
+    activeActivity: null,
     estateId: 'estate:char:old',
     diedLogicalTimeSeconds: 0,
     deathCauseCode: 'hazard.accident',

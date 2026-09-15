@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { firstSettlementPack } from '../src/content/first-settlement.js';
 import { createDevelopmentGame } from '../src/game.js';
@@ -60,9 +60,11 @@ test('first settlement exposes an immediate meaningful choice and a short visibl
 
   const worked = await dispatch(game.runtime, 'work-once', 'economy.work', { jobId: 'first-carrying-work' });
   assert.equal(worked.ok, true);
-  assert.equal(worked.code, 'WORK_COMPLETED');
-  assert.equal(worked.data.money, 2);
-  assert.deepEqual(worked.data.needs, { hunger: 4, thirst: 5, fatigue: 2 });
+  assert.equal(worked.code, 'WORK_STARTED');
+  nowMs += 5 * 60 * 1000;
+  const settled = await dispatch(game.runtime, 'work-settled', 'narrative.scene');
+  assert.equal(settled.data.character.money, 2);
+  assert.deepEqual(settled.data.character.needs, { hunger: 4, thirst: 5, fatigue: 2 });
 
   assert.equal((await dispatch(game.runtime, 'buy-bread', 'economy.buy', { itemId: 'coarse-bread' })).ok, true);
   assert.equal((await dispatch(game.runtime, 'buy-water', 'economy.buy', { itemId: 'drinking-water' })).ok, true);

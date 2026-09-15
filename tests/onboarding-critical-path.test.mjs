@@ -32,7 +32,8 @@ test('onboarding reaches a persisted formal first-settlement survival and liveli
   const dir = await mkdtemp(join(tmpdir(), 'iv-critical-path-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'formal-world.json');
-  const server = createOnboardingDevServer({ filePath, now: () => 1000 });
+  const clock = { now: 1000 };
+  const server = createOnboardingDevServer({ filePath, now: () => clock.now });
   const base = await listen(server);
   t.after(() => close(server));
 
@@ -61,8 +62,11 @@ test('onboarding reaches a persisted formal first-settlement survival and liveli
   result = await postAction(base, cookie, 'accept-carrying', 'employment.accept', { jobId: 'first-carrying-work' });
   assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
   result = await postAction(base, cookie, 'work-carrying', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
-  assert.equal(result.body.data.money, 2);
+  assert.equal(result.body.code, 'WORK_STARTED');
+  assert.equal(result.body.data.completesLogicalTimeSeconds, 5 * 60);
+  clock.now += 5 * 60 * 1000;
+  result = await postAction(base, cookie, 'settle-carrying', 'narrative.scene');
+  assert.equal(result.body.data.character.money, 2);
 
   result = await postAction(base, cookie, 'buy-bread', 'economy.buy', { itemId: 'coarse-bread' });
   assert.equal(result.body.code, 'PURCHASE_COMPLETED');
@@ -82,8 +86,10 @@ test('onboarding reaches a persisted formal first-settlement survival and liveli
   result = await postAction(base, cookie, 'accept-lodging', 'employment.accept', { jobId: 'first-lodging-work' });
   assert.equal(result.body.code, 'EMPLOYMENT_STARTED');
   result = await postAction(base, cookie, 'work-lodging', 'economy.work', { jobId: 'first-lodging-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
-  const beforeRest = result.body.data.needs.fatigue;
+  assert.equal(result.body.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  result = await postAction(base, cookie, 'settle-lodging', 'narrative.scene');
+  const beforeRest = result.body.data.character.needs.fatigue;
   result = await postAction(base, cookie, 'rest-lodging', 'survival.rest');
   assert.equal(result.body.code, 'REST_COMPLETED');
   assert.ok(result.body.data.needs.fatigue < beforeRest);
@@ -103,7 +109,8 @@ test('formal livelihood survives server restart and replay does not duplicate re
   t.after(() => rm(dir, { recursive: true, force: true }));
   const filePath = join(dir, 'formal-world.json');
 
-  const firstServer = createOnboardingDevServer({ filePath, now: () => 2000 });
+  const clock = { now: 2000 };
+  const firstServer = createOnboardingDevServer({ filePath, now: () => clock.now });
   const firstBase = await listen(firstServer);
   const page = await fetch(firstBase + '/');
   const cookie = page.headers.get('set-cookie').split(';')[0];
@@ -119,32 +126,35 @@ test('formal livelihood survives server restart and replay does not duplicate re
   await postAction(firstBase, cookie, 'restart-meet', 'npc.interact', { npcId: 'first-foreman' });
   await postAction(firstBase, cookie, 'restart-employment', 'employment.accept', { jobId: 'first-carrying-work' });
   const firstWork = await postAction(firstBase, cookie, 'restart-work', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(firstWork.body.code, 'WORK_COMPLETED');
-  assert.equal(firstWork.body.data.money, 2);
-  result = await postAction(firstBase, cookie, 'restart-buy-bread', 'economy.buy', { itemId: 'coarse-bread' });
-  assert.equal(result.body.code, 'PURCHASE_COMPLETED');
-  assert.equal(result.body.data.money, 1);
+  assert.equal(firstWork.body.code, 'WORK_STARTED');
+  assert.equal(JSON.parse(await readFile(filePath, 'utf8')).characters[sessionId].money, 0);
   await close(firstServer);
-  const secondServer = createOnboardingDevServer({ filePath, now: () => 2000 });
+  clock.now += 5 * 60 * 1000;
+  const secondServer = createOnboardingDevServer({ filePath, now: () => clock.now });
   const secondBase = await listen(secondServer);
   t.after(() => close(secondServer));
 
   result = await postAction(secondBase, cookie, 'restart-scene', 'narrative.scene');
   assert.equal(result.response.status, 200);
   assert.equal(result.body.data.location.id, 'first-square');
-  assert.equal(result.body.data.character.money, 1);
-  assert.equal(result.body.data.character.inventory['coarse-bread'], 1);
+  assert.equal(result.body.data.character.money, 2);
+  assert.equal(result.body.data.character.inventory['coarse-bread'] ?? 0, 0);
   const reloadedWorld = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(reloadedWorld.characters[sessionId].currentEmployment.jobId, 'first-carrying-work');
 
   const replay = await postAction(secondBase, cookie, 'restart-work', 'economy.work', { jobId: 'first-carrying-work' });
   assert.deepEqual(replay.body, firstWork.body);
+  assert.equal(JSON.parse(await readFile(filePath, 'utf8')).characters[sessionId].money, 2);
 
+  result = await postAction(secondBase, cookie, 'restart-buy-bread', 'economy.buy', { itemId: 'coarse-bread' });
+  assert.equal(result.body.code, 'PURCHASE_COMPLETED');
   result = await postAction(secondBase, cookie, 'restart-eat-bread', 'survival.consume', { itemId: 'coarse-bread' });
   assert.equal(result.body.code, 'ITEM_CONSUMED');
   result = await postAction(secondBase, cookie, 'restart-work-after', 'economy.work', { jobId: 'first-carrying-work' });
-  assert.equal(result.body.code, 'WORK_COMPLETED');
-  assert.equal(result.body.data.money, 3);
+  assert.equal(result.body.code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  result = await postAction(secondBase, cookie, 'restart-settle-after', 'narrative.scene');
+  assert.equal(result.body.data.character.money, 3);
 
   const world = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(Object.keys(world.characters).length, 1);

@@ -26,7 +26,8 @@ async function setCharacter(game, mutator) {
 
 test('critical-only recovery work replaces free food and water fixtures without creating money', async () => {
   const pack = recoveryProofPack();
-  const game = createDevelopmentGame({ contentPack: pack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const game = createDevelopmentGame({ contentPack: pack, now: () => clock.now });
   await dispatch(game.runtime, 'birth', 'character.birth', { name: '困頓旅人' });
   await dispatch(game.runtime, 'accept', 'employment.accept', { jobId: 'first-carrying-work' });
   await setCharacter(game, (character) => {
@@ -61,7 +62,9 @@ test('critical-only recovery work replaces free food and water fixtures without 
   assert.ok(recovered.needs.hunger < pack.survival.criticalThreshold);
   assert.ok(recovered.needs.thirst < pack.survival.criticalThreshold);
   assert.ok(recovered.needs.fatigue < pack.survival.criticalThreshold);
-  assert.equal((await dispatch(game.runtime, 'work-after-recovery', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_COMPLETED');
+  assert.equal((await dispatch(game.runtime, 'work-after-recovery', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await dispatch(game.runtime, 'settle-work-after-recovery', 'narrative.scene');
   assert.equal(game.store.snapshot().characters[actor.sessionId].money, 2);
 
   const recoveryEvents = game.store.snapshot().gameEvents.filter((event) => event.type === 'economy.recovery-supply-earned');

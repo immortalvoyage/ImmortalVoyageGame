@@ -21,6 +21,7 @@ export function createCharacterState({
     behaviorCounts: {},
     knowledgeIds: [],
     currentEmployment: null,
+    activeActivity: null,
     inventory: {},
     money: 0,
   };
@@ -39,6 +40,7 @@ export function publicCharacter(character) {
     behaviorCounts: _behaviorCounts,
     knowledgeIds: _knowledgeIds,
     currentEmployment: _currentEmployment,
+    activeActivity: _activeActivity,
     ...publicFields
   } = character;
   return structuredClone(publicFields);

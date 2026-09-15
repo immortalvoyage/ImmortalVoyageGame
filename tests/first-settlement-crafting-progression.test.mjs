@@ -5,12 +5,18 @@ import { createDevelopmentGame } from '../src/game.js';
 
 const actor = { sessionId: 'first-craft-progression-player' };
 const dispatch = (runtime, requestId, type, payload = {}) => runtime.dispatch({ actor, requestId, action: { type, payload } });
+async function completeWork(runtime, clock, requestId, jobId) {
+  assert.equal((await dispatch(runtime, requestId, 'economy.work', { jobId })).code, 'WORK_STARTED');
+  clock.now += 5 * 60 * 1000;
+  await dispatch(runtime, `${requestId}-settle`, 'narrative.scene');
+}
 
 test('formal first-settlement livelihood can branch into crafting and visible derived skill', async () => {
-  const { runtime, store } = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => 1000 });
+  const clock = { now: 1000 };
+  const { runtime, store } = createDevelopmentGame({ contentPack: firstSettlementPack, now: () => clock.now });
   assert.equal((await dispatch(runtime, 'birth', 'character.birth', { name: '手作旅人' })).ok, true);
   assert.equal((await dispatch(runtime, 'accept', 'employment.accept', { jobId: 'first-carrying-work' })).ok, true);
-  assert.equal((await dispatch(runtime, 'work', 'economy.work', { jobId: 'first-carrying-work' })).code, 'WORK_COMPLETED');
+  await completeWork(runtime, clock, 'work', 'first-carrying-work');
   assert.equal((await dispatch(runtime, 'bread', 'economy.buy', { itemId: 'coarse-bread' })).code, 'PURCHASE_COMPLETED');
   assert.equal((await dispatch(runtime, 'water', 'economy.buy', { itemId: 'drinking-water' })).code, 'PURCHASE_COMPLETED');
 

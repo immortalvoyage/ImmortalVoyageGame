@@ -1,6 +1,6 @@
 import { assertWorldInstant } from './world-calendar.js';
 
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 export const MAX_REQUEST_RESULTS = 256;
 export const MAX_GAME_EVENTS = 256;
 export const MAX_TRADE_LISTINGS = 50;
@@ -40,6 +40,23 @@ function assertKnowledgeIds(character) {
     if (!isNonEmptyText(knowledgeId) || seen.has(knowledgeId)) throw new Error('invalid character knowledge');
     seen.add(knowledgeId);
   }
+}
+
+function assertActiveActivity(character, worldLogicalTimeSeconds) {
+  const activity = character.activeActivity;
+  if (activity === null) return;
+  if (!isRecord(activity) || activity.type !== 'work'
+    || !isNonEmptyText(activity.jobId) || !isNonEmptyText(activity.workLocationId)
+    || !isNonEmptyText(activity.behaviorId) || !Number.isSafeInteger(activity.rewardMoney) || activity.rewardMoney < 0
+    || !isRecord(activity.needCosts)) throw new Error('invalid active activity');
+  for (const [need, cost] of Object.entries(activity.needCosts)) {
+    if (!NEED_KEYS.includes(need) || !Number.isSafeInteger(cost) || cost < 0 || cost > 100) throw new Error('invalid active activity');
+  }
+  for (const key of ['startedLogicalTimeSeconds', 'completesLogicalTimeSeconds']) {
+    if (!Number.isSafeInteger(activity[key]) || activity[key] < 0) throw new Error('invalid active activity time');
+  }
+  if (activity.startedLogicalTimeSeconds > worldLogicalTimeSeconds
+    || activity.completesLogicalTimeSeconds <= activity.startedLogicalTimeSeconds) throw new Error('invalid active activity time');
 }
 
 function assertCurrentEmployment(character) {
@@ -108,6 +125,7 @@ function assertCharacterState(sessionId, character, worldLogicalTimeSeconds) {
   assertNeedsAndBehavior(character);
   assertKnowledgeIds(character);
   assertCurrentEmployment(character);
+  assertActiveActivity(character, worldLogicalTimeSeconds);
   assertActiveTimeState(character, worldLogicalTimeSeconds);
   assertInventory(character.inventory);
   if (!Number.isSafeInteger(character.money) || character.money < 0) throw new Error('invalid money state');
