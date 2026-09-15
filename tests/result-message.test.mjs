@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { formatActionResult } from '../public/result-message.js';
 
@@ -63,6 +63,7 @@ test('crafting success and failures produce deterministic feedback', () => {
     '已製作簡單餐食 × 1。',
   );
   assert.equal(formatActionResult({ ok: false, code: 'CRAFT_MATERIALS_MISSING' }, '製作'), '製作材料不足。');
+  assert.equal(formatActionResult({ ok: false, code: 'CRAFT_REQUIREMENTS_NOT_MET' }, '製作'), '你目前累積的製作經驗還不足以進行這項製作。');
   assert.equal(formatActionResult({ ok: false, code: 'CRAFT_NOT_AVAILABLE' }, '製作'), '這裡目前無法進行這項製作。');
 });
 

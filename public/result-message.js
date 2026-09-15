@@ -58,6 +58,8 @@ function failureMessage(code, fallbackLabel) {
       return '這裡目前無法進行這項製作。';
     case 'CRAFT_MATERIALS_MISSING':
       return '製作材料不足。';
+    case 'CRAFT_REQUIREMENTS_NOT_MET':
+      return '你目前累積的製作經驗還不足以進行這項製作。';
     case 'TRADE_ITEM_NOT_AVAILABLE':
       return '這個物品目前無法寄售或交付。';
     case 'INVALID_TRADE_LISTING':

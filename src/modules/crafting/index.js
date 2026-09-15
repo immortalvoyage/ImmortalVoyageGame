@@ -1,6 +1,7 @@
-import { validateGameModuleManifest } from '../../core/module-manifest.js';
+﻿import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { recordBehavior } from '../character/behavior.js';
+import { behaviorRequirementsMet } from '../progression/requirements.js';
 import { addStack, canApplyInventoryDelta, removeStack } from '../inventory/index.js';
 
 const manifest = validateGameModuleManifest({ name: 'crafting', dataVersion: 3, actions: ['crafting.craft'] });
@@ -14,6 +15,7 @@ function craft({ world, actor, action, context }) {
   const recipeId = action.payload?.recipeId;
   const recipe = location?.recipes?.find((entry) => entry.id === recipeId);
   if (!recipe) return { ok: false, code: 'CRAFT_NOT_AVAILABLE' };
+  if (!behaviorRequirementsMet(character, recipe.requirements ?? [])) return { ok: false, code: 'CRAFT_REQUIREMENTS_NOT_MET' };
 
   for (const input of recipe.inputs) {
     if ((character.inventory[input.itemId] ?? 0) < input.quantity) {
