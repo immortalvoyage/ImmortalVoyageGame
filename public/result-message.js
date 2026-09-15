@@ -102,6 +102,13 @@ function failureMessage(code, fallbackLabel) {
       return '正式人生必須經由正式出生流程建立。';
     case 'INVALID_NAME':
       return '姓名不符合規則；請使用 1～24 個可辨識文字，避免保留身份或特殊控制字元。';
+    case 'INVALID_ACTION':
+      return '這次操作格式不完整；請重新整理目前狀態後再試一次。';
+    case 'INVALID_REQUEST_ID':
+    case 'REQUEST_ID_COLLISION':
+      return '這次操作識別已失效；請重新整理目前狀態後再重新操作。';
+    case 'ACTION_REJECTED':
+      return '這次操作未被世界規則接受；請重新整理目前狀態後再試一次。';
     case 'UNKNOWN_ACTION':
       return '這個行動目前不可用。';
     case 'UNAUTHENTICATED':
