@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { formatActionResult } from '../public/result-message.js';
 
@@ -35,6 +35,10 @@ test('employment contract failures use bounded player-facing messages', () => {
   assert.equal(
     formatActionResult({ ok: false, code: 'EMPLOYMENT_OFFER_NOT_AVAILABLE' }, '接受工作'),
     '這份工作目前無法受雇。',
+  );
+  assert.equal(
+    formatActionResult({ ok: false, code: 'EMPLOYMENT_REQUIREMENTS_NOT_MET' }, '承接工作'),
+    '你目前累積的經歷還不足以承接這份工作。',
   );
   assert.equal(
     formatActionResult({ ok: false, code: 'EMPLOYMENT_NOT_ACTIVE' }, '離職'),
