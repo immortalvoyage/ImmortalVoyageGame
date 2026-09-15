@@ -1,14 +1,13 @@
-import { validateGameModuleManifest } from '../../core/module-manifest.js';
+﻿import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
+import { behaviorRequirementsMet } from '../progression/requirements.js';
 
 const manifest = validateGameModuleManifest({ name: 'career', dataVersion: 1, actions: ['career.observe'] });
 
 export function buildCareerView(character, careers = {}) {
   if (!character?.behaviorCounts || !careers) return [];
   return Object.values(careers)
-    .filter((career) => career.requirements.every(
-      (requirement) => (character.behaviorCounts[requirement.behaviorId] ?? 0) >= requirement.minCount,
-    ))
+    .filter((career) => behaviorRequirementsMet(character, career.requirements))
     .map((career) => ({ name: career.name }));
 }
 
