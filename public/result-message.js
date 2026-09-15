@@ -80,6 +80,8 @@ function failureMessage(code, fallbackLabel) {
       return '這筆交易目前無法結算。';
     case 'TRADE_INVENTORY_LIMIT':
       return '物品數量已達目前可安全保存的上限。';
+    case 'NO_ACTIVE_CHARACTER':
+      return '目前沒有可操作的角色；請回到出生流程或重新整理目前狀態。';
     case 'CHARACTER_EXISTS':
       return '這個工作階段已經有角色。';
     case 'TUTORIAL_EXIT_CONFIRMATION_REQUIRED':
