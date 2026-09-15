@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDevelopmentGame } from '../src/game.js';
-import { MAX_REQUEST_RESULTS } from '../src/core/world-state.js';
+import { MAX_REQUEST_RESULTS, createInitialWorld, rememberRequest } from '../src/core/world-state.js';
+import { validateGameModuleManifest } from '../src/core/module-manifest.js';
 
 const actor = { sessionId: 's1' };
 
@@ -105,15 +106,49 @@ test('frequent requests cannot freeze survival progression by discarding fractio
   assert.deepEqual(character.needProgressSeconds, { hunger: 0, thirst: 0, fatigue: 0 });
 });
 
-test('idempotency ledger is bounded', async () => {
+test('idempotency ledger is bounded without spending replay slots on observations', async () => {
   const { runtime, store } = createDevelopmentGame({ now: () => 0 });
-  await dispatch(runtime, 'birth', 'character.birth', { name: '旅人' });
+  await dispatch(runtime, 'birth', 'character.birth', { name: 'Ledger Audit' });
   for (let i = 0; i < MAX_REQUEST_RESULTS + 10; i += 1) {
     await dispatch(runtime, `observe-${i}`, 'location.observe');
   }
   const snapshot = store.snapshot();
-  assert.equal(snapshot.requestOrder.length, MAX_REQUEST_RESULTS);
-  assert.equal(Object.keys(snapshot.requestResults).length, MAX_REQUEST_RESULTS);
+  assert.deepEqual(snapshot.requestOrder, ['birth']);
+  assert.deepEqual(Object.keys(snapshot.requestResults), ['birth']);
+
+  const ledger = createInitialWorld({ nowMs: 0 });
+  for (let i = 0; i < MAX_REQUEST_RESULTS + 10; i += 1) {
+    rememberRequest(ledger, { requestId: `mutation-${i}`, sessionId: 'ledger', result: { ok: true, code: 'OK', data: null } });
+  }
+  assert.equal(ledger.requestOrder.length, MAX_REQUEST_RESULTS);
+  assert.equal(Object.keys(ledger.requestResults).length, MAX_REQUEST_RESULTS);
+});
+
+test('module manifests reject untracked actions that are not registered', () => {
+  assert.throws(() => validateGameModuleManifest({
+    name: 'bad-policy', dataVersion: 1, actions: ['read'], untrackedActions: ['write'],
+  }), /untracked action must be registered/);
+});
+
+test('another player cannot evict a committed mutation replay proof with observation churn', async () => {
+  const { runtime, store } = createDevelopmentGame({ now: () => 0 });
+  await dispatch(runtime, 'a-birth', 'character.birth', { name: 'Worker A' });
+  await acceptStarterEmployment(runtime, 'a-employment');
+  const first = await dispatch(runtime, 'a-work', 'economy.work', { jobId: 'starter-labor' });
+  assert.equal(first.ok, true);
+  assert.equal(store.snapshot().characters.s1.money, 2);
+
+  const observer = { sessionId: 'observer-b' };
+  await dispatch(runtime, 'b-birth', 'character.birth', { name: 'Observer B' }, observer);
+  for (let i = 0; i < MAX_REQUEST_RESULTS + 10; i += 1) {
+    const observed = await dispatch(runtime, `b-scene-${i}`, 'narrative.scene', {}, observer);
+    assert.equal(observed.ok, true);
+  }
+
+  assert.ok(store.snapshot().requestResults['a-work']);
+  const replay = await dispatch(runtime, 'a-work', 'economy.work', { jobId: 'starter-labor' });
+  assert.deepEqual(replay, first);
+  assert.equal(store.snapshot().characters.s1.money, 2);
 });
 
 test('money source and sink leave bounded game event evidence', async () => {

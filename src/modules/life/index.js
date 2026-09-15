@@ -7,6 +7,7 @@ const manifest = validateGameModuleManifest({
   name: 'life',
   dataVersion: 2,
   actions: ['life.create-pending', 'life.observe-birth-options', 'life.formal-birth'],
+  untrackedActions: ['life.observe-birth-options'],
 });
 
 function isAccountId(value) {

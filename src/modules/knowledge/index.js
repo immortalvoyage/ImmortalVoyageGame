@@ -2,7 +2,7 @@ import { MAX_CHARACTER_KNOWLEDGE } from '../../core/world-state.js';
 import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 
-const manifest = validateGameModuleManifest({ name: 'knowledge', dataVersion: 1, actions: ['knowledge.observe'] });
+const manifest = validateGameModuleManifest({ name: 'knowledge', dataVersion: 1, actions: ['knowledge.observe'], untrackedActions: ['knowledge.observe'] });
 
 function validKnowledgeId(value) {
   return typeof value === 'string' && value.length > 0;

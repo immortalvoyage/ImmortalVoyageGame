@@ -11,6 +11,7 @@ const manifest = validateGameModuleManifest({
   name: 'situation',
   dataVersion: 8,
   actions: ['situation.observe'],
+  untrackedActions: ['situation.observe'],
 });
 
 function option(label, type, payload = {}) {

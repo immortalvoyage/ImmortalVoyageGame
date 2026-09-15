@@ -2,7 +2,7 @@ import { validateGameModuleManifest } from '../../core/module-manifest.js';
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { findHighestFamiliarityLevel } from './familiarity.js';
 
-const manifest = validateGameModuleManifest({ name: 'relationship', dataVersion: 2, actions: ['relationship.observe'] });
+const manifest = validateGameModuleManifest({ name: 'relationship', dataVersion: 2, actions: ['relationship.observe'], untrackedActions: ['relationship.observe'] });
 
 export function buildRelationshipView(character, npcs = {}) {
   const relationships = [];

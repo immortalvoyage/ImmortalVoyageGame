@@ -2,7 +2,7 @@
 import { getOwnedActiveCharacter } from '../../core/permission-boundary.js';
 import { behaviorRequirementsMet } from '../progression/requirements.js';
 
-const manifest = validateGameModuleManifest({ name: 'career', dataVersion: 1, actions: ['career.observe'] });
+const manifest = validateGameModuleManifest({ name: 'career', dataVersion: 1, actions: ['career.observe'], untrackedActions: ['career.observe'] });
 
 export function buildCareerView(character, careers = {}) {
   if (!character?.behaviorCounts || !careers) return [];
