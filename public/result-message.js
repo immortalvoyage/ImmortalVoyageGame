@@ -1,4 +1,4 @@
-function text(value, fallback = '') {
+﻿function text(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
@@ -38,6 +38,8 @@ function failureMessage(code, fallbackLabel) {
       return '你目前已經有一份現職，必須先離職才能接受另一份工作。';
     case 'EMPLOYMENT_OFFER_NOT_AVAILABLE':
       return '這份工作目前無法受雇。';
+    case 'EMPLOYMENT_REQUIREMENTS_NOT_MET':
+      return '你目前累積的經歷還不足以承接這份工作。';
     case 'EMPLOYMENT_NOT_ACTIVE':
       return '你目前沒有可離開的現職。';
     case 'EMPLOYMENT_REQUIRED':
